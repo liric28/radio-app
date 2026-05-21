@@ -1,7 +1,11 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { DotmHex1 } from "@/components/ui/dotm-hex-1";
 import { DotmHex10 } from "@/components/ui/dotm-hex-10";
+import { DotmSquare15 } from "@/components/ui/dotm-square-15";
+import { DotmSquare18 } from "@/components/ui/dotm-square-18";
+import { DotmCircular8 } from "@/components/ui/dotm-circular-8";
 import styles from "@/app/page.module.css";
 
 type QueueTrack = {
@@ -274,6 +278,7 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
   const [, startTransition] = useTransition();
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
   const [pointerGlow, setPointerGlow] = useState({ x: 50, y: 18, active: false });
+  const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("hex1");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
@@ -572,13 +577,21 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
               className={styles.dotClock}
               cellClassName={styles.clockDot}
             />
-            <div className={styles.clockMeta}>
+            <div className={styles.clockMeta} onClick={() => setLoaderVariant(v => v === "hex1" ? "hex10" : v === "hex10" ? "square15" : v === "square15" ? "square18" : v === "square18" ? "circular8" : "hex1")}>
               <strong>{dayLabel}</strong>
               <span>{dateLabel}</span>
               <em className={styles.onAir}>
                 <i /> {activeLabel}
               </em>
-              <DotmHex10 dotSize={5} bloom color="#54d88c" />
+              {loaderVariant === "hex1"
+                ? <DotmHex1 dotSize={5} bloom color="#54d88c" />
+                : loaderVariant === "hex10"
+                ? <DotmHex10 dotSize={5} bloom color="#54d88c" />
+                : loaderVariant === "square15"
+                ? <DotmSquare15 dotSize={5} bloom color="#54d88c" />
+                : loaderVariant === "square18"
+                ? <DotmSquare18 dotSize={5} bloom color="#54d88c" />
+                : <DotmCircular8 dotSize={5} bloom color="#54d88c" />}
             </div>
           </div>
         </section>
