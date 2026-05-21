@@ -1,6 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { DotmHex10 } from "@/components/ui/dotm-hex-10";
 import styles from "@/app/page.module.css";
 
 type QueueTrack = {
@@ -252,6 +253,10 @@ function DotMatrixText({
 /**
  * 按参考图组织成单列电台面板，主视图优先展示时间、控制和 DJ 对话。
  */
+/**
+ * Radio player shell — single-column station panel, prioritizes clock, controls and DJ info.
+ */
+
 export function PlayerShell({ initialProgram }: PlayerShellProps) {
   const waveformBars = [0.18, 0.56, 0.32, 0.8, 0.28, 0.66, 0.22, 0.74];
   const [theme, setTheme] = useState<"dark" | "light">("light");
@@ -293,6 +298,7 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
     return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath)}`;
   }, [program.currentTrack.sourcePath]);
 
+  // Audio source change handler
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -572,6 +578,7 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
               <em className={styles.onAir}>
                 <i /> {activeLabel}
               </em>
+              <DotmHex10 dotSize={5} bloom color="#54d88c" />
             </div>
           </div>
         </section>

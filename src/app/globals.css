@@ -8,6 +8,41 @@
     "Iowan Old Style", "Baskerville", "Times New Roman", "Songti SC", serif;
 }
 
+/* DotmHex10 bloom/glow from dotmatrix.zzzzshawn.cloud */
+.dmx-root {
+  position: relative;
+}
+.dmx-dot {
+  display: inline-block;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+  will-change: opacity;
+  flex-shrink: 0;
+}
+.dmx-inactive {
+  opacity: 0;
+}
+.dmx-bloom .dmx-bloom-dot {
+  filter: blur(2px);
+  opacity: 1 !important;
+}
+.dmx-bloom-dot[data-dmx-level="3"],
+.dmx-bloom .dmx-bloom-dot[data-dmx-level="3"] {
+  filter: blur(3px);
+  box-shadow: 0 0 6px 2px currentColor;
+}
+.dmx-bloom-dot[data-dmx-level="2"],
+.dmx-bloom .dmx-bloom-dot[data-dmx-level="2"] {
+  filter: blur(2px);
+  box-shadow: 0 0 4px 1px currentColor;
+}
+.dmx-bloom-dot[data-dmx-level="1"],
+.dmx-bloom .dmx-bloom-dot[data-dmx-level="1"] {
+  filter: blur(1px);
+  box-shadow: 0 0 2px currentColor;
+}
+
 html {
   min-height: 100%;
 }
