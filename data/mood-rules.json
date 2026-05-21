@@ -1,0 +1,22 @@
+[
+  {
+    "trigger": "skip",
+    "shiftTo": "refresh",
+    "avoid": ["拖沓", "重复"]
+  },
+  {
+    "trigger": "fresh",
+    "shiftTo": "explore",
+    "avoid": ["过于保守"]
+  },
+  {
+    "trigger": "calmer",
+    "shiftTo": "settle",
+    "avoid": ["高能量", "情绪过满"]
+  },
+  {
+    "trigger": "familiar",
+    "shiftTo": "anchor",
+    "avoid": ["陌生感过强"]
+  }
+]

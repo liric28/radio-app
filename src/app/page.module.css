@@ -1,0 +1,821 @@
+.page {
+  min-height: 100vh;
+  padding: 18px 12px 28px;
+  transition: background 180ms ease, color 180ms ease;
+}
+
+.panel {
+  width: min(860px, 100%);
+  margin: 0 auto;
+  border-radius: 28px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 0 50px rgba(73, 56, 132, 0.34);
+  overflow: hidden;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  position: relative;
+}
+
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(74, 255, 214, 0.92) 1.2px, transparent 1.2px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(
+    circle 118px at var(--mx, 50%) var(--my, 20%),
+    rgba(0, 0, 0, 0.95) 0,
+    rgba(0, 0, 0, 0.92) 34%,
+    transparent 74%
+  );
+  mask-image: radial-gradient(
+    circle 118px at var(--mx, 50%) var(--my, 20%),
+    rgba(0, 0, 0, 0.95) 0,
+    rgba(0, 0, 0, 0.92) 34%,
+    transparent 74%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.panelGlowActive::after {
+  opacity: 0.9;
+}
+
+.pageLight {
+  background:
+    radial-gradient(circle at 50% 8%, rgba(184, 174, 241, 0.22), transparent 24%),
+    linear-gradient(180deg, #faf9fe 0%, #f0eef8 100%);
+  color: #17141f;
+}
+
+.pageDark {
+  background:
+    radial-gradient(circle at 50% 8%, rgba(108, 86, 170, 0.2), transparent 24%),
+    linear-gradient(180deg, #18152a 0%, #0f1020 18%, #090b12 100%);
+  color: #f1eefb;
+}
+
+.panelLight {
+  border: 1px solid rgba(168, 159, 215, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 243, 252, 0.98)),
+    #f8f6fc;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.72) inset,
+    0 0 50px rgba(181, 173, 231, 0.28);
+}
+
+.panelDark {
+  border: 1px solid rgba(164, 146, 236, 0.18);
+  background:
+    linear-gradient(180deg, rgba(29, 29, 45, 0.92), rgba(18, 18, 26, 0.97)),
+    #12131b;
+}
+
+.topbar,
+.clockStage,
+.controlDeck,
+.timelineSection,
+.queueHeader,
+.liveStrip,
+.djPanel,
+.inputDock,
+.footerBar {
+  position: relative;
+}
+
+.topbar::before,
+.clockStage::before,
+.controlDeck::before,
+.djPanel::before,
+.footerBar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(165, 155, 204, 0.25) 0.8px, transparent 0.8px);
+  background-size: 18px 18px;
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.avatar,
+.djAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 38% 28%, #f4dcc5 10%, #c49572 38%, #5f4d7e 64%, #1c1d2d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 16px rgba(101, 171, 255, 0.16);
+}
+
+.dotWord {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: visible;
+}
+
+.dotGlyph {
+  display: grid;
+  grid-template-rows: repeat(7, var(--dot-size, 6px));
+  grid-auto-flow: row;
+  grid-auto-columns: var(--dot-size, 6px);
+  gap: var(--dot-gap, 4px);
+  flex: 0 0 auto;
+  line-height: 0;
+}
+
+.brandDot,
+.clockDot {
+  display: block;
+  width: var(--dot-size, 6px);
+  height: var(--dot-size, 6px);
+  border-radius: 999px;
+  transition:
+    background-color 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.brandDot {
+  --dot-size: 7px;
+  --dot-gap: 3px;
+}
+
+.clockDot {
+  --dot-size: 11px;
+  --dot-gap: 5px;
+}
+
+.dotOn {
+  background: currentColor;
+  opacity: 1;
+}
+
+.dotOff {
+  opacity: 0.14;
+}
+
+.panelLight .dotOn {
+  color: #121018;
+}
+
+.panelLight .dotOff {
+  background: rgba(18, 16, 24, 0.08);
+}
+
+.panelDark .dotOn {
+  color: #f6f2ff;
+}
+
+.panelDark .dotOff {
+  background: rgba(246, 242, 255, 0.08);
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.topGhost,
+.themeActive,
+.themeIdle,
+.chipButton,
+.utilityPrimary,
+.replayButton,
+.iconButton,
+.sendButton,
+.queueRow,
+.roundButton {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #d6d2ea;
+  cursor: pointer;
+}
+
+.topGhost {
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.themeToggle {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.themeActive,
+.themeIdle {
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  border-color: transparent;
+}
+
+.themeActive {
+  background: #f7f6fb;
+  color: #16151d;
+}
+
+.panelLight .topGhost,
+.panelLight .themeIdle,
+.panelLight .chipButton,
+.panelLight .utilityPrimary,
+.panelLight .replayButton,
+.panelLight .iconButton,
+.panelLight .roundButton,
+.panelLight .queueRow {
+  border-color: rgba(25, 23, 34, 0.08);
+  background: rgba(18, 16, 30, 0.03);
+  color: #4d465f;
+}
+
+.panelLight .themeToggle,
+.panelLight .controlDeck,
+.panelLight .liveStrip {
+  background: rgba(18, 16, 30, 0.035);
+}
+
+.panelLight .themeActive,
+.panelLight .sendButton {
+  background: #14131a;
+  color: #faf9ff;
+}
+
+.clockStage {
+  min-height: 380px;
+  padding: 26px 22px 24px;
+  display: grid;
+  place-items: center;
+}
+
+.dotGrid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.dotGrid::before,
+.dotGrid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: 18px 18px;
+}
+
+.dotGrid::before {
+  background-image: radial-gradient(rgba(173, 167, 210, 0.34) 1.1px, transparent 1.1px);
+  opacity: 0.32;
+}
+
+.dotGrid::after {
+  background-image: radial-gradient(rgba(74, 255, 214, 0.92) 1.2px, transparent 1.2px);
+  -webkit-mask-image: radial-gradient(
+    circle 108px at var(--mx, 50%) var(--my, 20%),
+    rgba(0, 0, 0, 0.98) 0,
+    rgba(0, 0, 0, 0.94) 30%,
+    transparent 70%
+  );
+  mask-image: radial-gradient(
+    circle 108px at var(--mx, 50%) var(--my, 20%),
+    rgba(0, 0, 0, 0.98) 0,
+    rgba(0, 0, 0, 0.94) 30%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.panelGlowActive .dotGrid::after {
+  opacity: 1;
+}
+
+.clockWrap {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.dotClock {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clockMeta {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  justify-items: center;
+}
+
+.clockMeta strong {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.clockMeta span {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: rgba(222, 218, 240, 0.62);
+}
+
+.panelLight .clockMeta strong,
+.panelLight .nowCard strong,
+.panelLight .liveTitle,
+.panelLight .queueRow strong,
+.panelLight .utilityTitle,
+.panelLight .djSpeech {
+  color: #17141f;
+}
+
+.panelLight .clockMeta span,
+.panelLight .queueHeader,
+.panelLight .liveStrip,
+.panelLight .footerBar,
+.panelLight .volumeCluster,
+.panelLight .timelineSection,
+.panelLight .serverLine,
+.panelLight .nowPlayingText,
+.panelLight .replayRow,
+.panelLight .nowCard p,
+.panelLight .queueRow p,
+.panelLight .queueRow span {
+  color: rgba(58, 52, 75, 0.5);
+}
+
+.onAir {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #51dd9b;
+  font-style: normal;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+}
+
+.onAir i,
+.liveTitle i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #54d88c;
+  box-shadow: 0 0 10px rgba(84, 216, 140, 0.8);
+}
+
+.controlDeck {
+  display: grid;
+  grid-template-columns: 1.1fr minmax(0, 1.9fr);
+  gap: 14px 18px;
+  align-items: center;
+  padding: 18px 20px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nowCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miniWave {
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  width: 34px;
+  height: 22px;
+}
+
+.miniBar {
+  width: 3px;
+  height: calc(100% * var(--bar-height));
+  border-radius: 999px;
+  background: linear-gradient(180deg, #43ffc6, rgba(67, 255, 198, 0.25));
+  opacity: 0.55;
+}
+
+.miniBarActive {
+  animation: mini-wave 0.9s ease-in-out infinite;
+  animation-delay: var(--bar-delay);
+  opacity: 1;
+}
+
+@keyframes mini-wave {
+  0%,
+  100% {
+    transform: scaleY(0.42);
+  }
+  50% {
+    transform: scaleY(1.12);
+  }
+}
+
+.nowCard strong {
+  display: block;
+  font-size: 18px;
+}
+
+.nowCard p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: rgba(223, 218, 240, 0.48);
+  letter-spacing: 0.16em;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.roundButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  font-size: 15px;
+}
+
+.chipButton {
+  padding: 11px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.volumeCluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: rgba(223, 218, 240, 0.58);
+  margin-left: 6px;
+}
+
+.timelineTrack,
+.volumeSlider {
+  appearance: none;
+}
+
+.volumeTrack,
+.timelineTrack {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.volumeSlider {
+  width: 88px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #f9f8ff;
+  border: 0;
+  box-shadow: 0 0 0 2px rgba(12, 12, 20, 0.7);
+  cursor: pointer;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #f9f8ff;
+  border: 0;
+  box-shadow: 0 0 0 2px rgba(12, 12, 20, 0.7);
+  cursor: pointer;
+}
+
+.volumeSlider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.timelineSection {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  gap: 12px;
+  align-items: center;
+  grid-column: 1 / -1;
+  padding: 2px 0 0;
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.44);
+}
+
+.timelineFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: #f4f4fb;
+}
+
+.panelLight .timelineTrack,
+.panelLight .volumeSlider {
+  background: rgba(20, 18, 28, 0.12);
+}
+
+.panelLight .timelineFill {
+  background: #111016;
+}
+
+.queueHeader,
+.liveStrip,
+.footerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: rgba(223, 218, 240, 0.52);
+}
+
+.queueHeader {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.liveStrip {
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.liveTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  color: #f5f2ff;
+}
+
+.liveBadge {
+  color: #56d58c;
+}
+
+.djPanel {
+  padding: 18px 20px 20px;
+}
+
+.serverLine {
+  text-align: center;
+  color: rgba(223, 218, 240, 0.46);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.djBubble {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.djContent {
+  padding: 14px 16px 16px;
+  border-radius: 6px;
+  background: rgba(8, 8, 12, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.panelLight .djContent,
+.panelLight .djInput,
+.panelLight .utilityCard {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(20, 18, 28, 0.06);
+}
+
+.djTag {
+  margin-bottom: 10px;
+  color: rgba(223, 218, 240, 0.5);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+.djSpeech {
+  font-size: 20px;
+  line-height: 1.58;
+  color: #f6f4fe;
+}
+
+.replayRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.44);
+}
+
+.replayButton {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.nowPlayingText {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(223, 218, 240, 0.44);
+}
+
+.queueList {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.queueRow {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 0;
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.05);
+  background: transparent;
+  text-align: left;
+}
+
+.queueRow strong {
+  display: block;
+  color: #f6f2ff;
+  font-size: 16px;
+}
+
+.queueRow p,
+.queueRow span {
+  margin-top: 4px;
+  color: rgba(223, 218, 240, 0.52);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.inputDock {
+  display: grid;
+  grid-template-columns: 1fr 48px 48px;
+  gap: 10px;
+  padding: 16px 20px 20px;
+}
+
+.djInput {
+  height: 52px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(5, 6, 10, 0.96);
+  color: rgba(223, 218, 240, 0.7);
+  font-size: 16px;
+}
+
+.iconButton,
+.sendButton {
+  border-radius: 999px;
+  font-size: 20px;
+}
+
+.sendButton {
+  background: #c8c7d8;
+  color: #13131a;
+}
+
+.footerBar {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.error {
+  padding: 0 20px 16px;
+  color: #ff9e9e;
+  font-size: 14px;
+}
+
+.utilityDetails {
+  margin: 0 20px 20px;
+}
+
+.utilitySummary {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(223, 218, 240, 0.66);
+  cursor: pointer;
+}
+
+.utilityGrid {
+  margin-top: 12px;
+}
+
+.utilityCard {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.utilityTitle {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #f1eefb;
+}
+
+.libraryForm {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  gap: 10px;
+}
+
+.libraryInput,
+.libraryLimit {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(5, 6, 10, 0.96);
+  color: #f1eefb;
+}
+
+.utilityPrimary {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+
+@media (max-width: 720px) {
+  .brandDot {
+    --dot-size: 5px;
+    --dot-gap: 2px;
+  }
+
+  .clockDot {
+    --dot-size: 8px;
+    --dot-gap: 4px;
+  }
+
+  .dotWord {
+    gap: 3px;
+  }
+
+  .controlDeck {
+    grid-template-columns: 1fr;
+  }
+
+  .transport,
+  .volumeCluster {
+    justify-content: flex-start;
+  }
+
+  .djSpeech {
+    font-size: 16px;
+  }
+
+  .inputDock {
+    grid-template-columns: 1fr 44px 44px;
+  }
+
+  .libraryForm {
+    grid-template-columns: 1fr;
+  }
+}

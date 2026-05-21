@@ -1,0 +1,22 @@
+[
+  {
+    "period": "morning",
+    "scene": "晨间出门",
+    "preferredMoods": ["清醒", "轻快", "通勤"]
+  },
+  {
+    "period": "daytime",
+    "scene": "白天工作流",
+    "preferredMoods": ["专注", "克制", "轻推力"]
+  },
+  {
+    "period": "evening",
+    "scene": "傍晚归家",
+    "preferredMoods": ["回忆感", "夜晚", "轻微克制"]
+  },
+  {
+    "period": "late-night",
+    "scene": "深夜降速",
+    "preferredMoods": ["安静", "夜晚", "回忆感"]
+  }
+]
