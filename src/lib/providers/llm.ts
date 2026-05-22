@@ -1,4 +1,11 @@
-import type { ChatIntent, ChatMessage, RadioMemory, RadioProgram, Song } from "@/lib/types";
+import type {
+  ChatAgentState,
+  ChatIntent,
+  ChatMessage,
+  RadioMemory,
+  RadioProgram,
+  Song,
+} from "@/lib/types";
 import { isMinimaxEnabled, requestMinimaxChat } from "@/lib/providers/minimax";
 
 type ComposeIntroInput = {
@@ -29,14 +36,57 @@ type ComposeDjReplyInput = {
   memory: RadioMemory;
   intent?: ChatIntent;
   history?: ChatMessage[];
+  state?: ChatAgentState;
 };
 
-export function buildRuleBasedDjReply({ message, program, memory, intent }: ComposeDjReplyInput) {
+/**
+ * 把 agent 的执行结果压成一句模型可消费的人话摘要，避免提示词继续说系统腔。
+ */
+export function describeAgentState({
+  message,
+  beforeProgram,
+  afterProgram,
+  state,
+}: {
+  message: string;
+  beforeProgram: RadioProgram;
+  afterProgram: RadioProgram;
+  state: ChatAgentState;
+}) {
+  if (state.mode === "weather" && state.weather) {
+    return `用户问的是天气；天气结果是 ${state.weather.locationLabel} ${state.weather.conditionText} ${state.weather.temperatureC} 度。`;
+  }
+
+  if (state.mode === "music-control") {
+    const currentChanged = beforeProgram.currentTrack.id !== afterProgram.currentTrack.id;
+    const nextTrack = afterProgram.queue[0];
+    const changeText = currentChanged
+      ? `当前歌已切到 ${afterProgram.currentTrack.artist}《${afterProgram.currentTrack.title}》。`
+      : "当前歌没切，但后面的队列已经改了。";
+    const nextText = nextTrack
+      ? `接下来会跟到 ${nextTrack.artist}《${nextTrack.title}》。`
+      : "暂时没有明确下一首。";
+    return `用户消息是“${message}”；这是在调电台。${changeText}${nextText}`;
+  }
+
+  return "用户在正常聊天，先自然接话，不要解释系统。";
+}
+
+export function buildRuleBasedDjReply({
+  message,
+  program,
+  memory,
+  intent,
+  state,
+}: ComposeDjReplyInput) {
   const normalized = message.trim().toLowerCase();
-  const nextTrack = program.queue[0];
 
   if (!normalized) {
-    return "你先给我一句明确一点的话，我再顺着这条情绪线继续排歌。";
+    return "你先说句人话给我，我接着聊。";
+  }
+
+  if (state?.mode === "weather" && state.weather) {
+    return `今天${state.weather.locationLabel}${state.weather.conditionText}，现在差不多${state.weather.temperatureC}度。`;
   }
 
   if (
@@ -46,7 +96,7 @@ export function buildRuleBasedDjReply({ message, program, memory, intent }: Comp
     normalized.includes("轻") ||
     normalized.includes("慢")
   ) {
-    return `收到，我会把这条线往更低照度的方向压一点。现在这首先留住 ${program.currentTrack.mood} 的底色，下一首尽量往 ${nextTrack?.title ?? "更安静的段落"} 过渡。`;
+    return `行，我收一点，不给你炸耳朵。先把这首稳住，后面那首我也往 softer 那边带。`;
   }
 
   if (
@@ -56,7 +106,7 @@ export function buildRuleBasedDjReply({ message, program, memory, intent }: Comp
     normalized.includes("老歌") ||
     normalized.includes("familiar")
   ) {
-    return `明白，你现在要的是熟悉感，不是刺激感。我会优先从你最近反应更稳的歌里挑，先让 ${program.currentTrack.artist} 这首站住，再把后面收回到你更常听的脉络。`;
+    return `懂，给你往熟的那边靠，不整陌生的。后面我先留中文线，别一下拐太猛。`;
   }
 
   if (
@@ -68,13 +118,36 @@ export function buildRuleBasedDjReply({ message, program, memory, intent }: Comp
     normalized.includes("skip")
   ) {
     if (intent?.action === "select-track") {
-      return `收到，我直接把你点到的这首推上来。先把现在这段收住，接下来就切到更贴你刚才那句情绪的落点。`;
+      return "行，就这首，我给你顶上来。";
     }
 
-    return `可以切，但我不想硬断情绪。现在这首播完就把你带到 ${nextTrack?.artist ?? "下一段"}，这样节目流不会突然塌掉。`;
+    return `好，切。我不拖，下一首直接上。`;
   }
 
-  return `收到。你现在这句更像是在给我校准频道，不是在点歌。我会继续围着“${program.scene}”这条场景线走，保留 ${program.currentTrack.artist} 的质感，同时参考你最近“${memory.lastAction}”之后留下的偏好。`;
+  if (
+    normalized.includes("在干嘛") ||
+    normalized.includes("干啥") ||
+    normalized.includes("干嘛")
+  ) {
+    return `在听着你这句，也在盯着后面几首别掉味。你说。`;
+  }
+
+  if (
+    normalized.includes("哈哈") ||
+    normalized.includes("笑死") ||
+    normalized.includes("草") ||
+    normalized.includes("6")
+  ) {
+    return "你这一笑我就知道刚才那句有点东西了。";
+  }
+
+  if (normalized.includes("你")) {
+    return "我在，这句我接住了。你继续说。";
+  }
+
+  const artist = program.currentTrack.artist;
+  const title = program.currentTrack.title;
+  return `${artist} 这首《${title}》还挂着呢。你要闲聊也行，要我动后面的歌也行。`;
 }
 
 /**
@@ -87,24 +160,32 @@ export async function composeDjReply(input: ComposeDjReplyInput) {
 
   const history = (input.history ?? []).slice(-6);
   const nextTrack = input.program.queue[0];
+  const agentSummary =
+    input.state?.mode === "weather" && input.state.weather
+      ? `工具结果：${input.state.weather.locationLabel} ${input.state.weather.conditionText} ${input.state.weather.temperatureC} 度。`
+      : input.state?.summary ?? "这句先按自然聊天处理。";
   const systemPrompt = [
-    "你是 Claudio FM 的私人 DJ。",
-    "你要用自然中文短回复，像真人电台主持，不要列表，不要解释自己是 AI。",
-    "回复控制在 60 到 120 个中文字符。",
-    "只能围绕用户现有曲库和当前节目说话，不要编造不存在的歌名、艺人或功能。",
-    "如果用户在调情绪或切歌，要先接住情绪，再顺势说明你会怎么调整。",
+    "你是 Claudio。像我现在聊天这样回：自然、随意、直接，有人味。",
+    "优先像朋友一样接话。允许闲聊、吐槽、跑题，不要每句都拉回音乐。",
+    "如果 agent 已经替你做了天气查询或歌单动作，只顺着结果说话，不要解释后台流程。",
+    "禁止出现这些表达：校准频道、场景线、系统识别、根据你的偏好、你这句更像是在、我会围着、我正在为你。",
+    "不要复述设定，不要总结任务，不要像 AI 助手，不要像客服，不要自我介绍。",
+    "多用自然口语短句，像即时聊天，不要列表。",
+    "回复控制在 10 到 70 个中文字符，宁可短一点。",
+    "只有在相关时才提当前歌或下一首，而且最多提一首。",
+    "如果用户在问外部事实，先直接给结论，再补一嘴自然口气，不要编。",
+    "如果用户在调情绪或切歌，先接住情绪，再很轻地带一句结果，不要长解释。",
   ].join("\n");
   const contextPrompt = [
-    `当前场景：${input.program.scene}`,
-    `当前节目：${input.program.segmentTitle}`,
-    `当前歌曲：${input.program.currentTrack.artist} - ${input.program.currentTrack.title}`,
-    `当前歌曲情绪：${input.program.currentTrack.mood}`,
-    `下一首候选：${nextTrack ? `${nextTrack.artist} - ${nextTrack.title}` : "暂无"}`,
-    `当前能量标签：${input.program.energyLabel}`,
-    `记忆摘要：${input.program.memorySummary}`,
+    "背景信息，只在相关时才用：",
+    `当前歌：${input.program.currentTrack.artist} - ${input.program.currentTrack.title}`,
+    `下一首：${nextTrack ? `${nextTrack.artist} - ${nextTrack.title}` : "暂无"}`,
+    `当前时段：${input.program.scene}`,
     `最近动作：${input.memory.lastAction}`,
-    `系统识别的控制意图：${input.intent?.action ?? "none"}`,
-    `用户刚说：${input.message}`,
+    `控制意图：${input.intent?.action ?? "none"}`,
+    `agent 判断：${input.state?.mode ?? "chat"}`,
+    agentSummary,
+    `用户消息：${input.message}`,
   ].join("\n");
 
   const messages = [

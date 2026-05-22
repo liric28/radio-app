@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { completeChatJob, createChatJob, failChatJob } from "@/lib/chat-jobs";
-import { ensureDailySchedule } from "@/lib/daily-schedule";
-import { readMemory } from "@/lib/memory";
-import { buildRuleBasedDjReply, composeDjReply } from "@/lib/providers/llm";
-import { applyChatIntentWithProgram, resolveChatIntent } from "@/lib/radio-engine";
-import type { ChatIntent, ChatMessage, RadioProgram } from "@/lib/types";
+import { runChatAgent } from "@/lib/chat-agent";
+import type { ChatMessage, RadioProgram } from "@/lib/types";
 
 type ChatRequest = {
   message?: string;
@@ -13,7 +10,7 @@ type ChatRequest = {
 };
 
 /**
- * 接收用户对 DJ 的文本消息，并结合当前节目上下文生成回复。
+ * 接收页内聊天消息，统一交给 chat agent 决策并返回最新页面状态。
  */
 export async function POST(request: NextRequest) {
   const payload = (await request.json()) as ChatRequest;
@@ -33,26 +30,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const intent: ChatIntent = resolveChatIntent(message, payload.program);
-  const controlledProgram =
-    (await applyChatIntentWithProgram(intent, payload.program)) ?? payload.program;
-  const memory = await readMemory();
-  const previewReply = buildRuleBasedDjReply({
+  const agentResult = await runChatAgent({
     message,
-    program: controlledProgram,
-    memory,
-    intent,
+    program: payload.program,
     history: payload.history,
   });
   const job = await createChatJob();
 
-  void composeDjReply({
-    message,
-    program: controlledProgram,
-    memory,
-    intent,
-    history: payload.history,
-  })
+  void agentResult
+    .finalizeReply()
     .then((reply) => completeChatJob(job.id, reply))
     .catch((error) =>
       failChatJob(job.id, error instanceof Error ? error.message : "DJ 生成失败"),
@@ -60,15 +46,18 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    intent,
-    program: controlledProgram,
-    schedule: await ensureDailySchedule(),
+    intent: agentResult.state.intent,
+    mode: agentResult.state.mode,
+    tool: agentResult.state.tool,
+    program: agentResult.program,
+    schedule: agentResult.schedule,
+    weather: agentResult.state.weather ?? null,
     pending: true,
     jobId: job.id,
     reply: {
       id: `assistant-${Date.now()}`,
       role: "assistant",
-      content: previewReply,
+      content: agentResult.previewReply,
     } satisfies ChatMessage,
   });
 }

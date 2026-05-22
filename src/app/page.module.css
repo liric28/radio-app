@@ -325,6 +325,33 @@
   text-align: center;
 }
 
+.weatherBadge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: 108px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.weatherBadge strong {
+  font-size: 20px;
+  line-height: 1;
+  color: #f6f2ff;
+}
+
+.weatherBadge span {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: rgba(223, 218, 240, 0.64);
+}
+
 .dotClock {
   display: inline-flex;
   align-items: center;
@@ -350,6 +377,7 @@
 }
 
 .panelLight .clockMeta strong,
+.panelLight .weatherBadge strong,
 .panelLight .nowCard strong,
 .panelLight .liveTitle,
 .panelLight .queueRow strong,
@@ -359,6 +387,7 @@
 }
 
 .panelLight .clockMeta span,
+.panelLight .weatherBadge span,
 .panelLight .queueHeader,
 .panelLight .liveStrip,
 .panelLight .footerBar,
@@ -830,7 +859,8 @@
   display: grid;
   grid-template-columns: 1fr 48px 48px;
   gap: 10px;
-  padding: 16px 20px 20px;
+  margin-top: 16px;
+  padding: 0;
 }
 
 .djInput {
@@ -948,6 +978,12 @@
 
   .inputDock {
     grid-template-columns: 1fr 44px 44px;
+  }
+
+  .weatherBadge {
+    position: static;
+    justify-items: center;
+    margin: 0 auto 16px;
   }
 
   .libraryForm {

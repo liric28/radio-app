@@ -7,7 +7,15 @@ import { DotmSquare15 } from "@/components/ui/dotm-square-15";
 import { DotmSquare18 } from "@/components/ui/dotm-square-18";
 import { DotmCircular8 } from "@/components/ui/dotm-circular-8";
 import styles from "@/app/page.module.css";
-import type { ChatIntent, ChatMessage, DailySchedule, RadioProgram } from "@/lib/types";
+import type {
+  ChatAgentMode,
+  ChatAgentTool,
+  ChatIntent,
+  ChatMessage,
+  DailySchedule,
+  RadioProgram,
+  WeatherSnapshot,
+} from "@/lib/types";
 
 type RadioResponse = {
   ok: boolean;
@@ -19,8 +27,11 @@ type ChatResponse = {
   ok: boolean;
   reply: ChatMessage;
   intent?: ChatIntent;
+  mode?: ChatAgentMode;
+  tool?: ChatAgentTool;
   program?: RadioProgram;
   schedule?: DailySchedule;
+  weather?: WeatherSnapshot | null;
   pending?: boolean;
   jobId?: string;
   message?: string;
@@ -38,6 +49,7 @@ const actionLabels: Record<FeedbackAction, string> = {
 type PlayerShellProps = {
   initialProgram: RadioProgram;
   initialSchedule: DailySchedule;
+  initialWeather: WeatherSnapshot | null;
 };
 
 const dotGlyphs: Record<string, string[]> = {
@@ -252,11 +264,12 @@ function DotMatrixText({
  * Radio player shell — single-column station panel, prioritizes clock, controls and DJ info.
  */
 
-export function PlayerShell({ initialProgram, initialSchedule }: PlayerShellProps) {
+export function PlayerShell({ initialProgram, initialSchedule, initialWeather }: PlayerShellProps) {
   const waveformBars = [0.18, 0.56, 0.32, 0.8, 0.28, 0.66, 0.22, 0.74];
-  const [theme, setTheme] = useState<"dark" | "light">("light");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [program, setProgram] = useState<RadioProgram>(initialProgram);
   const [schedule, setSchedule] = useState<DailySchedule>(initialSchedule);
+  const [weather, setWeather] = useState<WeatherSnapshot | null>(initialWeather);
   const [chatInput, setChatInput] = useState<string>("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
     {
@@ -280,7 +293,7 @@ export function PlayerShell({ initialProgram, initialSchedule }: PlayerShellProp
   const [, startTransition] = useTransition();
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
   const [pointerGlow, setPointerGlow] = useState({ x: 50, y: 18, active: false });
-  const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("hex1");
+  const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("circular8");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
@@ -578,6 +591,9 @@ export function PlayerShell({ initialProgram, initialSchedule }: PlayerShellProp
       if (payload.schedule) {
         setSchedule(payload.schedule);
       }
+      if (payload.weather !== undefined) {
+        setWeather(payload.weather);
+      }
       setChatHistory((currentHistory) => [...currentHistory, payload.reply].slice(-12));
 
       if (payload.pending && payload.jobId) {
@@ -697,6 +713,12 @@ export function PlayerShell({ initialProgram, initialSchedule }: PlayerShellProp
         <section className={styles.clockStage}>
           <div className={styles.dotGrid} />
           <div className={styles.clockWrap}>
+            {weather ? (
+              <aside className={styles.weatherBadge}>
+                <strong>{weather.temperatureC}°</strong>
+                <span>{weather.conditionText}</span>
+              </aside>
+            ) : null}
             <DotMatrixText
               text={currentClock}
               className={styles.dotClock}
@@ -843,6 +865,27 @@ export function PlayerShell({ initialProgram, initialSchedule }: PlayerShellProp
             ) : null}
           </div>
 
+          <section className={styles.inputDock}>
+            <input
+              className={styles.djInput}
+              placeholder="Say something to the DJ..."
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={handleInputKeyDown}
+            />
+            <button type="button" className={styles.iconButton} onClick={importLocalLibrary}>
+              ⌁
+            </button>
+            <button
+              type="button"
+              className={styles.sendButton}
+              onClick={() => void sendChatMessage()}
+              disabled={isChatSending}
+            >
+              ↑
+            </button>
+          </section>
+
           <p className={styles.nowPlayingText}>
             Now playing: {program.currentTrack.title} · {program.currentTrack.artist}
           </p>
@@ -891,27 +934,6 @@ export function PlayerShell({ initialProgram, initialSchedule }: PlayerShellProp
               </section>
             ))}
           </div>
-        </section>
-
-        <section className={styles.inputDock}>
-          <input
-            className={styles.djInput}
-            placeholder="Say something to the DJ..."
-            value={chatInput}
-            onChange={(event) => setChatInput(event.target.value)}
-            onKeyDown={handleInputKeyDown}
-          />
-          <button type="button" className={styles.iconButton} onClick={importLocalLibrary}>
-            ⌁
-          </button>
-          <button
-            type="button"
-            className={styles.sendButton}
-            onClick={() => void sendChatMessage()}
-            disabled={isChatSending}
-          >
-            ↑
-          </button>
         </section>
 
         <footer className={styles.footerBar}>

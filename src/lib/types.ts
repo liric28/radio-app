@@ -95,6 +95,18 @@ export type ChatIntent = {
   targetPeriod?: string;
 };
 
+export type ChatAgentMode = "chat" | "weather" | "music-control";
+
+export type ChatAgentTool = "none" | "weather" | "schedule";
+
+export type ChatAgentState = {
+  mode: ChatAgentMode;
+  tool: ChatAgentTool;
+  intent: ChatIntent;
+  summary: string;
+  weather?: WeatherSnapshot | null;
+};
+
 export type ScheduledTrack = Song & {
   reason: string;
 };
@@ -112,4 +124,12 @@ export type DailySchedule = {
   currentBlockPeriod: string;
   currentTrackIndex: number;
   blocks: DailyScheduleBlock[];
+};
+
+export type WeatherSnapshot = {
+  locationLabel: string;
+  temperatureC: number;
+  conditionText: string;
+  daytimeHighC?: number;
+  daytimeLowC?: number;
 };
