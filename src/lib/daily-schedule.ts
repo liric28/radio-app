@@ -14,7 +14,6 @@ import type {
   DailySchedule,
   DailyScheduleBlock,
   RadioMemory,
-  ScheduledTrack,
   Song,
 } from "@/lib/types";
 
@@ -126,7 +125,7 @@ async function generateDailySchedule(): Promise<DailySchedule> {
     const reasonMap = await batchRewriteTrackReasons(pickedSongs, routine.scene);
     const withReason = pickedSongs.map((track) => ({
       ...track,
-      reason: reasonMap.get(track.id) ?? `${routine.scene}里保留${track.mood}质感，${track.reasonSeed}`,
+      reason: reasonMap.get(track.id) ?? track.reasonSeed,
     }));
 
     for (const track of pickedSongs) {
@@ -144,7 +143,7 @@ async function generateDailySchedule(): Promise<DailySchedule> {
   return {
     date: getTodayDateKey(),
     stationName: "Claudio FM",
-    currentBlockPeriod: routines[0]?.period ?? "morning",
+    currentBlockPeriod: routines.find((item) => item.period === getCurrentPeriod())?.period ?? getCurrentPeriod(),
     currentTrackIndex: 0,
     blocks,
   };
@@ -192,8 +191,8 @@ export async function summarizeDailySchedule(schedule: DailySchedule) {
 
 export function resolveCurrentScheduleBlock(schedule: DailySchedule) {
   return (
-    schedule.blocks.find((block) => block.period === getCurrentPeriod()) ??
     schedule.blocks.find((block) => block.period === schedule.currentBlockPeriod) ??
+    schedule.blocks.find((block) => block.period === getCurrentPeriod()) ??
     schedule.blocks[0]
   );
 }
@@ -278,6 +277,23 @@ export async function selectScheduledTrack(trackId: string) {
   }
 
   return schedule;
+}
+
+export async function switchDailySchedulePeriod(targetPeriod: string) {
+  const schedule = await readDailySchedule();
+  const nextBlock = schedule.blocks.find((block) => block.period === targetPeriod);
+
+  if (!nextBlock) {
+    return schedule;
+  }
+
+  const nextSchedule = {
+    ...schedule,
+    currentBlockPeriod: nextBlock.period,
+    currentTrackIndex: 0,
+  };
+  await writeDailySchedule(nextSchedule);
+  return nextSchedule;
 }
 
 function resolveTargetPeriodFromAction(

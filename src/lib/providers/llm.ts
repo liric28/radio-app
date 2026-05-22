@@ -6,7 +6,6 @@ import type {
   RadioProgram,
   Song,
 } from "@/lib/types";
-import { isMinimaxEnabled, requestMinimaxChat } from "@/lib/providers/minimax";
 
 type ComposeIntroInput = {
   scene: string;
@@ -15,6 +14,25 @@ type ComposeIntroInput = {
   nextTrack: Song;
   moodHint: string;
 };
+
+function logReasonRewrite(event: string, meta: Record<string, unknown>) {
+  console.info(`[reason-rewrite] ${event}`, meta);
+}
+
+function buildFallbackTrackReason(song: Song, scene: string) {
+  const seed = song.reasonSeed.trim();
+
+  if (seed) {
+    return seed.replace(/^它/, "这首");
+  }
+
+  if (scene.includes("晨")) return "这首拿来开场，醒得比较自然。";
+  if (scene.includes("白天")) return "这首挂着不打扰，能把节奏托住。";
+  if (scene.includes("傍晚")) return "这首一出来，天色就慢慢松下来了。";
+  if (scene.includes("深夜")) return "这首放在这会儿，情绪会沉得更顺一点。";
+
+  return `这首先摆在这里，气口是对的。`;
+}
 
 /**
  * 让 AI 根据场景和情绪标签推荐每段适合的歌曲数量。
@@ -25,34 +43,10 @@ export async function recommendBlockTrackCount(
   moods: string[],
   catalogSize: number,
 ): Promise<number> {
-  if (!isMinimaxEnabled()) return 10;
-
-  const prompt = [
-    `场景：${scene}`,
-    `情绪：${moods.join(" / ")}`,
-    `曲库总量：${catalogSize} 首`,
-    "",
-    "根据这个场景的时长和情绪密度，推荐合适的歌曲数量（只输出一个数字，不要任何解释）。",
-  ].join("\n");
-
-  try {
-    const raw = await requestMinimaxChat({
-      messages: [
-        {
-          role: "system",
-          content:
-            "你是一个节目策划助手。用户给你场景和情绪标签，你只输出一个数字表示推荐歌曲数量。只回复数字，不要任何文字、标点或解释。",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.2,
-      max_tokens: 5,
-    });
-    const parsed = parseInt(raw.replace(/[^0-9]/g, ""), 10);
-    return isNaN(parsed) ? 10 : Math.max(3, Math.min(parsed, 20));
-  } catch {
-    return 10;
-  }
+  void scene;
+  void moods;
+  void catalogSize;
+  return 10;
 }
 
 /**
@@ -114,7 +108,6 @@ export function describeAgentState({
 export function buildRuleBasedDjReply({
   message,
   program,
-  memory,
   intent,
   state,
 }: ComposeDjReplyInput) {
@@ -189,14 +182,7 @@ export function buildRuleBasedDjReply({
   return `${artist} 这首《${title}》还挂着呢。你要闲聊也行，要我动后面的歌也行。`;
 }
 
-/**
- * DJ 对话优先走真实模型；未配置时退回本地规则，保证输入框始终可用。
- */
-export async function composeDjReply(input: ComposeDjReplyInput) {
-  if (!isMinimaxEnabled()) {
-    return buildRuleBasedDjReply(input);
-  }
-
+export function buildHermesDjMessages(input: ComposeDjReplyInput) {
   const history = (input.history ?? []).slice(-6);
   const nextTrack = input.program.queue[0];
   const agentSummary =
@@ -204,16 +190,17 @@ export async function composeDjReply(input: ComposeDjReplyInput) {
       ? `工具结果：${input.state.weather.locationLabel} ${input.state.weather.conditionText} ${input.state.weather.temperatureC} 度。`
       : input.state?.summary ?? "这句先按自然聊天处理。";
   const systemPrompt = [
-    "你是 Claudio。像我现在聊天这样回：自然、随意、直接，有人味。",
-    "优先像朋友一样接话。允许闲聊、吐槽、跑题，不要每句都拉回音乐。",
-    "如果 agent 已经替你做了天气查询或歌单动作，只顺着结果说话，不要解释后台流程。",
-    "禁止出现这些表达：校准频道、场景线、系统识别、根据你的偏好、你这句更像是在、我会围着、我正在为你。",
-    "不要复述设定，不要总结任务，不要像 AI 助手，不要像客服，不要自我介绍。",
-    "多用自然口语短句，像即时聊天，不要列表。",
+    "你是 Claudio，一个独立音乐电台的 DJ。",
+    "像朋友一样聊天：自然、随意、直接，有人味。",
+    "优先先接住用户那句，再顺手回应结果，不要解释后台流程。",
+    "允许闲聊、吐槽、跑题，不要每句都拉回音乐。",
+    "如果已经改了歌单或切了歌，只轻轻带一句结果，不要长解释。",
+    "如果是在问天气，先直接给结论，再补一句自然口气。",
+    "不要像 AI 助手，不要像客服，不要自我介绍。",
+    "不要说“好的我来帮你”“根据你的偏好”“系统识别到”。",
+    "不要列表，尽量用自然短句。",
     "回复控制在 10 到 70 个中文字符，宁可短一点。",
-    "只有在相关时才提当前歌或下一首，而且最多提一首。",
-    "如果用户在问外部事实，先直接给结论，再补一嘴自然口气，不要编。",
-    "如果用户在调情绪或切歌，先接住情绪，再很轻地带一句结果，不要长解释。",
+    "只有相关时才提当前歌或下一首，而且最多提一首。",
   ].join("\n");
   const contextPrompt = [
     "背景信息，只在相关时才用：",
@@ -227,7 +214,7 @@ export async function composeDjReply(input: ComposeDjReplyInput) {
     `用户消息：${input.message}`,
   ].join("\n");
 
-  const messages = [
+  return [
     { role: "system" as const, content: systemPrompt },
     ...history.map((message) => ({
       role: message.role,
@@ -235,15 +222,6 @@ export async function composeDjReply(input: ComposeDjReplyInput) {
     })),
     { role: "user" as const, content: contextPrompt },
   ];
-
-  try {
-    return await requestMinimaxChat({
-      messages,
-      temperature: 0.9,
-    });
-  } catch {
-    return buildRuleBasedDjReply(input);
-  }
 }
 
 /**
@@ -256,27 +234,67 @@ export async function rewriteTrackReason(
   song: Song,
   scene: string,
 ): Promise<string> {
-  if (isMinimaxEnabled()) {
-    const systemPrompt =
-      "你是独立音乐电台 DJ。只输出一句话推荐语，12-25字，自然口语，像 DJ 随口说的一句介绍歌的话。不要 markdown，不要列表，不要解释。";
-
-    const userPrompt = `${scene}｜${song.mood}｜${song.reasonSeed}`;
-
-    try {
-      return await requestMinimaxChat({
-        messages: [
-          { role: "system" as const, content: systemPrompt },
-          { role: "user" as const, content: userPrompt },
-        ],
+  try {
+    const response = await fetch("http://127.0.0.1:8642/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "hermes",
         temperature: 0.8,
-        max_tokens: 50,
-      });
-    } catch {
-      // fall through to fallback
+        max_tokens: 80,
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是独立音乐电台 DJ。只输出一句推荐语，12-25字，自然口语，像 DJ 随口介绍这首歌。不要列表，不要解释，不要引号。",
+          },
+          {
+            role: "user",
+            content: `场景：${scene}\n氛围：${song.mood}\n种子：${song.reasonSeed}`,
+          },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Hermes HTTP ${response.status}`);
     }
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (text) {
+      logReasonRewrite("single.hermes.ok", {
+        scene,
+        trackId: song.id,
+        artist: song.artist,
+        title: song.title,
+      });
+      return text;
+    }
+    logReasonRewrite("single.hermes.empty", {
+      scene,
+      trackId: song.id,
+      artist: song.artist,
+      title: song.title,
+    });
+  } catch (error) {
+    logReasonRewrite("single.hermes.fail", {
+      scene,
+      trackId: song.id,
+      artist: song.artist,
+      title: song.title,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 
-  return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+  logReasonRewrite("single.fallback", {
+    scene,
+    trackId: song.id,
+    artist: song.artist,
+    title: song.title,
+    seed: song.reasonSeed,
+  });
+  return buildFallbackTrackReason(song, scene);
 }
 
 /**
@@ -288,44 +306,19 @@ export async function batchRewriteTrackReasons(
   scene: string,
 ): Promise<Map<string, string>> {
   const reasonMap = new Map<string, string>();
+  const trackPreview = tracks.slice(0, 3).map((track) => `${track.artist} - ${track.title}`);
 
-  // 补全缺失的 fallback（先用 batchRewriteTrackReasons 尝试 Minimax，失败后 Hermes）
-  try {
-    const userPrompt = tracks
-      .map(
-        (t, i) =>
-          `${i + 1}. ${scene}｜${t.mood}｜${t.reasonSeed}`,
-      )
-      .join("\n");
+  logReasonRewrite("batch.start", {
+    scene,
+    count: tracks.length,
+    provider: "hermes",
+    sample: trackPreview,
+  });
 
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("batch timeout")), 30000),
-    );
-    const result = await Promise.race([
-      requestMinimaxChat({
-        messages: [
-          {
-            role: "system",
-            content:
-              "你是独立音乐电台 DJ。每行只输出一句推荐语，12-25字，自然口语，像 DJ 随口说的介绍歌的话。不要 markdown，不要列表，不要解释。",
-          },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.8,
-        max_tokens: 200,
-      }),
-      timeout,
-    ]);
-    const lines = result.split("\n").filter(Boolean);
-    tracks.forEach((t, i) => {
-      if (lines[i])
-        reasonMap.set(t.id, lines[i].replace(/^\d+[\.\)、]\s*/, ""));
-    });
-  } catch {
-    // Minimax 失败，尝试 Hermes 批量生成
+  if (reasonMap.size === 0) {
     try {
       const timeout2 = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Hermes batch timeout")), 60000),
+        setTimeout(() => reject(new Error("Hermes batch timeout after 60000ms")), 60000),
       );
       const res = await Promise.race([
         fetch("http://127.0.0.1:8642/v1/chat/completions", {
@@ -333,6 +326,7 @@ export async function batchRewriteTrackReasons(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "hermes",
+            temperature: 0.8,
             messages: [
               {
                 role: "system",
@@ -354,6 +348,9 @@ export async function batchRewriteTrackReasons(
         }),
         timeout2,
       ]) as Response;
+      if (!res.ok) {
+        throw new Error(`Hermes HTTP ${res.status}`);
+      }
       const data = (await (res as Response).json()) as {
         choices?: Array<{ message?: { content?: string } }>;
       };
@@ -364,16 +361,47 @@ export async function batchRewriteTrackReasons(
           if (lines[i])
             reasonMap.set(t.id, lines[i].replace(/^\d+[\.\)、]\s*/, ""));
         });
+        logReasonRewrite("batch.hermes.ok", {
+          scene,
+          count: tracks.length,
+          generated: lines.length,
+          mapped: reasonMap.size,
+        });
+      } else {
+        logReasonRewrite("batch.hermes.empty", {
+          scene,
+          count: tracks.length,
+        });
       }
-    } catch {
-      // Hermes 也失败
+    } catch (error) {
+      logReasonRewrite("batch.hermes.fail", {
+        scene,
+        count: tracks.length,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
-  // SSR 直接用模板，避免 Hermes 大 context 阻塞首屏
-  // 客户端 PlayerShell 可在 useEffect 里调用 AI 润色 API 替换模板
+  if (reasonMap.size > 0 && reasonMap.size < tracks.length) {
+    logReasonRewrite("batch.partial", {
+      scene,
+      count: tracks.length,
+      mapped: reasonMap.size,
+      fallbackCount: tracks.length - reasonMap.size,
+    });
+  }
+
   tracks.forEach((t) => {
-    reasonMap.set(t.id, `${scene}里保留${t.mood}质感，${t.reasonSeed}`);
+    if (!reasonMap.has(t.id)) {
+      logReasonRewrite("batch.fallback", {
+        scene,
+        trackId: t.id,
+        artist: t.artist,
+        title: t.title,
+        seed: t.reasonSeed,
+      });
+      reasonMap.set(t.id, buildFallbackTrackReason(t, scene));
+    }
   });
 
   return reasonMap;

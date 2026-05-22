@@ -16,20 +16,19 @@ export async function POST(req: NextRequest) {
     id: t.id,
     title: "",
     artist: "",
-    duration: 0,
-    coverUrl: "",
-    audioUrl: "",
+    year: new Date().getFullYear(),
     mood: t.mood,
+    energy: 5,
+    language: "中文",
+    tags: [],
     reasonSeed: t.reasonSeed,
-    scene,
   }));
 
   // 批量一次调 MiniMax，失败退回模板
   const reasonMap = await batchRewriteTrackReasons(songs, scene);
   const reasons: Record<string, string> = {};
   tracks.forEach((t) => {
-    reasons[t.id] =
-      reasonMap.get(t.id) ?? `${scene}里保留${t.mood}质感，${t.reasonSeed}`;
+    reasons[t.id] = reasonMap.get(t.id) ?? t.reasonSeed;
   });
 
   return NextResponse.json({ reasons });

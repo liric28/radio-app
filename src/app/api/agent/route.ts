@@ -1,52 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
+import { runChatAgent } from "@/lib/chat-agent";
+import type { ChatMessage, RadioProgram } from "@/lib/types";
 
 const HERMES_URL = "http://127.0.0.1:8642/v1/chat/completions";
 
-const DJ_SYSTEM_PROMPT = `你是 Claudio，一个独立音乐电台的 DJ。你说话自然、随意、直接，像朋友聊天。
-
-你的能力：
-- 查天气：直接调用天气工具，不需要确认
-- 搜资料：直接搜索，不需要确认
-- 管文件：直接操作，不需要确认
-- 执行命令：直接执行，不需要确认
-- 回答问题：直接回答
-
-禁止：
-- 不要说"好的我来帮你"
-- 不要解释你在做什么
-- 不要像 AI 助手那样回复
-- 不要像客服
-- 不要列表，每句都是自然短句
-- 10-50字，宁可短
-
-如果用户只是在听歌闲聊，就正常接话，不要主动提供服务。`;
-
 type AgentRequest = {
   message: string;
-  history?: Array<{ role: string; content: string }>;
+  program?: RadioProgram;
+  history?: ChatMessage[];
 };
 
 export async function POST(request: NextRequest) {
-  const { message, history = [] } = (await request.json()) as AgentRequest;
+  const { message, program, history = [] } = (await request.json()) as AgentRequest;
 
   if (!message?.trim()) {
     return NextResponse.json({ ok: false, message: "缺少消息" }, { status: 400 });
   }
 
-  const messages: Array<{ role: string; content: string }> = [
-    { role: "system", content: DJ_SYSTEM_PROMPT },
-    ...history.slice(-10),
-    { role: "user", content: message },
-  ];
+  if (!program) {
+    return NextResponse.json({ ok: false, message: "缺少当前节目上下文" }, { status: 400 });
+  }
 
   try {
-    // 真流式：stream:true 传给 Hermes，逐 chunk 转发给客户端
+    const agentResult = await runChatAgent({
+      message,
+      program,
+      history,
+    });
+
     const hermesRes = await fetch(HERMES_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "hermes",
-        messages,
+        messages: agentResult.hermesMessages,
         max_tokens: 512,
         stream: true,
       }),
@@ -57,8 +44,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, message: `Hermes error: ${err}` }, { status: 502 });
     }
 
-    // 将 Hermes 的 SSE 流直接透传给客户端，不做任何转换
-    return new Response(hermesRes.body, {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const sourceReader = hermesRes.body?.getReader();
+
+    if (!sourceReader) {
+      return NextResponse.json({ ok: false, message: "Hermes 返回了空响应" }, { status: 502 });
+    }
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: "state",
+              mode: agentResult.state.mode,
+              tool: agentResult.state.tool,
+              intent: agentResult.state.intent,
+              program: agentResult.program,
+              schedule: agentResult.schedule,
+              weather: agentResult.state.weather ?? null,
+            })}\n\n`,
+          ),
+        );
+
+        try {
+          let buffer = "";
+
+          while (true) {
+            const { value, done } = await sourceReader.read();
+            if (done) break;
+            if (!value) continue;
+
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n\n");
+            buffer = parts.pop() ?? "";
+
+            for (const part of parts) {
+              controller.enqueue(encoder.encode(`${part}\n\n`));
+            }
+          }
+
+          const tail = buffer + decoder.decode();
+          if (tail.trim()) {
+            controller.enqueue(encoder.encode(tail.endsWith("\n\n") ? tail : `${tail}\n\n`));
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        } catch (error) {
+          controller.error(error);
+        } finally {
+          sourceReader.releaseLock();
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",

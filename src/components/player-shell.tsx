@@ -8,9 +8,6 @@ import { DotmSquare18 } from "@/components/ui/dotm-square-18";
 import { DotmCircular8 } from "@/components/ui/dotm-circular-8";
 import styles from "@/app/page.module.css";
 import type {
-  ChatAgentMode,
-  ChatAgentTool,
-  ChatIntent,
   ChatMessage,
   DailySchedule,
   RadioProgram,
@@ -21,20 +18,6 @@ type RadioResponse = {
   ok: boolean;
   program: RadioProgram;
   schedule?: DailySchedule;
-};
-
-type ChatResponse = {
-  ok: boolean;
-  reply: ChatMessage;
-  intent?: ChatIntent;
-  mode?: ChatAgentMode;
-  tool?: ChatAgentTool;
-  program?: RadioProgram;
-  schedule?: DailySchedule;
-  weather?: WeatherSnapshot | null;
-  pending?: boolean;
-  jobId?: string;
-  message?: string;
 };
 
 type FeedbackAction = "skip" | "fresh" | "calmer" | "familiar";
@@ -298,9 +281,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const latestDjMessage = chatHistory[chatHistory.length - 1];
-  const currentHour = new Date().getHours();
-  const currentBlockPeriod =
-    currentHour < 9 ? "morning" : currentHour < 18 ? "daytime" : currentHour < 23 ? "evening" : "late-night";
+  const currentBlockPeriod = schedule.currentBlockPeriod;
   const currentTrackIndex = schedule.currentTrackIndex;
   const now = new Date();
   const currentClock = `${String(now.getHours()).padStart(2, "0")} ${String(
@@ -394,18 +375,20 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         if (!data.reasons) return;
         const reasons = data.reasons;
         // 更新当前 block 的推荐语
-        const updatedBlocks = schedule.blocks.map((block) =>
-          block.period === activePeriod
-            ? {
-                ...block,
-                tracks: block.tracks.map((t) => ({
-                  ...t,
-                  reason: reasons[t.id] ?? t.reason,
-                })),
-              }
-            : block,
-        );
-        setSchedule((prev) => ({ ...prev, blocks: updatedBlocks }));
+        setSchedule((prev) => ({
+          ...prev,
+          blocks: prev.blocks.map((block) =>
+            block.period === activePeriod
+              ? {
+                  ...block,
+                  tracks: block.tracks.map((t) => ({
+                    ...t,
+                    reason: reasons[t.id] ?? t.reason,
+                  })),
+                }
+              : block,
+          ),
+        }));
         setProgram((prev) => ({
           ...prev,
           currentTrack: { ...prev.currentTrack, reason: reasons[prev.currentTrack.id] ?? prev.currentTrack.reason },
@@ -413,7 +396,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         }));
       })
       .catch(() => {});
-  }, [program.scene]);
+  }, [program.scene, schedule.currentBlockPeriod]);
 
   function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -623,30 +606,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     setActiveLabel("DJ LIVE");
     setChatHistory([...nextHistory, placeholder]);
 
-    // 音乐控制走原有 agent
-    const musicKeywords = ["切歌", "换歌", "下一首", "skip", "安静", "calm", "熟悉", "familiar", "fresh", "燥", "燥一点", "播"];
-    const isMusicControl = musicKeywords.some((k) => message.toLowerCase().includes(k.toLowerCase()));
-    if (isMusicControl) {
-      const legacyRes = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, program, history: nextHistory }),
-      });
-      const legacy = (await legacyRes.json()) as ChatResponse;
-      if (legacy.program) {
-        setHistory((currentHistory) => [program, ...currentHistory].slice(0, 24));
-        setProgram(legacy.program);
-      }
-      if (legacy.schedule) setSchedule(legacy.schedule);
-    }
-
     try {
       const response = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          history: nextHistory.map((m) => ({ role: m.role, content: m.content })),
+          program,
+          history: nextHistory,
         }),
       });
 
@@ -660,27 +627,48 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       const decoder = new TextDecoder();
 
       let done = false;
+      let sseBuffer = "";
+      let receivedContent = false;
+
       while (!done) {
-        const { value, done: d } = await reader.read();
-        done = d;
+        const { value, done: streamDone } = await reader.read();
+        done = streamDone;
         if (!value) continue;
 
-        const text = decoder.decode(value, { stream: !done });
-        const lines = text.split("\n");
+        sseBuffer += decoder.decode(value, { stream: !done });
+        const events = sseBuffer.split("\n\n");
+        sseBuffer = events.pop() ?? "";
 
-        for (const line of lines) {
+        for (const event of events) {
+          const lines = event.split("\n");
+
+          for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
-          if (data === "[DONE]" || !data) continue;
+            if (!data) continue;
+            if (data === "[DONE]") {
+              done = true;
+              break;
+            }
 
           try {
             const chunk = JSON.parse(data);
+            if (chunk.type === "state") {
+              if (chunk.program) {
+                setHistory((currentHistory) => [program, ...currentHistory].slice(0, 24));
+                setProgram(chunk.program);
+              }
+              if (chunk.schedule) setSchedule(chunk.schedule);
+              if ("weather" in chunk) setWeather(chunk.weather);
+              continue;
+            }
             let content = chunk.choices?.[0]?.delta?.content;
             // Hermes 可能把 content 包装成对象，尝试提取 text 字段
             if (typeof content === "object" && content !== null) {
               content = (content as { text?: string }).text ?? String(content);
             }
             if (typeof content === "string" && content) {
+              receivedContent = true;
               setChatHistory((prev) =>
                 prev.map((m) =>
                   m.id === placeholderId ? { ...m, content: m.content + content } : m,
@@ -691,6 +679,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             // ignore parse errors
           }
         }
+
+          if (done) {
+            break;
+          }
+        }
+      }
+
+      if (!receivedContent) {
+        setChatHistory((prev) =>
+          prev.map((m) =>
+            m.id === placeholderId ? { ...m, content: "嗯，我切过去了。" } : m,
+          ),
+        );
       }
     } catch (chatError) {
       setError(chatError instanceof Error ? chatError.message : "Claudio 掉线了");

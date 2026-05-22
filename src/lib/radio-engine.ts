@@ -14,8 +14,9 @@ import {
   resolveCurrentScheduleBlock,
   selectScheduledTrack,
   summarizeDailySchedule,
+  switchDailySchedulePeriod,
 } from "@/lib/daily-schedule";
-import { batchRewriteTrackReasons, composeHostIntro, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
+import { batchRewriteTrackReasons, composeHostIntro, summarizeReasons } from "@/lib/providers/llm";
 import type { ChatIntent, RadioMemory, RadioProgram, Song } from "@/lib/types";
 
 type BuildProgramOptions = {
@@ -68,13 +69,6 @@ function toEnergyLabel(energy: number) {
   if (energy <= 3) return "低照度安静流";
   if (energy <= 6) return "熟悉暖调";
   return "轻推力上行";
-}
-
-/**
- * 生成每首歌给用户看的推荐理由。
- */
-async function buildTrackReason(song: Song, scene: string) {
-  return rewriteTrackReason(song, scene);
 }
 
 /**
@@ -146,7 +140,8 @@ function pickRandomizedTracks(
  * 核心逻辑：基于画像、时段和记忆状态生成一个节目流。
  */
 export async function buildRadioProgramForScene(targetPeriod: string): Promise<RadioProgram> {
-  return buildRadioProgram({ forceRandom: true, targetPeriod });
+  await switchDailySchedulePeriod(targetPeriod);
+  return buildRadioProgram();
 }
 
 export async function buildRadioProgram(
@@ -456,6 +451,16 @@ export function resolveChatIntent(message: string, program: RadioProgram): ChatI
     normalized.includes("next")
   ) {
     return { action: "skip", targetPeriod };
+  }
+
+  if (
+    targetPeriod &&
+    (normalized.includes("切") ||
+      normalized.includes("换") ||
+      normalized.includes("到") ||
+      normalized.includes("进"))
+  ) {
+    return { action: "scene-change", targetPeriod };
   }
 
   if (

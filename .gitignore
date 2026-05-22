@@ -42,5 +42,6 @@ next-env.d.ts
 
 # local runtime data
 /data/audio-roots.json
+/data/chat-jobs.json
 /data/daily-schedule.json
 /package-lock.json

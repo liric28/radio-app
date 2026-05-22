@@ -1,8 +1,7 @@
 import { ensureDailySchedule } from "@/lib/daily-schedule";
 import { readMemory } from "@/lib/memory";
 import {
-  buildRuleBasedDjReply,
-  composeDjReply,
+  buildHermesDjMessages,
   describeAgentState,
 } from "@/lib/providers/llm";
 import { applyChatIntentWithProgram, resolveChatIntent } from "@/lib/radio-engine";
@@ -23,8 +22,7 @@ type RunChatAgentResult = {
   state: ChatAgentState;
   program: RadioProgram;
   schedule: Awaited<ReturnType<typeof ensureDailySchedule>>;
-  previewReply: string;
-  finalizeReply: () => Promise<string>;
+  hermesMessages: Array<{ role: string; content: string }>;
 };
 
 /**
@@ -96,28 +94,17 @@ export async function runChatAgent({
   }
 
   const [memory, schedule] = await Promise.all([readMemory(), ensureDailySchedule()]);
-  const previewReply = buildRuleBasedDjReply({
-    message,
-    program: nextProgram,
-    memory,
-    intent: nextState.intent,
-    history,
-    state: nextState,
-  });
-
   return {
     state: nextState,
     program: nextProgram,
     schedule,
-    previewReply,
-    finalizeReply: () =>
-      composeDjReply({
-        message,
-        program: nextProgram,
-        memory,
-        intent: nextState.intent,
-        history,
-        state: nextState,
-      }),
+    hermesMessages: buildHermesDjMessages({
+      message,
+      program: nextProgram,
+      memory,
+      intent: nextState.intent,
+      history,
+      state: nextState,
+    }),
   };
 }
