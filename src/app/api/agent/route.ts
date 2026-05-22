@@ -58,19 +58,15 @@ export async function POST(request: NextRequest) {
     const data = await hermesRes.json();
     const reply = data.choices?.[0]?.message?.content ?? "";
 
-    // 流式版本：先把完整回复拿到，再通过 SSE 逐字吐出
+    // 流式：逐字吐，模拟打字机
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        // 先发一个空片段表示开始
         controller.enqueue(encoder.encode(`data: START\n\n`));
-
-        // 逐字吐，模拟打字机效果
         for (const char of reply) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(char)}\n\n`));
           await new Promise((r) => setTimeout(r, 18));
         }
-
         controller.enqueue(encoder.encode(`data: END\n\n`));
         controller.close();
       },

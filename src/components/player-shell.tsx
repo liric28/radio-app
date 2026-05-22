@@ -562,83 +562,84 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     };
     const nextHistory = [...chatHistory, userMessage].slice(-12);
 
+    // 空占位符 + 流式更新
+    const placeholderId = `assistant-${Date.now()}`;
+    const placeholder: ChatMessage = { id: placeholderId, role: "assistant", content: "" };
+
     setChatInput("");
     setIsChatSending(true);
     setError(null);
     setActiveLabel("DJ LIVE");
-    setChatHistory(nextHistory);
+    setChatHistory([...nextHistory, placeholder]);
+
+    // 音乐控制走原有 agent
+    const musicKeywords = ["切歌", "换歌", "下一首", "skip", "安静", "calm", "熟悉", "familiar", "fresh", "燥", "燥一点"];
+    const isMusicControl = musicKeywords.some((k) => message.toLowerCase().includes(k.toLowerCase()));
+    if (isMusicControl) {
+      const legacyRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, program, history: nextHistory }),
+      });
+      const legacy = (await legacyRes.json()) as ChatResponse;
+      if (legacy.program) {
+        setHistory((currentHistory) => [program, ...currentHistory].slice(0, 24));
+        setProgram(legacy.program);
+      }
+      if (legacy.schedule) setSchedule(legacy.schedule);
+    }
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          program,
-          history: nextHistory,
+          history: nextHistory.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
-      const payload = (await response.json()) as ChatResponse & { message?: string };
 
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.message || "DJ 暂时没有接住这句话");
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Claudio 暂时没有接住这句话");
       }
 
-      if (payload.program) {
-        setHistory((currentHistory) => [program, ...currentHistory].slice(0, 24));
-        setProgram(payload.program);
-      }
-      if (payload.schedule) {
-        setSchedule(payload.schedule);
-      }
-      if (payload.weather !== undefined) {
-        setWeather(payload.weather);
-      }
-      setChatHistory((currentHistory) => [...currentHistory, payload.reply].slice(-12));
+      // SSE 流式接收，逐字更新占位符
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
 
-      if (payload.pending && payload.jobId) {
-        const previewId = payload.reply.id;
-        const pollJob = async () => {
+      let done = false;
+      while (!done) {
+        const { value, done: d } = await reader.read();
+        done = d;
+        if (!value) continue;
+
+        const text = decoder.decode(value, { stream: !done });
+        const lines = text.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "END" || data === "START") continue;
+          if (!data) continue;
+
+          let char: string;
           try {
-            const response = await fetch(`/api/chat/${payload.jobId}`);
-            const result = (await response.json()) as {
-              ok: boolean;
-              job?: { status: string; content?: string };
-            };
-
-            if (!response.ok || !result.ok || !result.job) {
-              return;
-            }
-
-            if (result.job.status === "completed" && result.job.content) {
-              setChatHistory((currentHistory) =>
-                currentHistory.map((message) =>
-                  message.id === previewId
-                    ? { ...message, content: result.job!.content! }
-                    : message,
-                ),
-              );
-              return;
-            }
-
-            if (result.job.status === "failed") {
-              return;
-            }
-
-            chatPollTimerRef.current = window.setTimeout(() => {
-              void pollJob();
-            }, 1200);
+            char = JSON.parse(data);
           } catch {
-            // ignore transient polling failures
+            continue;
           }
-        };
 
-        chatPollTimerRef.current = window.setTimeout(() => {
-          void pollJob();
-        }, 1200);
+          setChatHistory((prev) =>
+            prev.map((m) =>
+              m.id === placeholderId ? { ...m, content: m.content + char } : m,
+            ),
+          );
+        }
       }
     } catch (chatError) {
-      setError(chatError instanceof Error ? chatError.message : "DJ 回复失败");
+      setError(chatError instanceof Error ? chatError.message : "Claudio 掉线了");
+      setChatHistory((prev) => prev.filter((m) => m.id !== placeholderId));
     } finally {
       setIsChatSending(false);
     }
@@ -854,15 +855,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 <span className={styles.chatRole}>
                   {message.role === "assistant" ? "DJ" : "YOU"}
                 </span>
-                <p>{message.content}</p>
+                {message.content ? (
+                  <p>{message.content}</p>
+                ) : (
+                  <p className={styles.djTyping}>
+                    <span /><span /><span />
+                  </p>
+                )}
               </div>
             ))}
-            {isChatSending ? (
-              <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
-                <span className={styles.chatRole}>DJ</span>
-                <p>正在接你的话，稍等一下。</p>
-              </div>
-            ) : null}
           </div>
 
           <section className={styles.inputDock}>
