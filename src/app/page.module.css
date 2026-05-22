@@ -231,23 +231,26 @@
 
 .themeToggle {
   display: inline-flex;
-  padding: 4px;
+  padding: 3px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .themeActive,
 .themeIdle {
-  padding: 12px 18px;
+  padding: 10px 18px;
   border-radius: 14px;
   font-size: 12px;
   letter-spacing: 0.16em;
-  border-color: transparent;
+  border: none;
+  background: transparent;
+  color: rgba(214, 210, 234, 0.5);
 }
 
 .themeActive {
-  background: #f7f6fb;
-  color: #16151d;
+  background: rgba(255, 255, 255, 0.12);
+  color: #faf9ff;
 }
 
 .panelLight .topGhost,
@@ -263,16 +266,23 @@
   color: #4d465f;
 }
 
-.panelLight .themeToggle,
-.panelLight .controlDeck,
-.panelLight .liveStrip {
-  background: rgba(18, 16, 30, 0.035);
+.themeActive {
+  background: #ffffff;
+  color: #000000;
 }
 
-.panelLight .themeActive,
-.panelLight .sendButton {
-  background: #14131a;
-  color: #faf9ff;
+.panelLight .themeToggle {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.panelLight .themeIdle {
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.panelLight .themeActive {
+  background: #000000;
+  color: #ffffff;
 }
 
 .clockStage {

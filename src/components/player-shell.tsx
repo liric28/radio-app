@@ -745,9 +745,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             />
           </div>
           <div className={styles.topActions}>
-            <button type="button" className={styles.topGhost}>
-              LOGIN
-            </button>
             <div className={styles.themeToggle}>
               <button
                 type="button"
