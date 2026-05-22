@@ -334,17 +334,17 @@ export async function rewriteCurrentScheduleBlock(
       );
     });
 
-  const rebuiltTracks = [
+  const rebuiltTracks = await Promise.all([
     ...keepPlayed,
     ...(currentTrack ? [currentTrack] : []),
     ...candidateSongs.slice(
       0,
       Math.max(block.tracks.length - keepPlayed.length - (currentTrack ? 1 : 0), 0),
     ),
-  ].map((track) => ({
+  ].map(async (track) => ({
     ...track,
-    reason: buildTrackReason(track, block.scene),
-  }));
+    reason: await buildTrackReason(track, block.scene),
+  })));
 
   const nextSchedule = {
     ...schedule,

@@ -211,38 +211,133 @@ export async function composeDjReply(input: ComposeDjReplyInput) {
  * 用 AI 润色单首歌的推荐理由，保留 DJ 口吻。
  * 失败时退回模板句，不阻塞播放流程。
  */
+// 真正的串行化信号灯，防止 Hermes 被 48 个并发请求打挂
+
 export async function rewriteTrackReason(
   song: Song,
   scene: string,
 ): Promise<string> {
-  if (!isMinimaxEnabled()) {
-    return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+  if (isMinimaxEnabled()) {
+    const systemPrompt =
+      "你是独立音乐电台 DJ。只输出一句话推荐语，12-25字，自然口语，像 DJ 随口说的一句介绍歌的话。不要 markdown，不要列表，不要解释。";
+
+    const userPrompt = `${scene}｜${song.mood}｜${song.reasonSeed}`;
+
+    try {
+      return await requestMinimaxChat({
+        messages: [
+          { role: "system" as const, content: systemPrompt },
+          { role: "user" as const, content: userPrompt },
+        ],
+        temperature: 0.8,
+        max_tokens: 50,
+      });
+    } catch {
+      // fall through to fallback
+    }
   }
 
-  const systemPrompt = [
-    "你是一个独立音乐电台的 DJ 推荐语润色助手。",
-    "输入：场景名 + 歌曲的氛围标签(mood) + 原始推荐种子(reasonSeed)",
-    "输出：一句话推荐语，12-25字，自然口语，像 DJ 在介绍歌。",
-    "禁止：列表、解释性语言、套话。不要出现 mood/seed/标签 等系统词汇。",
-  ].join("\n");
+  return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+}
 
-  const userPrompt = [
-    `场景：${scene}`,
-    `氛围标签：${song.mood}`,
-    `原始推荐种子：${song.reasonSeed}`,
-  ].join("\n");
+/**
+ * 批量生成推荐语。一次调用生成多条，5秒超时。
+ * 专给 SSR 用，避免 48 个并发请求打挂 Hermes。
+ */
+export async function batchRewriteTrackReasons(
+  tracks: Song[],
+  scene: string,
+): Promise<Map<string, string>> {
+  const reasonMap = new Map<string, string>();
 
+  // 补全缺失的 fallback（先用 batchRewriteTrackReasons 尝试 Minimax，失败后 Hermes）
   try {
-    return await requestMinimaxChat({
-      messages: [
-        { role: "system" as const, content: systemPrompt },
-        { role: "user" as const, content: userPrompt },
-      ],
-      temperature: 0.85,
+    const userPrompt = tracks
+      .map(
+        (t, i) =>
+          `${i + 1}. ${scene}｜${t.mood}｜${t.reasonSeed}`,
+      )
+      .join("\n");
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("batch timeout")), 10000),
+    );
+    const result = await Promise.race([
+      requestMinimaxChat({
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是独立音乐电台 DJ。每行只输出一句推荐语，12-25字，自然口语，像 DJ 随口说的介绍歌的话。不要 markdown，不要列表，不要解释。",
+          },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.8,
+        max_tokens: 200,
+      }),
+      timeout,
+    ]);
+    const lines = result.split("\n").filter(Boolean);
+    tracks.forEach((t, i) => {
+      if (lines[i])
+        reasonMap.set(t.id, lines[i].replace(/^\d+[\.\)、]\s*/, ""));
     });
   } catch {
-    return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+    // Minimax 失败，尝试 Hermes 批量生成
+    try {
+      const timeout2 = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Hermes batch timeout")), 60000),
+      );
+      const res = await Promise.race([
+        fetch("http://127.0.0.1:8642/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "hermes",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "你是独立音乐电台 DJ 推荐语助手。按序号每行输出一句推荐语，12-25字，自然口语，像 DJ 在介绍歌。禁止列表、解释。",
+              },
+              {
+                role: "user",
+                content: tracks
+                  .map(
+                    (t, i) =>
+                      `${i + 1}. 场景：${scene}，氛围：${t.mood}，种子：${t.reasonSeed}`,
+                  )
+                  .join("\n"),
+              },
+            ],
+            max_tokens: 512,
+          }),
+        }),
+        timeout2,
+      ]) as Response;
+      const data = (await (res as Response).json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const text = data.choices?.[0]?.message?.content?.trim();
+      if (text) {
+        const lines = text.split("\n").filter(Boolean);
+        tracks.forEach((t, i) => {
+          if (lines[i])
+            reasonMap.set(t.id, lines[i].replace(/^\d+[\.\)、]\s*/, ""));
+        });
+      }
+    } catch {
+      // Hermes 也失败
+    }
   }
+
+  // SSR 直接用模板，避免 Hermes 大 context 阻塞首屏
+  // 客户端 PlayerShell 可在 useEffect 里调用 AI 润色 API 替换模板
+  tracks.forEach((t) => {
+    reasonMap.set(t.id, `${scene}里保留${t.mood}质感，${t.reasonSeed}`);
+  });
+
+  return reasonMap;
 }
 
 /**

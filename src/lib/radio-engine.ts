@@ -15,7 +15,7 @@ import {
   selectScheduledTrack,
   summarizeDailySchedule,
 } from "@/lib/daily-schedule";
-import { composeHostIntro, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
+import { batchRewriteTrackReasons, composeHostIntro, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
 import type { ChatIntent, RadioMemory, RadioProgram, Song } from "@/lib/types";
 
 type BuildProgramOptions = {
@@ -195,15 +195,12 @@ export async function buildRadioProgram(
     throw new Error("当前曲库为空，无法生成节目流");
   }
 
-  const queue = queueBase.map((track) => ({
-    ...track,
-    reason: buildTrackReason(track, routine.scene),
-  }));
+  // 一次调用批量生成所有推荐语，避免并发打挂 Hermes
+  const allTracks = [currentTrack, ...queueBase];
+  const reasons = await batchRewriteTrackReasons(allTracks, routine.scene);
 
-  const currentWithReason = {
-    ...currentTrack,
-    reason: buildTrackReason(currentTrack, routine.scene),
-  };
+  const currentWithReason = { ...currentTrack, reason: reasons.get(currentTrack.id)! };
+  const queue = queueBase.map((t) => ({ ...t, reason: reasons.get(t.id)! }));
 
   const rawReasons = [
     `当前时段是 ${routine.scene}，优先命中 ${routine.preferredMoods.join(" / ")}。`,

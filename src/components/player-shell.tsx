@@ -364,6 +364,34 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     };
   }, []);
 
+  /**
+   * 挂载后悄悄触发 AI 润色推荐语，替换 SSR 的模板 reason。
+   */
+  useEffect(() => {
+    const allTracks = [program.currentTrack, ...program.queue].filter(Boolean);
+    if (!allTracks.length) return;
+
+    fetch("/api/rewrite-reasons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tracks: allTracks.map((t) => ({ id: t.id, mood: t.mood, reasonSeed: t.reasonSeed ?? "" })),
+        scene: program.scene,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data: { reasons?: Record<string, string> }) => {
+        if (!data.reasons) return;
+        const reasons = data.reasons;
+        setProgram((prev) => ({
+          ...prev,
+          currentTrack: { ...prev.currentTrack, reason: reasons[prev.currentTrack.id] ?? prev.currentTrack.reason },
+          queue: prev.queue.map((t) => ({ ...t, reason: reasons[t.id] ?? t.reason })),
+        }));
+      })
+      .catch(() => {});
+  }, []); // 只在首次挂载时执行一次
+
   function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
     const minutes = Math.floor(seconds / 60);
