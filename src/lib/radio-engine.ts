@@ -15,7 +15,7 @@ import {
   selectScheduledTrack,
   summarizeDailySchedule,
 } from "@/lib/daily-schedule";
-import { composeHostIntro, summarizeReasons } from "@/lib/providers/llm";
+import { composeHostIntro, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
 import type { ChatIntent, RadioMemory, RadioProgram, Song } from "@/lib/types";
 
 type BuildProgramOptions = {
@@ -72,8 +72,8 @@ function toEnergyLabel(energy: number) {
 /**
  * 生成每首歌给用户看的推荐理由。
  */
-function buildTrackReason(song: Song, scene: string) {
-  return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+async function buildTrackReason(song: Song, scene: string) {
+  return rewriteTrackReason(song, scene);
 }
 
 /**

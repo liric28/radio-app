@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
   ];
 
   try {
+    // 真流式：stream:true 传给 Hermes，逐 chunk 转发给客户端
     const hermesRes = await fetch(HERMES_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
         model: "hermes",
         messages,
         max_tokens: 512,
+        stream: true,
       }),
     });
 
@@ -55,24 +57,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, message: `Hermes error: ${err}` }, { status: 502 });
     }
 
-    const data = await hermesRes.json();
-    const reply = data.choices?.[0]?.message?.content ?? "";
-
-    // 流式：逐字吐，模拟打字机
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        controller.enqueue(encoder.encode(`data: START\n\n`));
-        for (const char of reply) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(char)}\n\n`));
-          await new Promise((r) => setTimeout(r, 18));
-        }
-        controller.enqueue(encoder.encode(`data: END\n\n`));
-        controller.close();
-      },
-    });
-
-    return new Response(stream, {
+    // 将 Hermes 的 SSE 流直接透传给客户端，不做任何转换
+    return new Response(hermesRes.body, {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",

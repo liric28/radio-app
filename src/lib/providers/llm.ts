@@ -208,6 +208,44 @@ export async function composeDjReply(input: ComposeDjReplyInput) {
 }
 
 /**
+ * 用 AI 润色单首歌的推荐理由，保留 DJ 口吻。
+ * 失败时退回模板句，不阻塞播放流程。
+ */
+export async function rewriteTrackReason(
+  song: Song,
+  scene: string,
+): Promise<string> {
+  if (!isMinimaxEnabled()) {
+    return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+  }
+
+  const systemPrompt = [
+    "你是一个独立音乐电台的 DJ 推荐语润色助手。",
+    "输入：场景名 + 歌曲的氛围标签(mood) + 原始推荐种子(reasonSeed)",
+    "输出：一句话推荐语，12-25字，自然口语，像 DJ 在介绍歌。",
+    "禁止：列表、解释性语言、套话。不要出现 mood/seed/标签 等系统词汇。",
+  ].join("\n");
+
+  const userPrompt = [
+    `场景：${scene}`,
+    `氛围标签：${song.mood}`,
+    `原始推荐种子：${song.reasonSeed}`,
+  ].join("\n");
+
+  try {
+    return await requestMinimaxChat({
+      messages: [
+        { role: "system" as const, content: systemPrompt },
+        { role: "user" as const, content: userPrompt },
+      ],
+      temperature: 0.85,
+    });
+  } catch {
+    return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+  }
+}
+
+/**
  * 预留真实 LLM 输出结构的占位类型，避免后续重构 API。
  */
 export type ProgramDraft = Pick<

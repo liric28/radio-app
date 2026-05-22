@@ -8,7 +8,7 @@ import {
   readTasteProfile,
 } from "@/lib/profile";
 import type { ChatIntentAction } from "@/lib/types";
-import { summarizeReasons } from "@/lib/providers/llm";
+import { rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
 import { dataDir } from "@/lib/paths";
 import type {
   DailySchedule,
@@ -33,8 +33,8 @@ function getCurrentPeriod() {
   return "late-night";
 }
 
-function buildTrackReason(song: Song, scene: string) {
-  return `${scene}里保留${song.mood}质感，${song.reasonSeed}`;
+async function buildTrackReason(song: Song, scene: string) {
+  return rewriteTrackReason(song, scene);
 }
 
 function buildBlockTitle(scene: string, playlistSummary: string) {
@@ -103,33 +103,36 @@ async function generateDailySchedule(): Promise<DailySchedule> {
 
   const playlist = playlists[0];
   const usedTrackIds = new Set<string>();
-  const blocks: DailyScheduleBlock[] = routines.map((routine) => {
-    const rankedSongs = [...songs]
-      .filter((song) => !usedTrackIds.has(song.id))
-      .sort((left, right) => {
-        return (
-          scoreSongForBlock(right, memory, routine.preferredMoods, taste) -
-          scoreSongForBlock(left, memory, routine.preferredMoods, taste)
-        );
-      });
+  const blocks: DailyScheduleBlock[] = await Promise.all(
+    routines.map(async (routine) => {
+      const rankedSongs = [...songs]
+        .filter((song) => !usedTrackIds.has(song.id))
+        .sort((left, right) => {
+          return (
+            scoreSongForBlock(right, memory, routine.preferredMoods, taste) -
+            scoreSongForBlock(left, memory, routine.preferredMoods, taste)
+          );
+        });
 
-    const fallbackSongs = [...songs].filter((song) => !usedTrackIds.has(song.id));
-    const pickedSongs = [...rankedSongs, ...fallbackSongs].slice(0, 12);
+      const fallbackSongs = [...songs].filter((song) => !usedTrackIds.has(song.id));
+      const pickedSongs = [...rankedSongs, ...fallbackSongs].slice(0, 12);
 
-    for (const track of pickedSongs) {
-      usedTrackIds.add(track.id);
-    }
+      for (const track of pickedSongs) {
+        usedTrackIds.add(track.id);
+      }
 
-    return {
-      period: routine.period,
-      scene: routine.scene,
-      title: buildBlockTitle(routine.scene, playlist.summary),
-      tracks: pickedSongs.map((track) => ({
-        ...track,
-        reason: buildTrackReason(track, routine.scene),
-      })),
-    };
-  });
+      return {
+        period: routine.period,
+        scene: routine.scene,
+        title: buildBlockTitle(routine.scene, playlist.summary),
+        tracks: await Promise.all(
+          pickedSongs.map((track) =>
+            buildTrackReason(track, routine.scene).then((reason) => ({ ...track, reason })),
+          ),
+        ),
+      };
+    }),
+  );
 
   return {
     date: getTodayDateKey(),

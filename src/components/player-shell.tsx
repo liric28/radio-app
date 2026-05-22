@@ -620,21 +620,25 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
-          if (data === "END" || data === "START") continue;
-          if (!data) continue;
+          if (data === "[DONE]" || !data) continue;
 
-          let char: string;
           try {
-            char = JSON.parse(data);
+            const chunk = JSON.parse(data);
+            let content = chunk.choices?.[0]?.delta?.content;
+            // Hermes 可能把 content 包装成对象，尝试提取 text 字段
+            if (typeof content === "object" && content !== null) {
+              content = (content as { text?: string }).text ?? String(content);
+            }
+            if (typeof content === "string" && content) {
+              setChatHistory((prev) =>
+                prev.map((m) =>
+                  m.id === placeholderId ? { ...m, content: m.content + content } : m,
+                ),
+              );
+            }
           } catch {
-            continue;
+            // ignore parse errors
           }
-
-          setChatHistory((prev) =>
-            prev.map((m) =>
-              m.id === placeholderId ? { ...m, content: m.content + char } : m,
-            ),
-          );
         }
       }
     } catch (chatError) {
@@ -714,12 +718,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         <section className={styles.clockStage}>
           <div className={styles.dotGrid} />
           <div className={styles.clockWrap}>
-            {weather ? (
-              <aside className={styles.weatherBadge}>
-                <strong>{weather.temperatureC}°</strong>
-                <span>{weather.conditionText}</span>
-              </aside>
-            ) : null}
             <DotMatrixText
               text={currentClock}
               className={styles.dotClock}
@@ -817,6 +815,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
         <section className={styles.queueHeader}>
           <span>TODAY</span>
+          {weather && (
+            <div className={styles.weatherInHeader}>
+              <span>{weather.conditionText}</span>
+              <span className={styles.weatherTemp}>{weather.temperatureC}°</span>
+            </div>
+          )}
           <span>{schedule.blocks.reduce((sum, block) => sum + block.tracks.length, 0)} TRACKS</span>
         </section>
 
@@ -886,7 +890,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           </section>
 
           <p className={styles.nowPlayingText}>
-            Now playing: {program.currentTrack.title} · {program.currentTrack.artist}
+            Now playing: <span className={styles.trackTitle}>{program.currentTrack.title}</span> <span className={styles.trackTitle}>· {program.currentTrack.artist}</span>
           </p>
 
           <div className={styles.queueList}>

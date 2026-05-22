@@ -603,6 +603,20 @@
   color: rgba(223, 218, 240, 0.52);
 }
 
+.weatherInHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: rgba(223, 218, 240, 0.52);
+}
+
+.weatherTemp {
+  color: #54d88c;
+  font-weight: 600;
+}
+
 .queueHeader {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -719,6 +733,10 @@
   text-align: center;
   font-size: 14px;
   color: rgba(223, 218, 240, 0.44);
+}
+
+.nowPlayingText .trackTitle {
+  color: #4ade80;
 }
 
 .chatLog {
