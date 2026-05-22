@@ -858,9 +858,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 {message.content ? (
                   <p>{message.content}</p>
                 ) : (
-                  <p className={styles.djTyping}>
-                    <span /><span /><span />
-                  </p>
+                  <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />
                 )}
               </div>
             ))}
