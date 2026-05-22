@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local runtime data
+/data/audio-roots.json
+/data/daily-schedule.json
+/package-lock.json
