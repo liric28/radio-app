@@ -135,7 +135,8 @@ export async function scanLocalLibrary(
       const tags = await probeAudioFile(filePath);
       songs.push(toSong(filePath, tags, index));
     } catch {
-      // 单文件探测失败时跳过，避免整批扫描中断。
+      // 没有 ffprobe 或单文件探测失败时，退回到文件名/目录名推断，避免整批扫描失效。
+      songs.push(toSong(filePath, {}, index));
     }
   }
 

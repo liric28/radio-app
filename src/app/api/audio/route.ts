@@ -1,8 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
-
-const allowedRoots = ["/Users/lipan/Music/Music/Media/Music"];
+import { readAllowedAudioRoots } from "@/lib/audio-roots";
 
 const mimeTypes: Record<string, string> = {
   ".mp3": "audio/mpeg",
@@ -25,6 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   const normalizedPath = path.resolve(filePath);
+  const allowedRoots = await readAllowedAudioRoots();
   const isAllowed = allowedRoots.some((root) => normalizedPath.startsWith(root));
 
   if (!isAllowed) {

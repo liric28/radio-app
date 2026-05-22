@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { addAllowedAudioRoot } from "@/lib/audio-roots";
 import {
   scanLocalLibrary,
   defaultLibraryPath,
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     await writeSongCatalog(scannedSongs);
     await writeTasteProfile(deriveTasteProfileFromSongs(scannedSongs));
+    await addAllowedAudioRoot(libraryPath);
     const schedule = await regenerateDailySchedule();
     const program = await buildRadioProgram();
 
