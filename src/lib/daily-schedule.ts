@@ -7,7 +7,7 @@ import {
   readSongCatalog,
   readTasteProfile,
 } from "@/lib/profile";
-import type { ChatIntentAction } from "@/lib/types";
+import type { ChatIntentAction, ScheduledTrack } from "@/lib/types";
 import { batchRewriteTrackReasons, recommendBlockTrackCount, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
 import { dataDir } from "@/lib/paths";
 import type {
@@ -38,6 +38,54 @@ async function buildTrackReason(song: Song, scene: string) {
 
 function buildBlockTitle(scene: string, playlistSummary: string) {
   return `${scene} · ${playlistSummary}`;
+}
+
+function hydrateScheduledTrack(
+  track: Partial<ScheduledTrack>,
+  catalog: Map<string, Song>,
+): ScheduledTrack | null {
+  const catalogTrack = track.id ? catalog.get(track.id) : null;
+  const title = track.title ?? catalogTrack?.title;
+  const artist = track.artist ?? catalogTrack?.artist;
+  const reason = track.reason ?? track.reasonSeed ?? catalogTrack?.reasonSeed;
+
+  if (!track.id || !title || !artist || !reason) {
+    return null;
+  }
+
+  return {
+    ...(catalogTrack ?? {
+      id: track.id,
+      title,
+      artist,
+      year: new Date().getFullYear(),
+      mood: track.mood ?? "回忆感",
+      energy: typeof track.energy === "number" ? track.energy : 5,
+      language: track.language ?? "中文",
+      tags: track.tags ?? [],
+      reasonSeed: track.reasonSeed ?? "",
+      sourcePath: track.sourcePath,
+    }),
+    ...track,
+    title,
+    artist,
+    reason,
+  } as ScheduledTrack;
+}
+
+async function normalizeDailySchedule(schedule: DailySchedule): Promise<DailySchedule> {
+  const songs = await readSongCatalog();
+  const catalog = new Map(songs.map((song) => [song.id, song]));
+
+  return {
+    ...schedule,
+    blocks: schedule.blocks.map((block) => ({
+      ...block,
+      tracks: block.tracks
+        .map((track) => hydrateScheduledTrack(track, catalog))
+        .filter((track): track is ScheduledTrack => Boolean(track)),
+    })),
+  };
 }
 
 function scoreSongForBlock(
@@ -153,11 +201,11 @@ export async function readDailySchedule() {
   try {
     const content = await fs.readFile(dailySchedulePath, "utf8");
     const schedule = JSON.parse(content) as Partial<DailySchedule>;
-    const normalizedSchedule = {
+    const normalizedSchedule = await normalizeDailySchedule({
       ...schedule,
       currentBlockPeriod: schedule.currentBlockPeriod || getCurrentPeriod(),
       currentTrackIndex: typeof schedule.currentTrackIndex === "number" ? schedule.currentTrackIndex : 0,
-    } as DailySchedule;
+    } as DailySchedule);
 
     if (normalizedSchedule.date === getTodayDateKey()) {
       return normalizedSchedule;
