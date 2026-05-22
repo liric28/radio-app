@@ -404,6 +404,37 @@
   color: rgba(223, 218, 240, 0.64);
 }
 
+.panelLight .weatherBadge {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.panelLight .weatherBadge span {
+  color: rgba(90, 75, 120, 0.55);
+}
+
+.weatherInHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: rgba(223, 218, 240, 0.52);
+}
+
+.weatherTemp {
+  color: #54d88c;
+  font-weight: 600;
+}
+
+.panelLight .weatherTemp {
+  color: #2ab87a;
+}
+
+.panelLight .weatherInHeader {
+  color: rgba(90, 75, 120, 0.55);
+}
+
 .dotClock {
   display: inline-flex;
   align-items: center;
@@ -737,6 +768,24 @@
 .panelLight .utilityCard {
   background: rgba(255, 255, 255, 0.78);
   border-color: rgba(20, 18, 28, 0.06);
+}
+
+.panelLight .chatLineAssistant .chatBubbleWithLabel {
+  background: rgba(0, 0, 0, 0.04);
+  color: #2a2640;
+}
+
+.panelLight .chatLineUser .chatBubbleWithLabel {
+  background: rgba(67, 255, 198, 0.1);
+  color: #1a3a2a;
+}
+
+.panelLight .chatBubbleLabel {
+  color: rgba(90, 75, 120, 0.55);
+}
+
+.panelLight .chatBubbleLabelLiric {
+  color: rgba(40, 180, 130, 0.8);
 }
 
 .panelLight .chatLineAssistant p {
