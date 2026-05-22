@@ -1,39 +1,29 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { type CSSProperties, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DotmHex1 } from "@/components/ui/dotm-hex-1";
 import { DotmHex10 } from "@/components/ui/dotm-hex-10";
 import { DotmSquare15 } from "@/components/ui/dotm-square-15";
 import { DotmSquare18 } from "@/components/ui/dotm-square-18";
 import { DotmCircular8 } from "@/components/ui/dotm-circular-8";
 import styles from "@/app/page.module.css";
-
-type QueueTrack = {
-  id: string;
-  title: string;
-  artist: string;
-  year: number;
-  mood: string;
-  reason: string;
-  sourcePath?: string;
-};
-
-type RadioProgram = {
-  stationName: string;
-  segmentTitle: string;
-  scene: string;
-  energyLabel: string;
-  hostIntro: string;
-  currentTrack: QueueTrack;
-  queue: QueueTrack[];
-  explanation: string[];
-  controlsHint: string;
-  memorySummary: string;
-};
+import type { ChatIntent, ChatMessage, DailySchedule, RadioProgram } from "@/lib/types";
 
 type RadioResponse = {
   ok: boolean;
   program: RadioProgram;
+  schedule?: DailySchedule;
+};
+
+type ChatResponse = {
+  ok: boolean;
+  reply: ChatMessage;
+  intent?: ChatIntent;
+  program?: RadioProgram;
+  schedule?: DailySchedule;
+  pending?: boolean;
+  jobId?: string;
+  message?: string;
 };
 
 type FeedbackAction = "skip" | "fresh" | "calmer" | "familiar";
@@ -47,6 +37,7 @@ const actionLabels: Record<FeedbackAction, string> = {
 
 type PlayerShellProps = {
   initialProgram: RadioProgram;
+  initialSchedule: DailySchedule;
 };
 
 const dotGlyphs: Record<string, string[]> = {
@@ -261,10 +252,21 @@ function DotMatrixText({
  * Radio player shell — single-column station panel, prioritizes clock, controls and DJ info.
  */
 
-export function PlayerShell({ initialProgram }: PlayerShellProps) {
+export function PlayerShell({ initialProgram, initialSchedule }: PlayerShellProps) {
   const waveformBars = [0.18, 0.56, 0.32, 0.8, 0.28, 0.66, 0.22, 0.74];
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [program, setProgram] = useState<RadioProgram>(initialProgram);
+  const [schedule, setSchedule] = useState<DailySchedule>(initialSchedule);
+  const [chatInput, setChatInput] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
+    {
+      id: "assistant-intro",
+      role: "assistant",
+      content: initialProgram.hostIntro,
+    },
+  ]);
+  const [isChatSending, setIsChatSending] = useState<boolean>(false);
+  const chatPollTimerRef = useRef<number | null>(null);
   const [history, setHistory] = useState<RadioProgram[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -282,6 +284,9 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
+  const latestDjMessage = chatHistory[chatHistory.length - 1];
+  const currentBlockPeriod = schedule.currentBlockPeriod;
+  const currentTrackIndex = schedule.currentTrackIndex;
   const now = new Date();
   const currentClock = `${String(now.getHours()).padStart(2, "0")} ${String(
     now.getMinutes(),
@@ -338,6 +343,14 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
     audioRef.current.volume = volume;
   }, [volume]);
 
+  useEffect(() => {
+    return () => {
+      if (chatPollTimerRef.current) {
+        window.clearTimeout(chatPollTimerRef.current);
+      }
+    };
+  }, []);
+
   function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
     const minutes = Math.floor(seconds / 60);
@@ -371,6 +384,18 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
           ].slice(0, 24));
         }
         setProgram(payload.program);
+        if (payload.schedule) {
+          setSchedule(payload.schedule);
+        }
+        setChatHistory((currentHistory) => {
+          const nextIntro: ChatMessage = {
+            id: `assistant-program-${Date.now()}`,
+            role: "assistant",
+            content: payload.program.hostIntro,
+          };
+
+          return [...currentHistory, nextIntro].slice(-12);
+        });
       } catch (fetchError) {
         shouldResumePlaybackRef.current = false;
         setError(fetchError instanceof Error ? fetchError.message : "请求失败");
@@ -510,7 +535,107 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
     );
   }
 
-  function handlePanelPointerMove(event: React.MouseEvent<HTMLElement>) {
+  async function sendChatMessage() {
+    const message = chatInput.trim();
+
+    if (!message || isChatSending) {
+      return;
+    }
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: message,
+    };
+    const nextHistory = [...chatHistory, userMessage].slice(-12);
+
+    setChatInput("");
+    setIsChatSending(true);
+    setError(null);
+    setActiveLabel("DJ LIVE");
+    setChatHistory(nextHistory);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          program,
+          history: nextHistory,
+        }),
+      });
+      const payload = (await response.json()) as ChatResponse & { message?: string };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message || "DJ 暂时没有接住这句话");
+      }
+
+      if (payload.program) {
+        setHistory((currentHistory) => [program, ...currentHistory].slice(0, 24));
+        setProgram(payload.program);
+      }
+      if (payload.schedule) {
+        setSchedule(payload.schedule);
+      }
+      setChatHistory((currentHistory) => [...currentHistory, payload.reply].slice(-12));
+
+      if (payload.pending && payload.jobId) {
+        const previewId = payload.reply.id;
+        const pollJob = async () => {
+          try {
+            const response = await fetch(`/api/chat/${payload.jobId}`);
+            const result = (await response.json()) as {
+              ok: boolean;
+              job?: { status: string; content?: string };
+            };
+
+            if (!response.ok || !result.ok || !result.job) {
+              return;
+            }
+
+            if (result.job.status === "completed" && result.job.content) {
+              setChatHistory((currentHistory) =>
+                currentHistory.map((message) =>
+                  message.id === previewId
+                    ? { ...message, content: result.job!.content! }
+                    : message,
+                ),
+              );
+              return;
+            }
+
+            if (result.job.status === "failed") {
+              return;
+            }
+
+            chatPollTimerRef.current = window.setTimeout(() => {
+              void pollJob();
+            }, 1200);
+          } catch {
+            // ignore transient polling failures
+          }
+        };
+
+        chatPollTimerRef.current = window.setTimeout(() => {
+          void pollJob();
+        }, 1200);
+      }
+    } catch (chatError) {
+      setError(chatError instanceof Error ? chatError.message : "DJ 回复失败");
+    } finally {
+      setIsChatSending(false);
+    }
+  }
+
+  function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void sendChatMessage();
+    }
+  }
+
+  function handlePanelPointerMove(event: MouseEvent<HTMLElement>) {
     const rect = panelRef.current?.getBoundingClientRect();
     if (!rect) return;
 
@@ -668,8 +793,8 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
         </section>
 
         <section className={styles.queueHeader}>
-          <span>QUEUE</span>
-          <span>{program.queue.length + 1} TRACKS</span>
+          <span>TODAY</span>
+          <span>{schedule.blocks.reduce((sum, block) => sum + block.tracks.length, 0)} TRACKS</span>
         </section>
 
         <section className={styles.liveStrip}>
@@ -686,7 +811,7 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
             <div className={styles.djAvatar} />
             <div className={styles.djContent}>
               <p className={styles.djTag}>CLAUDIO</p>
-              <p className={styles.djSpeech}>{program.hostIntro}</p>
+              <p className={styles.djSpeech}>{latestDjMessage?.content ?? program.hostIntro}</p>
               <div className={styles.replayRow}>
                 <span>{formatTime(currentTime)}</span>
                 <button type="button" className={styles.replayButton} onClick={() => void replayCurrentTrack()}>
@@ -694,6 +819,28 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className={styles.chatLog}>
+            {chatHistory.slice(-4).map((message) => (
+              <div
+                key={message.id}
+                className={`${styles.chatLine} ${
+                  message.role === "assistant" ? styles.chatLineAssistant : styles.chatLineUser
+                }`}
+              >
+                <span className={styles.chatRole}>
+                  {message.role === "assistant" ? "DJ" : "YOU"}
+                </span>
+                <p>{message.content}</p>
+              </div>
+            ))}
+            {isChatSending ? (
+              <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
+                <span className={styles.chatRole}>DJ</span>
+                <p>正在接你的话，稍等一下。</p>
+              </div>
+            ) : null}
           </div>
 
           <p className={styles.nowPlayingText}>
@@ -716,18 +863,53 @@ export function PlayerShell({ initialProgram }: PlayerShellProps) {
               </button>
             ))}
           </div>
+
+          <div className={styles.scheduleBlocks}>
+            {schedule.blocks.map((block) => (
+              <section key={block.period} className={styles.scheduleBlock}>
+                <div className={styles.scheduleBlockHeader}>
+                  <strong>{block.scene}</strong>
+                  <span>{block.tracks.length} 首</span>
+                </div>
+                <div className={styles.scheduleTrackList}>
+                  {block.tracks.slice(0, 6).map((track, index) => (
+                    <div
+                      key={track.id}
+                      className={`${styles.scheduleTrackRow} ${
+                        block.period === currentBlockPeriod && index === currentTrackIndex
+                          ? styles.scheduleTrackRowActive
+                          : ""
+                      }`}
+                    >
+                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      <p>
+                        {track.title} · {track.artist}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         </section>
 
         <section className={styles.inputDock}>
           <input
             className={styles.djInput}
             placeholder="Say something to the DJ..."
-            readOnly
+            value={chatInput}
+            onChange={(event) => setChatInput(event.target.value)}
+            onKeyDown={handleInputKeyDown}
           />
           <button type="button" className={styles.iconButton} onClick={importLocalLibrary}>
             ⌁
           </button>
-          <button type="button" className={styles.sendButton} onClick={playNextTrack}>
+          <button
+            type="button"
+            className={styles.sendButton}
+            onClick={() => void sendChatMessage()}
+            disabled={isChatSending}
+          >
             ↑
           </button>
         </section>

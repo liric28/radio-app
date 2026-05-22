@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensureDailySchedule } from "@/lib/daily-schedule";
 import { advanceProgramRandomly } from "@/lib/radio-engine";
 
 /**
@@ -6,5 +7,6 @@ import { advanceProgramRandomly } from "@/lib/radio-engine";
  */
 export async function POST() {
   const program = await advanceProgramRandomly();
-  return NextResponse.json({ ok: true, program });
+  const schedule = await ensureDailySchedule();
+  return NextResponse.json({ ok: true, program, schedule });
 }

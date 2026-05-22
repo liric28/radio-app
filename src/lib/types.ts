@@ -72,3 +72,44 @@ export type RadioProgram = {
   controlsHint: string;
   memorySummary: string;
 };
+
+export type ChatRole = "user" | "assistant";
+
+export type ChatMessage = {
+  id: string;
+  role: ChatRole;
+  content: string;
+};
+
+export type ChatIntentAction =
+  | "none"
+  | "skip"
+  | "fresh"
+  | "calmer"
+  | "familiar"
+  | "select-track";
+
+export type ChatIntent = {
+  action: ChatIntentAction;
+  trackId?: string;
+  targetPeriod?: string;
+};
+
+export type ScheduledTrack = Song & {
+  reason: string;
+};
+
+export type DailyScheduleBlock = {
+  period: string;
+  scene: string;
+  title: string;
+  tracks: ScheduledTrack[];
+};
+
+export type DailySchedule = {
+  date: string;
+  stationName: string;
+  currentBlockPeriod: string;
+  currentTrackIndex: number;
+  blocks: DailyScheduleBlock[];
+};

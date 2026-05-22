@@ -6,8 +6,17 @@ import {
   readTasteProfile,
 } from "@/lib/profile";
 import { readMemory, writeMemory } from "@/lib/memory";
+import {
+  advanceDailyScheduleTrack,
+  ensureDailySchedule,
+  getCurrentScheduledTrack,
+  rewriteCurrentScheduleBlock,
+  resolveCurrentScheduleBlock,
+  selectScheduledTrack,
+  summarizeDailySchedule,
+} from "@/lib/daily-schedule";
 import { composeHostIntro, summarizeReasons } from "@/lib/providers/llm";
-import type { RadioMemory, RadioProgram, Song } from "@/lib/types";
+import type { ChatIntent, RadioMemory, RadioProgram, Song } from "@/lib/types";
 
 type BuildProgramOptions = {
   forceRandom?: boolean;
@@ -138,6 +147,10 @@ function pickRandomizedTracks(
 export async function buildRadioProgram(
   options: BuildProgramOptions = {},
 ): Promise<RadioProgram> {
+  if (!options.forceRandom && !options.pinnedTrackId) {
+    return buildProgramFromDailySchedule();
+  }
+
   const [taste, playlists, routines, songs, memory] = await Promise.all([
     readTasteProfile(),
     readPlaylistProfiles(),
@@ -221,10 +234,59 @@ export async function buildRadioProgram(
   };
 }
 
+async function buildProgramFromDailySchedule(): Promise<RadioProgram> {
+  const [taste, memory, schedule] = await Promise.all([
+    readTasteProfile(),
+    readMemory(),
+    ensureDailySchedule(),
+  ]);
+  const currentBlock = resolveCurrentScheduleBlock(schedule);
+  const scheduled = getCurrentScheduledTrack(schedule);
+
+  if (!currentBlock || currentBlock.tracks.length === 0 || !scheduled.track) {
+    throw new Error("今天的节目单为空，无法生成节目流");
+  }
+
+  const currentTrack = scheduled.track;
+  const queue = scheduled.queue;
+  const explanation = await summarizeDailySchedule(schedule);
+  const hostIntro = await composeHostIntro({
+    scene: currentBlock.scene,
+    persona: taste.radioPersona,
+    currentTrack,
+    nextTrack: queue[0] ?? currentTrack,
+    moodHint: currentTrack.mood,
+  });
+
+  return {
+    stationName: schedule.stationName,
+    segmentTitle: currentBlock.title,
+    scene: currentBlock.scene,
+    energyLabel: toEnergyLabel(currentTrack.energy),
+    hostIntro,
+    currentTrack,
+    queue: queue.slice(0, 6),
+    explanation,
+    controlsHint: "今天的节目先按四段式排好，聊天和控制会逐步改写接下来的 block。",
+    memorySummary: `今天已编排 ${schedule.blocks.length} 个时段；最近记住 ${memory.recentTrackIds.length} 首歌，当前更偏向 ${memory.feedbackBias.calmer > memory.feedbackBias.fresh ? "安静与熟悉" : "新鲜与流动"}。`,
+  };
+}
+
 /**
  * 应用用户反馈后更新记忆状态，并返回新的节目。
  */
 export async function applyFeedbackAndBuildProgram(action: string) {
+  return applyFeedbackAndBuildProgramWithOptions(action);
+}
+
+type ApplyFeedbackOptions = {
+  avoidTrackId?: string;
+};
+
+async function applyFeedbackAndBuildProgramWithOptions(
+  action: string,
+  options: ApplyFeedbackOptions = {},
+) {
   const [memory, moodRules] = await Promise.all([readMemory(), readMoodRules()]);
   const nextMemory = { ...memory, feedbackBias: { ...memory.feedbackBias } };
 
@@ -252,10 +314,17 @@ export async function applyFeedbackAndBuildProgram(action: string) {
   }
 
   await writeMemory(nextMemory);
-  const program = await buildRadioProgram({
+  let program = await buildRadioProgram({
     forceRandom: action === "fresh" || action === "skip",
     excludeTrackIds: memory.recentTrackIds,
   });
+
+  if (options.avoidTrackId && program.currentTrack.id === options.avoidTrackId) {
+    program = await buildRadioProgram({
+      forceRandom: true,
+      excludeTrackIds: [...memory.recentTrackIds, options.avoidTrackId],
+    });
+  }
 
   const refreshedMemory = await readMemory();
   refreshedMemory.recentTrackIds = [
@@ -275,15 +344,13 @@ export async function applyFeedbackAndBuildProgram(action: string) {
  * 连续播放时自动切到下一首，默认使用随机模式并避开最近播放。
  */
 export async function advanceProgramRandomly() {
+  await advanceDailyScheduleTrack();
+  const program = await buildProgramFromDailySchedule();
   const memory = await readMemory();
-  const program = await buildRadioProgram({
-    forceRandom: true,
-    excludeTrackIds: memory.recentTrackIds,
-  });
 
   const nextMemory = {
     ...memory,
-    lastAction: "autoplay-next",
+    lastAction: "schedule-next",
     recentTrackIds: [program.currentTrack.id, ...memory.recentTrackIds].slice(0, 12),
     recentProgramTitles: [program.segmentTitle, ...memory.recentProgramTitles].slice(0, 6),
   };
@@ -296,11 +363,9 @@ export async function advanceProgramRandomly() {
  * 用户手动点选队列中的某一首时，直接将它提升为当前播放。
  */
 export async function selectTrackProgram(trackId: string) {
+  await selectScheduledTrack(trackId);
   const memory = await readMemory();
-  const program = await buildRadioProgram({
-    pinnedTrackId: trackId,
-    excludeTrackIds: memory.recentTrackIds.filter((id) => id !== trackId),
-  });
+  const program = await buildProgramFromDailySchedule();
 
   const nextMemory = {
     ...memory,
@@ -311,4 +376,155 @@ export async function selectTrackProgram(trackId: string) {
 
   await writeMemory(nextMemory);
   return program;
+}
+
+function findQueueTrackByMessage(program: RadioProgram, message: string) {
+  const normalized = message.trim().toLowerCase();
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  return program.queue.find((track) => {
+    const title = track.title.toLowerCase();
+    const artist = track.artist.toLowerCase();
+    return normalized.includes(title) || normalized.includes(artist);
+  });
+}
+
+function resolveTargetPeriod(message: string) {
+  const normalized = message.trim().toLowerCase();
+
+  if (
+    normalized.includes("今晚") ||
+    normalized.includes("晚上") ||
+    normalized.includes("傍晚")
+  ) {
+    return "evening";
+  }
+
+  if (
+    normalized.includes("深夜") ||
+    normalized.includes("夜里") ||
+    normalized.includes("半夜")
+  ) {
+    return "late-night";
+  }
+
+  if (
+    normalized.includes("白天") ||
+    normalized.includes("下午") ||
+    normalized.includes("工作")
+  ) {
+    return "daytime";
+  }
+
+  if (
+    normalized.includes("早上") ||
+    normalized.includes("早晨") ||
+    normalized.includes("晨间")
+  ) {
+    return "morning";
+  }
+
+  return undefined;
+}
+
+/**
+ * 聊天意图只做可预测的本地规则判断，避免把实际控制权直接交给模型。
+ */
+export function resolveChatIntent(message: string, program: RadioProgram): ChatIntent {
+  const normalized = message.trim().toLowerCase();
+  const targetPeriod = resolveTargetPeriod(message);
+
+  if (!normalized) {
+    return { action: "none", targetPeriod };
+  }
+
+  const selectedTrack = findQueueTrackByMessage(program, normalized);
+  if (selectedTrack) {
+    return { action: "select-track", trackId: selectedTrack.id, targetPeriod };
+  }
+
+  if (
+    normalized.includes("下一首") ||
+    normalized.includes("切歌") ||
+    normalized.includes("跳过") ||
+    normalized.includes("skip") ||
+    normalized.includes("next")
+  ) {
+    return { action: "skip", targetPeriod };
+  }
+
+  if (
+    normalized.includes("熟") ||
+    normalized.includes("回忆") ||
+    normalized.includes("老歌") ||
+    normalized.includes("familiar")
+  ) {
+    return { action: "familiar", targetPeriod };
+  }
+
+  if (
+    normalized.includes("安静") ||
+    normalized.includes("轻一点") ||
+    normalized.includes("慢一点") ||
+    normalized.includes("calm") ||
+    normalized.includes("softer")
+  ) {
+    return { action: "calmer", targetPeriod };
+  }
+
+  if (
+    normalized.includes("新一点") ||
+    normalized.includes("新鲜") ||
+    normalized.includes("换个感觉") ||
+    normalized.includes("fresh") ||
+    normalized.includes("switch")
+  ) {
+    return { action: "fresh", targetPeriod };
+  }
+
+  return { action: "none", targetPeriod };
+}
+
+/**
+ * 把聊天里的控制意图映射到真实电台动作。
+ */
+export async function applyChatIntent(intent: ChatIntent) {
+  if (intent.action === "select-track" && intent.trackId) {
+    return selectTrackProgram(intent.trackId);
+  }
+
+  if (intent.action === "skip") {
+    return advanceProgramRandomly();
+  }
+
+  if (
+    intent.action === "fresh" ||
+    intent.action === "calmer" ||
+    intent.action === "familiar"
+  ) {
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * 聊天控制型意图需要更强的即时反馈，优先直接离开当前曲目。
+ */
+export async function applyChatIntentWithProgram(
+  intent: ChatIntent,
+  currentProgram: RadioProgram,
+) {
+  if (intent.action === "fresh" || intent.action === "calmer" || intent.action === "familiar") {
+    await applyFeedbackAndBuildProgramWithOptions(intent.action, {
+      avoidTrackId: currentProgram.currentTrack.id,
+    });
+    await rewriteCurrentScheduleBlock(intent.action, intent.targetPeriod);
+    return buildRadioProgram();
+  }
+
+  return applyChatIntent(intent);
 }

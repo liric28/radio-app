@@ -1,9 +1,9 @@
-import path from "node:path";
+import { realpathSync } from "node:fs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: path.join(__dirname),
+    root: realpathSync(process.cwd()),
   },
 };
 

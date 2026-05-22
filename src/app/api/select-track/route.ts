@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ensureDailySchedule } from "@/lib/daily-schedule";
 import { selectTrackProgram } from "@/lib/radio-engine";
 
 /**
@@ -15,5 +16,6 @@ export async function POST(request: NextRequest) {
   }
 
   const program = await selectTrackProgram(payload.trackId);
-  return NextResponse.json({ ok: true, program });
+  const schedule = await ensureDailySchedule();
+  return NextResponse.json({ ok: true, program, schedule });
 }

@@ -366,6 +366,7 @@
 .panelLight .timelineSection,
 .panelLight .serverLine,
 .panelLight .nowPlayingText,
+.panelLight .chatRole,
 .panelLight .replayRow,
 .panelLight .nowCard p,
 .panelLight .queueRow p,
@@ -627,6 +628,35 @@
   border-color: rgba(20, 18, 28, 0.06);
 }
 
+.panelLight .chatLineAssistant p {
+  background: rgba(20, 18, 28, 0.06);
+  color: #17141f;
+}
+
+.panelLight .chatLineUser p {
+  background: rgba(84, 216, 140, 0.14);
+  color: #213927;
+}
+
+.panelLight .scheduleBlock {
+  background: rgba(20, 18, 28, 0.03);
+  border-color: rgba(20, 18, 28, 0.06);
+}
+
+.panelLight .scheduleBlockHeader strong,
+.panelLight .scheduleTrackRow p {
+  color: #17141f;
+}
+
+.panelLight .scheduleBlockHeader span,
+.panelLight .scheduleTrackRow span {
+  color: rgba(58, 52, 75, 0.5);
+}
+
+.panelLight .scheduleTrackRowActive {
+  background: rgba(84, 216, 140, 0.14);
+}
+
 .djTag {
   margin-bottom: 10px;
   color: rgba(223, 218, 240, 0.5);
@@ -662,10 +692,110 @@
   color: rgba(223, 218, 240, 0.44);
 }
 
+.chatLog {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.chatLine {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.chatRole {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(223, 218, 240, 0.42);
+}
+
+.chatLine p {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.chatLineAssistant p {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f3f0ff;
+}
+
+.chatLineUser p {
+  background: rgba(84, 216, 140, 0.12);
+  color: #c9ffd8;
+}
+
 .queueList {
   display: grid;
   gap: 10px;
   margin-top: 20px;
+}
+
+.scheduleBlocks {
+  display: grid;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.scheduleBlock {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.scheduleBlockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scheduleBlockHeader strong {
+  font-size: 14px;
+  color: #f6f2ff;
+}
+
+.scheduleBlockHeader span {
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.52);
+  letter-spacing: 0.12em;
+}
+
+.scheduleTrackList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.scheduleTrackRow {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.scheduleTrackRow span {
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.4);
+}
+
+.scheduleTrackRow p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(243, 240, 255, 0.86);
+}
+
+.scheduleTrackRowActive {
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: 10px;
+  background: rgba(84, 216, 140, 0.1);
 }
 
 .queueRow {
@@ -722,6 +852,11 @@
 .sendButton {
   background: #c8c7d8;
   color: #13131a;
+}
+
+.sendButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .footerBar {

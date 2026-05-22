@@ -4,6 +4,7 @@ import {
   defaultLibraryPath,
   deriveTasteProfileFromSongs,
 } from "@/lib/local-library";
+import { regenerateDailySchedule } from "@/lib/daily-schedule";
 import { writeSongCatalog, writeTasteProfile } from "@/lib/profile";
 import { buildRadioProgram } from "@/lib/radio-engine";
 
@@ -32,12 +33,14 @@ export async function POST(request: NextRequest) {
 
     await writeSongCatalog(scannedSongs);
     await writeTasteProfile(deriveTasteProfileFromSongs(scannedSongs));
+    const schedule = await regenerateDailySchedule();
     const program = await buildRadioProgram();
 
     return NextResponse.json({
       ok: true,
       importedCount: scannedSongs.length,
       libraryPath,
+      schedule,
       program,
     });
   } catch (error) {
