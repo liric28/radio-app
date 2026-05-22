@@ -8,7 +8,7 @@ import {
   readTasteProfile,
 } from "@/lib/profile";
 import type { ChatIntentAction } from "@/lib/types";
-import { rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
+import { batchRewriteTrackReasons, recommendBlockTrackCount, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
 import { dataDir } from "@/lib/paths";
 import type {
   DailySchedule,
@@ -103,36 +103,43 @@ async function generateDailySchedule(): Promise<DailySchedule> {
 
   const playlist = playlists[0];
   const usedTrackIds = new Set<string>();
-  const blocks: DailyScheduleBlock[] = await Promise.all(
-    routines.map(async (routine) => {
-      const rankedSongs = [...songs]
-        .filter((song) => !usedTrackIds.has(song.id))
-        .sort((left, right) => {
-          return (
-            scoreSongForBlock(right, memory, routine.preferredMoods, taste) -
-            scoreSongForBlock(left, memory, routine.preferredMoods, taste)
-          );
-        });
+  const blocks: DailyScheduleBlock[] = [];
+  for (const routine of routines) {
+    const trackCount = await recommendBlockTrackCount(
+      routine.scene,
+      routine.preferredMoods,
+      songs.length,
+    );
 
-      const fallbackSongs = [...songs].filter((song) => !usedTrackIds.has(song.id));
-      const pickedSongs = [...rankedSongs, ...fallbackSongs].slice(0, 12);
+    const rankedSongs = [...songs]
+      .filter((song) => !usedTrackIds.has(song.id))
+      .sort((left, right) => {
+        return (
+          scoreSongForBlock(right, memory, routine.preferredMoods, taste) -
+          scoreSongForBlock(left, memory, routine.preferredMoods, taste)
+        );
+      });
 
-      for (const track of pickedSongs) {
-        usedTrackIds.add(track.id);
-      }
+    const fallbackSongs = [...songs].filter((song) => !usedTrackIds.has(song.id));
+    const pickedSongs = [...rankedSongs, ...fallbackSongs].slice(0, trackCount);
 
-      return {
-        period: routine.period,
-        scene: routine.scene,
-        title: buildBlockTitle(routine.scene, playlist.summary),
-        tracks: await Promise.all(
-          pickedSongs.map((track) =>
-            buildTrackReason(track, routine.scene).then((reason) => ({ ...track, reason })),
-          ),
-        ),
-      };
-    }),
-  );
+    const reasonMap = await batchRewriteTrackReasons(pickedSongs, routine.scene);
+    const withReason = pickedSongs.map((track) => ({
+      ...track,
+      reason: reasonMap.get(track.id) ?? `${routine.scene}里保留${track.mood}质感，${track.reasonSeed}`,
+    }));
+
+    for (const track of pickedSongs) {
+      usedTrackIds.add(track.id);
+    }
+
+    blocks.push({
+      period: routine.period,
+      scene: routine.scene,
+      title: buildBlockTitle(routine.scene, playlist.summary),
+      tracks: withReason,
+    });
+  }
 
   return {
     date: getTodayDateKey(),
@@ -185,8 +192,8 @@ export async function summarizeDailySchedule(schedule: DailySchedule) {
 
 export function resolveCurrentScheduleBlock(schedule: DailySchedule) {
   return (
-    schedule.blocks.find((block) => block.period === schedule.currentBlockPeriod) ??
     schedule.blocks.find((block) => block.period === getCurrentPeriod()) ??
+    schedule.blocks.find((block) => block.period === schedule.currentBlockPeriod) ??
     schedule.blocks[0]
   );
 }

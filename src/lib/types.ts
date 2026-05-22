@@ -87,7 +87,8 @@ export type ChatIntentAction =
   | "fresh"
   | "calmer"
   | "familiar"
-  | "select-track";
+  | "select-track"
+  | "scene-change";
 
 export type ChatIntent = {
   action: ChatIntentAction;

@@ -6,6 +6,7 @@ type MinimaxChatMessage = {
 type MinimaxChatOptions = {
   messages: MinimaxChatMessage[];
   temperature?: number;
+  max_tokens?: number;
 };
 
 type MinimaxChoice = {

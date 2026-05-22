@@ -298,7 +298,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const latestDjMessage = chatHistory[chatHistory.length - 1];
-  const currentBlockPeriod = schedule.currentBlockPeriod;
+  const currentHour = new Date().getHours();
+  const currentBlockPeriod =
+    currentHour < 9 ? "morning" : currentHour < 18 ? "daytime" : currentHour < 23 ? "evening" : "late-night";
   const currentTrackIndex = schedule.currentTrackIndex;
   const now = new Date();
   const currentClock = `${String(now.getHours()).padStart(2, "0")} ${String(
@@ -365,17 +367,25 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   }, []);
 
   /**
-   * 挂载后悄悄触发 AI 润色推荐语，替换 SSR 的模板 reason。
+   * 切 block 时，只润色当前 block 的推荐语。
    */
   useEffect(() => {
-    const allTracks = [program.currentTrack, ...program.queue].filter(Boolean);
-    if (!allTracks.length) return;
+    // 用 SSR 的 currentBlockPeriod 找当前 block（而非实时 hours）
+    const activePeriod = schedule.currentBlockPeriod;
+    const currentBlock = schedule.blocks.find((b) => b.period === activePeriod);
+    if (!currentBlock) return;
+
+    const blockTrackIds = new Set(currentBlock.tracks.map((t) => t.id));
+    const blockTracks = [program.currentTrack, ...program.queue].filter(
+      (t) => t && blockTrackIds.has(t.id),
+    );
+    if (!blockTracks.length) return;
 
     fetch("/api/rewrite-reasons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        tracks: allTracks.map((t) => ({ id: t.id, mood: t.mood, reasonSeed: t.reasonSeed ?? "" })),
+        tracks: blockTracks.map((t) => ({ id: t.id, mood: t.mood, reasonSeed: t.reasonSeed ?? "" })),
         scene: program.scene,
       }),
     })
@@ -383,6 +393,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       .then((data: { reasons?: Record<string, string> }) => {
         if (!data.reasons) return;
         const reasons = data.reasons;
+        // 更新当前 block 的推荐语
+        const updatedBlocks = schedule.blocks.map((block) =>
+          block.period === activePeriod
+            ? {
+                ...block,
+                tracks: block.tracks.map((t) => ({
+                  ...t,
+                  reason: reasons[t.id] ?? t.reason,
+                })),
+              }
+            : block,
+        );
+        setSchedule((prev) => ({ ...prev, blocks: updatedBlocks }));
         setProgram((prev) => ({
           ...prev,
           currentTrack: { ...prev.currentTrack, reason: reasons[prev.currentTrack.id] ?? prev.currentTrack.reason },
@@ -390,7 +413,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         }));
       })
       .catch(() => {});
-  }, []); // 只在首次挂载时执行一次
+  }, [program.scene]);
 
   function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -601,7 +624,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     setChatHistory([...nextHistory, placeholder]);
 
     // 音乐控制走原有 agent
-    const musicKeywords = ["切歌", "换歌", "下一首", "skip", "安静", "calm", "熟悉", "familiar", "fresh", "燥", "燥一点"];
+    const musicKeywords = ["切歌", "换歌", "下一首", "skip", "安静", "calm", "熟悉", "familiar", "fresh", "燥", "燥一点", "播"];
     const isMusicControl = musicKeywords.some((k) => message.toLowerCase().includes(k.toLowerCase()));
     if (isMusicControl) {
       const legacyRes = await fetch("/api/chat", {
@@ -946,7 +969,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                   <span>{block.tracks.length} 首</span>
                 </div>
                 <div className={styles.scheduleTrackList}>
-                  {block.tracks.slice(0, 6).map((track, index) => (
+                  {block.tracks.map((track, index) => (
                     <div
                       key={track.id}
                       className={`${styles.scheduleTrackRow} ${

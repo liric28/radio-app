@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rewriteTrackReason } from "@/lib/providers/llm";
+import { batchRewriteTrackReasons } from "@/lib/providers/llm";
 import type { Song } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -12,29 +12,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reasons: {} });
   }
 
-  // 用 MiniMax AI 润色（失败退回模板）
-  const results = await Promise.all(
-    tracks.map(async (t) => {
-      const song: Song = {
-        id: t.id,
-        title: "",
-        artist: "",
-        album: "",
-        duration: 0,
-        coverUrl: "",
-        audioUrl: "",
-        mood: t.mood,
-        reasonSeed: t.reasonSeed,
-        scene,
-      };
-      const reason = await rewriteTrackReason(song, scene);
-      return { id: t.id, reason };
-    }),
-  );
+  const songs: Song[] = tracks.map((t) => ({
+    id: t.id,
+    title: "",
+    artist: "",
+    duration: 0,
+    coverUrl: "",
+    audioUrl: "",
+    mood: t.mood,
+    reasonSeed: t.reasonSeed,
+    scene,
+  }));
 
+  // 批量一次调 MiniMax，失败退回模板
+  const reasonMap = await batchRewriteTrackReasons(songs, scene);
   const reasons: Record<string, string> = {};
-  results.forEach(({ id, reason }) => {
-    reasons[id] = reason;
+  tracks.forEach((t) => {
+    reasons[t.id] =
+      reasonMap.get(t.id) ?? `${scene}里保留${t.mood}质感，${t.reasonSeed}`;
   });
 
   return NextResponse.json({ reasons });

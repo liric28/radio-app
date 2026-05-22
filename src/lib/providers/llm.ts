@@ -17,6 +17,45 @@ type ComposeIntroInput = {
 };
 
 /**
+ * 让 AI 根据场景和情绪标签推荐每段适合的歌曲数量。
+ * 返回数字，失败时退回 10。
+ */
+export async function recommendBlockTrackCount(
+  scene: string,
+  moods: string[],
+  catalogSize: number,
+): Promise<number> {
+  if (!isMinimaxEnabled()) return 10;
+
+  const prompt = [
+    `场景：${scene}`,
+    `情绪：${moods.join(" / ")}`,
+    `曲库总量：${catalogSize} 首`,
+    "",
+    "根据这个场景的时长和情绪密度，推荐合适的歌曲数量（只输出一个数字，不要任何解释）。",
+  ].join("\n");
+
+  try {
+    const raw = await requestMinimaxChat({
+      messages: [
+        {
+          role: "system",
+          content:
+            "你是一个节目策划助手。用户给你场景和情绪标签，你只输出一个数字表示推荐歌曲数量。只回复数字，不要任何文字、标点或解释。",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.2,
+      max_tokens: 5,
+    });
+    const parsed = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+    return isNaN(parsed) ? 10 : Math.max(3, Math.min(parsed, 20));
+  } catch {
+    return 10;
+  }
+}
+
+/**
  * 第一版先用本地规则模拟 DJ 串词，后续再替换为真实模型调用。
  */
 export async function composeHostIntro(input: ComposeIntroInput) {
@@ -260,7 +299,7 @@ export async function batchRewriteTrackReasons(
       .join("\n");
 
     const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("batch timeout")), 10000),
+      setTimeout(() => reject(new Error("batch timeout")), 30000),
     );
     const result = await Promise.race([
       requestMinimaxChat({

@@ -22,6 +22,7 @@ type BuildProgramOptions = {
   forceRandom?: boolean;
   excludeTrackIds?: string[];
   pinnedTrackId?: string;
+  targetPeriod?: string;
 };
 
 /**
@@ -144,10 +145,14 @@ function pickRandomizedTracks(
 /**
  * 核心逻辑：基于画像、时段和记忆状态生成一个节目流。
  */
+export async function buildRadioProgramForScene(targetPeriod: string): Promise<RadioProgram> {
+  return buildRadioProgram({ forceRandom: true, targetPeriod });
+}
+
 export async function buildRadioProgram(
   options: BuildProgramOptions = {},
 ): Promise<RadioProgram> {
-  if (!options.forceRandom && !options.pinnedTrackId) {
+  if (!options.forceRandom && !options.pinnedTrackId && !options.targetPeriod) {
     return buildProgramFromDailySchedule();
   }
 
@@ -159,7 +164,7 @@ export async function buildRadioProgram(
     readMemory(),
   ]);
 
-  const period = resolveCurrentPeriod();
+  const period = options.targetPeriod ?? resolveCurrentPeriod();
   const routine =
     routines.find((item) => item.period === period) ?? routines[routines.length - 1];
   const playlist = playlists[0];
@@ -189,7 +194,7 @@ export async function buildRadioProgram(
       ]
     : rankedSongs;
 
-  const [currentTrack, ...queueBase] = workingSongs.slice(0, 4);
+  const [currentTrack, ...queueBase] = workingSongs;
 
   if (!currentTrack) {
     throw new Error("当前曲库为空，无法生成节目流");
@@ -262,7 +267,7 @@ async function buildProgramFromDailySchedule(): Promise<RadioProgram> {
     energyLabel: toEnergyLabel(currentTrack.energy),
     hostIntro,
     currentTrack,
-    queue: queue.slice(0, 6),
+    queue,
     explanation,
     controlsHint: "今天的节目先按四段式排好，聊天和控制会逐步改写接下来的 block。",
     memorySummary: `今天已编排 ${schedule.blocks.length} 个时段；最近记住 ${memory.recentTrackIds.length} 首歌，当前更偏向 ${memory.feedbackBias.calmer > memory.feedbackBias.fresh ? "安静与熟悉" : "新鲜与流动"}。`,
@@ -454,6 +459,12 @@ export function resolveChatIntent(message: string, program: RadioProgram): ChatI
   }
 
   if (
+    normalized.includes("播") && targetPeriod
+  ) {
+    return { action: "scene-change", targetPeriod };
+  }
+
+  if (
     normalized.includes("熟") ||
     normalized.includes("回忆") ||
     normalized.includes("老歌") ||
@@ -515,6 +526,10 @@ export async function applyChatIntentWithProgram(
   intent: ChatIntent,
   currentProgram: RadioProgram,
 ) {
+  if (intent.action === "scene-change" && intent.targetPeriod) {
+    return buildRadioProgramForScene(intent.targetPeriod);
+  }
+
   if (intent.action === "fresh" || intent.action === "calmer" || intent.action === "familiar") {
     await applyFeedbackAndBuildProgramWithOptions(intent.action, {
       avoidTrackId: currentProgram.currentTrack.id,
