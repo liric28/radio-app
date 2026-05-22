@@ -248,7 +248,7 @@ function DotMatrixText({
  */
 
 export function PlayerShell({ initialProgram, initialSchedule, initialWeather }: PlayerShellProps) {
-  const waveformBars = [0.18, 0.56, 0.32, 0.8, 0.28, 0.66, 0.22, 0.74];
+  const waveformBars = [0.2, 0.45, 0.7, 0.55, 0.85, 0.6, 0.9, 0.4, 0.75, 0.5, 0.65, 0.35, 0.8, 0.55, 0.45, 0.7];
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [program, setProgram] = useState<RadioProgram>(initialProgram);
   const [schedule, setSchedule] = useState<DailySchedule>(initialSchedule);
@@ -801,7 +801,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                   style={
                     {
                       "--bar-height": `${height}`,
-                      "--bar-delay": `${index * 100}ms`,
+                      "--bar-delay": `${index * 60}ms`,
                     } as CSSProperties
                   }
                 />
@@ -905,13 +905,22 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                   message.role === "assistant" ? styles.chatLineAssistant : styles.chatLineUser
                 }`}
               >
-                <span className={styles.chatRole}>
-                  {message.role === "assistant" ? "DJ" : "YOU"}
-                </span>
-                {message.content ? (
-                  <p>{message.content}</p>
+                {message.role === "assistant" ? (
+                  <>
+                    <div className={styles.avatar} />
+                    <p className={styles.chatBubbleWithLabel}>
+                      <span className={styles.chatBubbleLabel}>CLAUDIO</span>
+                      {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
+                    </p>
+                  </>
                 ) : (
-                  <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />
+                  <>
+                    <div className={styles.userAvatar} />
+                    <p className={`${styles.chatBubbleWithLabel} ${styles.chatBubbleLiric}`}>
+                      <span className={styles.chatBubbleLabelLiric}>LIRIC</span>
+                      {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
+                    </p>
+                  </>
                 )}
               </div>
             ))}

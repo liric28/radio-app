@@ -130,6 +130,28 @@
     radial-gradient(circle at 38% 28%, #f4dcc5 10%, #c49572 38%, #5f4d7e 64%, #1c1d2d 100%);
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 0 16px rgba(101, 171, 255, 0.16);
+  flex-shrink: 0;
+}
+
+.userAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 38% 28%, #c8e6c9 10%, #81c784 38%, #2e5a3a 64%, #0d1f14 100%);
+  border: 1px solid rgba(67, 255, 198, 0.25);
+  box-shadow: 0 0 16px rgba(67, 255, 198, 0.12);
+  flex-shrink: 0;
+}
+
+.panelLight .avatar {
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 16px rgba(67, 255, 198, 0.1);
+}
+
+.panelLight .userAvatar {
+  border-color: rgba(67, 255, 198, 0.3);
+  box-shadow: 0 0 16px rgba(67, 255, 198, 0.15);
 }
 
 .dotWord {
@@ -285,6 +307,22 @@
   color: #ffffff;
 }
 
+.panelLight .miniBar {
+  background: rgba(67, 255, 198, 0.15);
+}
+
+.panelLight .miniBarActive {
+  background: linear-gradient(180deg, #1adfaa 0%, rgba(67, 255, 198, 0.7) 100%);
+  box-shadow:
+    0 0 8px rgba(40, 210, 160, 0.9),
+    0 0 20px rgba(67, 255, 198, 0.4),
+    0 0 40px rgba(67, 255, 198, 0.15);
+}
+
+.panelLight .miniWave {
+  filter: drop-shadow(0 0 8px rgba(67, 255, 198, 0.3));
+}
+
 .clockStage {
   min-height: 380px;
   padding: 26px 22px 24px;
@@ -413,8 +451,13 @@
 .panelLight .replayRow,
 .panelLight .nowCard p,
 .panelLight .queueRow p,
-.panelLight .queueRow span {
+.panelLight .queueRow span,
+.panelLight .chatAvatarLabel {
   color: rgba(58, 52, 75, 0.5);
+}
+
+.panelLight .chatAvatarLabelLiric {
+  color: rgba(67, 255, 198, 0.7);
 }
 
 .onAir {
@@ -456,32 +499,43 @@
 .miniWave {
   display: flex;
   align-items: end;
-  gap: 4px;
-  width: 34px;
-  height: 22px;
+  gap: 3px;
+  width: 68px;
+  height: 28px;
 }
 
 .miniBar {
+  flex: 1;
   width: 3px;
   height: calc(100% * var(--bar-height));
   border-radius: 999px;
-  background: linear-gradient(180deg, #43ffc6, rgba(67, 255, 198, 0.25));
-  opacity: 0.55;
+  background: rgba(67, 255, 198, 0.15);
+  transition: background 0.2s ease;
 }
 
 .miniBarActive {
-  animation: mini-wave 0.9s ease-in-out infinite;
+  animation: mini-wave 1.1s ease-in-out infinite;
   animation-delay: var(--bar-delay);
-  opacity: 1;
+  background: linear-gradient(180deg, #43ffc6 0%, rgba(67, 255, 198, 0.7) 100%);
+  box-shadow:
+    0 0 8px rgba(67, 255, 198, 0.9),
+    0 0 20px rgba(67, 255, 198, 0.4),
+    0 0 40px rgba(67, 255, 198, 0.15);
 }
 
 @keyframes mini-wave {
-  0%,
-  100% {
-    transform: scaleY(0.42);
+  0%, 100% {
+    transform: scaleY(0.25);
+    background: linear-gradient(180deg, #43ffc6 0%, rgba(67, 255, 198, 0.4) 100%);
+    box-shadow: 0 0 4px rgba(67, 255, 198, 0.4);
   }
   50% {
-    transform: scaleY(1.12);
+    transform: scaleY(1.0);
+    background: linear-gradient(180deg, #ffffff 0%, #43ffc6 60%, rgba(67, 255, 198, 0.8) 100%);
+    box-shadow:
+      0 0 12px rgba(67, 255, 198, 1),
+      0 0 28px rgba(67, 255, 198, 0.6),
+      0 0 50px rgba(67, 255, 198, 0.25);
   }
 }
 
@@ -770,6 +824,63 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   color: rgba(223, 218, 240, 0.42);
+}
+
+.djAvatarWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.chatAvatarLabel {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(223, 218, 240, 0.55);
+  white-space: nowrap;
+}
+
+.chatAvatarLabelLiric {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(67, 255, 198, 0.6);
+  white-space: nowrap;
+}
+
+.chatBubbleWithLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.chatLineAssistant .chatBubbleWithLabel {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f3f0ff;
+}
+
+.chatLineUser .chatBubbleWithLabel {
+  background: rgba(84, 216, 140, 0.12);
+  color: #c9ffd8;
+}
+
+.chatBubbleLabel {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(223, 218, 240, 0.5);
+  margin-bottom: 2px;
+}
+
+.chatBubbleLabelLiric {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(67, 255, 198, 0.65);
+  margin-bottom: 2px;
 }
 
 .chatLine p {
