@@ -15,6 +15,7 @@ const mimeTypes: Record<string, string> = {
 
 /**
  * 将本地音乐文件以浏览器可访问的音频响应暴露给前端播放器。
+ * 大文件使用流式响应，避免 Next.js 超时。
  */
 export async function GET(request: NextRequest) {
   const filePath = request.nextUrl.searchParams.get("path");
@@ -32,13 +33,32 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const buffer = await fs.readFile(normalizedPath);
     const ext = path.extname(normalizedPath).toLowerCase();
+    const stat = await fs.stat(normalizedPath);
 
-    return new NextResponse(buffer, {
+    const stream = new ReadableStream({
+      async start(controller) {
+        const handle = await fs.open(normalizedPath, "r");
+        try {
+          const buffer = Buffer.alloc(64 * 1024);
+          let bytesRead: number;
+          while ((bytesRead = (await handle.read(buffer)).bytesRead) > 0) {
+            controller.enqueue(buffer.subarray(0, bytesRead));
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        } finally {
+          await handle.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
       status: 200,
       headers: {
         "Content-Type": mimeTypes[ext] ?? "application/octet-stream",
+        "Content-Length": String(stat.size),
         "Cache-Control": "no-cache",
       },
     });
