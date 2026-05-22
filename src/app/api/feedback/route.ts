@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ensureDailySchedule } from "@/lib/daily-schedule";
 import { applyFeedbackAndBuildProgram } from "@/lib/radio-engine";
 
 /**
@@ -14,6 +15,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const program = await applyFeedbackAndBuildProgram(payload.action);
-  return NextResponse.json({ ok: true, program });
+  const [program, schedule] = await Promise.all([
+    applyFeedbackAndBuildProgram(payload.action),
+    ensureDailySchedule(),
+  ]);
+  return NextResponse.json({ ok: true, program, schedule });
 }

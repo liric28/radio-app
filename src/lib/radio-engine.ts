@@ -10,6 +10,7 @@ import {
   advanceDailyScheduleTrack,
   ensureDailySchedule,
   getCurrentScheduledTrack,
+  readDailySchedule,
   rewriteCurrentScheduleBlock,
   resolveCurrentScheduleBlock,
   selectScheduledTrack,
@@ -284,7 +285,11 @@ async function applyFeedbackAndBuildProgramWithOptions(
   action: string,
   options: ApplyFeedbackOptions = {},
 ) {
-  const [memory, moodRules] = await Promise.all([readMemory(), readMoodRules()]);
+  const [memory, moodRules, schedule] = await Promise.all([
+    readMemory(),
+    readMoodRules(),
+    readDailySchedule(),
+  ]);
   const nextMemory = { ...memory, feedbackBias: { ...memory.feedbackBias } };
 
   nextMemory.lastAction = action;
@@ -311,16 +316,25 @@ async function applyFeedbackAndBuildProgramWithOptions(
   }
 
   await writeMemory(nextMemory);
-  let program = await buildRadioProgram({
-    forceRandom: action === "fresh" || action === "skip",
-    excludeTrackIds: memory.recentTrackIds,
-  });
+  let program;
 
-  if (options.avoidTrackId && program.currentTrack.id === options.avoidTrackId) {
+  if (action === "fresh" || action === "calmer" || action === "familiar") {
+    await rewriteCurrentScheduleBlock(action, schedule.currentBlockPeriod);
+    program = await buildRadioProgram();
+  } else {
     program = await buildRadioProgram({
-      forceRandom: true,
-      excludeTrackIds: [...memory.recentTrackIds, options.avoidTrackId],
+      forceRandom: action === "skip",
+      excludeTrackIds: memory.recentTrackIds,
+      targetPeriod: schedule.currentBlockPeriod,
     });
+
+    if (options.avoidTrackId && program.currentTrack.id === options.avoidTrackId) {
+      program = await buildRadioProgram({
+        forceRandom: true,
+        excludeTrackIds: [...memory.recentTrackIds, options.avoidTrackId],
+        targetPeriod: schedule.currentBlockPeriod,
+      });
+    }
   }
 
   const refreshedMemory = await readMemory();
