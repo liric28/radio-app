@@ -42,6 +42,10 @@
 | 706 | `importLocalLibrary` | fn | 底部读取本地曲库 | mode:"replace" 会覆盖手动调整 |
 | 717 | **`sendChatMessage`** | fn ⭐ | **聊天主流程**，8 步 SSE 接收 | abort 重发 + 30ms 批量 flush + loading 指示 |
 | 731 | flush 窗口 | const | 流式 token 批量提交 | 30ms（调优表见代码注释） |
+| 257 | `chatHistory` 持久化 | state | localStorage["radio.chatHistory"] | 刷新/报错不丢上下文（Hermes 无状态靠 client 带 history） |
+| 312 | `longPressTimerRef` / `longPressTriggeredRef` | ref | 长按 1s 清空对话 | triggeredRef 吞掉松手后的假 click |
+| 973 | `clearChatHistory` | fn | **清空 = 给 Hermes 开新会话** | abort 当前请求 + 保留 hostIntro 一条 + 刷新 localStorage |
+| 987 | `handleSendPointerDown/End/Click` | fn ×3 | 发送键长按检测三件套 | 1s 计时 + 松手清 timer + click 看 triggeredRef 决定吞不吞 |
 
 ## 两条核心数据流
 
@@ -74,6 +78,38 @@ sendChatMessage()
   ↓ [DONE] 或 reader.done → 收尾 flushPending
   ↓ AbortError → 悄悄清占位符
 ```
+
+### 聊天会话持久化 / 重置链路
+
+**关键认知**：Hermes 是无状态推理 API，"对话连续"靠前端每次把 history 数组一起发过去。
+
+持久化（防刷新失忆）：
+
+```
+setChatHistory(...)
+  ↓ useEffect[chatHistory] 触发
+  ↓ localStorage.setItem("radio.chatHistory", JSON.stringify(...))
+
+页面挂载 → useState 初始化函数
+  ↓ 读 localStorage["radio.chatHistory"]
+  ↓ 有效 → 恢复对话；无效/不存在 → 回落到单条 hostIntro
+```
+
+重置（长按发送键 1s）：
+
+```
+发送键 pointerDown
+  ↓ 启动 1s setTimeout
+  ↓ 1s 内松手 → 普通发送
+  ↓ 1s 到 → triggeredRef=true + clearChatHistory()
+       ↓ abort 当前请求（防旧响应污染）
+       ↓ setChatHistory([intro 单条])
+       ↓ useEffect 跟着覆盖 localStorage
+       ↓ 状态标签闪 "CLEARED"
+  ↓ 松手 → click 触发 → handleSendClick 看 triggeredRef → 吞掉这次假发送
+```
+
+清空 ≡ Hermes 新会话：下次发消息时 history 只有 `[intro, 新消息]`，前文都没了。
 
 ## radio-engine.ts 速查
 
@@ -145,6 +181,10 @@ sendChatMessage()
 - **聊天卡顿** → 调整 flush 窗口（30ms ↑ ~50ms），或检查是否 startTransition 误用
 - **发送按钮锁死** → 看 `isChatSending` 状态 + `chatAbortRef`
 - **推荐语都是 "它来自你的本地音乐库..."** → rewrite-reasons useEffect 没触发，检查 deps 是否更新
+- **Hermes 像失忆 / 接不上之前对话** → 检查 localStorage["radio.chatHistory"] 是否在；
+  Hermes 本身无状态，连续性靠 client 每次带 history 数组
+- **长按清空没反应** → 检查 `handleSendPointerDown` 的 setTimeout 有没有被 pointerLeave 提前清掉
+- **长按清空后多发了一条** → triggeredRef 没吞掉松手后的 click，检查 handleSendClick 分支
 
 ## 维护规则
 

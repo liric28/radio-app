@@ -254,13 +254,47 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const [schedule, setSchedule] = useState<DailySchedule>(initialSchedule);
   const [weather, setWeather] = useState<WeatherSnapshot | null>(initialWeather);
   const [chatInput, setChatInput] = useState<string>("");
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
-    {
-      id: "assistant-intro",
-      role: "assistant",
-      content: initialProgram.hostIntro,
-    },
-  ]);
+  /**
+   * 聊天记录持久化（localStorage）。
+   *
+   * 背景：Hermes 是无状态的本地推理 API，"对话连续性"完全靠前端每次把 history 数组
+   * 一起发过去。chatHistory 原本只在 React useState 里，刷新/报错就丢光，
+   * 下次发消息时 history 是空的 → Hermes "失忆"。
+   *
+   * 方案：每次 chatHistory 变就写 localStorage，组件挂载时尝试读回。
+   * 读失败（key 不存在 / JSON 损坏 / SSR 时 window 不存在）→ 回落到 hostIntro 开场。
+   */
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
+    if (typeof window === "undefined") {
+      return [{ id: "assistant-intro", role: "assistant", content: initialProgram.hostIntro }];
+    }
+    try {
+      const stored = window.localStorage.getItem("radio.chatHistory");
+      if (stored) {
+        const parsed = JSON.parse(stored) as ChatMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // JSON 损坏 / 权限不足，忽略
+    }
+    return [{ id: "assistant-intro", role: "assistant", content: initialProgram.hostIntro }];
+  });
+
+  /**
+   * chatHistory 持久化到 localStorage。
+   * 同步写不会卡 UI（数据量小），且能立刻在 storage 事件里看到。
+   * 写失败（隐私模式 / 满了）静默忽略——不能因此挂掉聊天。
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("radio.chatHistory", JSON.stringify(chatHistory));
+    } catch {
+      // 配额超 / 隐私模式 等
+    }
+  }, [chatHistory]);
   const [isChatSending, setIsChatSending] = useState<boolean>(false);
   const chatPollTimerRef = useRef<number | null>(null);
   /**
@@ -268,6 +302,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 用户在等待回复时再次点发送 → abort 当前请求，开启新请求。
    */
   const chatAbortRef = useRef<AbortController | null>(null);
+  /**
+   * 发送键长按检测。长按 ≥ 1s 触发清空聊天历史。
+   *
+   * - timerRef：onPointerDown 启动的 setTimeout 句柄，松开/移出时 clear
+   * - triggeredRef：长按成功触发的标记。
+   *   onClick 在 pointerUp 后还会跑一次，需要靠这个标记跳过那次"假的发送"。
+   */
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef<boolean>(false);
   const [history, setHistory] = useState<RadioProgram[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -922,6 +965,80 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     }
   }
 
+  /**
+   * 清空聊天历史 = 给 Hermes 开新会话。
+   *
+   * 为什么这俩等价：
+   *   Hermes 本身无状态，所谓"会话"完全靠客户端每次把 history 数组发过去。
+   *   清掉 chatHistory → 下次 sendChatMessage 拼 nextHistory 时只剩开场白 + 新消息，
+   *   Hermes 看到的 context 就是新的，前文统统不存在 = 等于新会话。
+   *
+   * 副作用顺序：
+   *   1. abort 当前进行中的请求（chatAbortRef）→ 防旧响应回来污染新历史
+   *   2. setChatHistory([intro])：保留一条 hostIntro 作初始气泡，避免界面空白
+   *   3. useEffect 跟着把 localStorage["radio.chatHistory"] 也覆盖成单条
+   *   4. 状态标签闪 "CLEARED" 给用户视觉反馈
+   *
+   * 触发入口：发送键长按 ≥ 1s（见下面 handleSendPointerDown / End / Click）
+   *
+   * 改成"全清"（连开场白也删）的话：把 setChatHistory([intro]) → setChatHistory([])
+   */
+  function clearChatHistory() {
+    chatAbortRef.current?.abort();
+    const intro: ChatMessage = {
+      id: `assistant-intro-${Date.now()}`,
+      role: "assistant",
+      content: program.hostIntro,
+    };
+    setChatHistory([intro]);
+    setActiveLabel("CLEARED");
+  }
+
+  /**
+   * 发送键长按检测，3 个 handler 协作。
+   *
+   * 时序：
+   *   按下 → handleSendPointerDown 启动 1s setTimeout
+   *     ├─ 1s 内松手 → handleSendPointerEnd 清 timer → click 走正常发送
+   *     └─ 1s 到 → timer 回调：triggeredRef=true + clearChatHistory()
+   *               → 用户松手 → click 触发 → handleSendClick 看到 triggeredRef
+   *               → 重置 ref + return（吞掉这次"假发送"）
+   *
+   * 为啥需要 triggeredRef：浏览器对长按依然会触发 pointerup → click 事件序列，
+   * 不能让长按清空之后还顺手发出去一条消息，所以用标记吞掉这次 click。
+   *
+   * 鼠标移出/取消 pointerLeave / pointerCancel 也走 handleSendPointerEnd，
+   * 避免按住后拖出按钮范围还误触发清空。
+   */
+  function handleSendPointerDown() {
+    longPressTriggeredRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      clearChatHistory();
+    }, 1000);
+  }
+
+  /**
+   * 松开/移出/取消：清掉计时器；未达 1s 即视为普通点击。
+   */
+  function handleSendPointerEnd() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  /**
+   * 发送键 click：长按成功的话跳过本次发送，仅清状态标记。
+   */
+  function handleSendClick() {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    void sendChatMessage();
+  }
+
   function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -1166,9 +1283,13 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             <button
               type="button"
               className={styles.sendButton}
-              onClick={() => void sendChatMessage()}
-              aria-label={isChatSending ? "中止当前并重新发送" : "发送"}
-              title={isChatSending ? "正在接收 Hermes 回复，点击中止并发新消息" : "发送"}
+              onClick={handleSendClick}
+              onPointerDown={handleSendPointerDown}
+              onPointerUp={handleSendPointerEnd}
+              onPointerLeave={handleSendPointerEnd}
+              onPointerCancel={handleSendPointerEnd}
+              aria-label={isChatSending ? "中止当前并重新发送" : "发送（长按 1 秒清空对话）"}
+              title={isChatSending ? "正在接收 Hermes 回复，点击中止并发新消息" : "点发送 / 长按 1 秒清空对话"}
             >
               {isChatSending ? (
                 <DotmHex10 dotSize={3} color="currentColor" size={16} speed={1.4} />
