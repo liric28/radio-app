@@ -1,5 +1,8 @@
 {
   "recentTrackIds": [
+    "local-unknown-artist-情人---邓紫棋dj-84",
+    "local-unknown-artist-长城dj-82",
+    "local-unknown-artist-都是你的错dj-81",
     "local-周杰伦-给我一首歌的时间-120",
     "local-周杰伦-稻香-119",
     "local-beatbrothers-fight-16",
@@ -8,23 +11,20 @@
     "local-周杰伦-听妈妈的话-113",
     "local-周杰伦-外婆-112",
     "local-周杰伦-七里香-111",
-    "local-unknown-artist-千千万万-78",
-    "local-unknown-artist-许巍《曾经的你》-80",
-    "local-unknown-artist-许巍《曾经的你》-80",
-    "local-unknown-artist-爱的故事上集-79"
+    "local-unknown-artist-千千万万-78"
   ],
   "recentProgramTitles": [
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
     "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
     "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律"
+    "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律"
   ],
   "feedbackBias": {
     "calmer": 3,
     "familiar": 4,
     "fresh": 15
   },
-  "lastAction": "schedule-next"
+  "lastAction": "manual-pick"
 }

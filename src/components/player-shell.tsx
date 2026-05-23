@@ -1046,13 +1046,62 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     }
   }
 
+  /**
+   * 鼠标在面板内移动 → 写 --mx/--my CSS 变量驱动透镜跟随。
+   *
+   * 性能：直接操 DOM 设置 style 而非 setState，避免每次 mousemove 触发
+   *      PlayerShell（1300 行）整体重渲染。仅 active 状态走 React。
+   *
+   * 排除聊天区：鼠标在 .djPanel 范围内时关闭透镜（视觉上保持聊天区干净，
+   * 不让点阵盖在文字上影响阅读）。
+   */
   function handlePanelPointerMove(event: MouseEvent<HTMLElement>) {
-    const rect = panelRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const node = panelRef.current;
+    if (!node) return;
 
+    // 检测鼠标是否在聊天区内（含其子元素）
+    const target = event.target as HTMLElement | null;
+    const inDjPanel = target?.closest(`.${styles.djPanel}`) !== null;
+    if (inDjPanel) {
+      if (pointerGlow.active) {
+        setPointerGlow((prev) => ({ ...prev, active: false }));
+      }
+      return;
+    }
+
+    const rect = node.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
-    setPointerGlow({ x, y, active: true });
+    node.style.setProperty("--mx", `${x}%`);
+    node.style.setProperty("--my", `${y}%`);
+    if (!pointerGlow.active) {
+      setPointerGlow((prev) => ({ ...prev, active: true }));
+    }
+  }
+
+  /**
+   * 全局点击光圈：鼠标点哪儿 → 该点 spawn 一个临时 div，CSS 动画扩散 + 淡出
+   * 600ms 后自动 remove。直接操 DOM 不走 React state，避免每次点击重渲染。
+   *
+   * 排除掉 textarea / input 内的点击，避免在文本输入时干扰光标定位。
+   */
+  function handlePanelClick(event: MouseEvent<HTMLElement>) {
+    const target = event.target as HTMLElement | null;
+    if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+
+    const node = panelRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const ripple = document.createElement("span");
+    ripple.className = styles.clickRipple;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    node.appendChild(ripple);
+
+    setTimeout(() => ripple.remove(), 700);
   }
 
   return (
@@ -1062,16 +1111,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         className={`${styles.panel} ${theme === "light" ? styles.panelLight : styles.panelDark} ${
           pointerGlow.active ? styles.panelGlowActive : ""
         }`}
-        style={
-          {
-            "--mx": `${pointerGlow.x}%`,
-            "--my": `${pointerGlow.y}%`,
-          } as CSSProperties
-        }
         onMouseMove={handlePanelPointerMove}
         onMouseLeave={() =>
           setPointerGlow((currentGlow) => ({ ...currentGlow, active: false }))
         }
+        onClick={handlePanelClick}
       >
         <header className={styles.topbar}>
           <div className={styles.brand}>

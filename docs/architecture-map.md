@@ -174,6 +174,29 @@ setChatHistory(...)
 | `POST /api/rewrite-reasons` | 懒加载润色当前段推荐语 |
 | `POST /api/import-library` | 全量扫描本地音乐目录写 songs.json |
 
+## 视觉效果
+
+### 自定义蓝色光标
+
+文件：`src/app/page.module.css` 顶部 `.page` 块
+
+- 全局 cursor 用内联 SVG 蓝色箭头（`#5db8ff` 描边白）
+- 按钮 / input / a 上换成更亮的 `#7ec8ff`
+- 颜色调整：搜 `%23` 后面的 hex 值替换（CSS 内联 SVG 里 `#` 要 url-encode）
+
+### 鼠标跟随点阵透镜（3D 缩放感）
+
+`.panel::before` + `.panel::after` 双层叠加（在 `page.module.css`）：
+
+- `::after` 外层稀薄小点（1.2px，半径 200px mask）
+- `::before` 内核密集大点（2.6px，半径 90px mask）
+- 都用 `drop-shadow` 加微光晕
+- 跟着 CSS 变量 `--mx --my` 移动（百分比）
+
+性能要点：
+- `handlePanelPointerMove`（player-shell.tsx）**直接操 DOM** 设 `--mx/--my`，不走 React state
+- 否则每次 mousemove 都会 re-render 整个 1300 行的 PlayerShell
+
 ## 常见调试入口
 
 - **点 ⌁ 没反应** → 看 `requestProgram` catch 分支 + Network 面板
