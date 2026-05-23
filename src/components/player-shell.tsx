@@ -464,8 +464,10 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         await audio.play();
         setIsPlaying(true);
         setActiveLabel("ON AIR");
-      } catch {
-        setError("浏览器没有成功拉起音频播放。");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[Audio] play() failed:", msg);
+        setError(`播放失败：${msg}`);
       }
       return;
     }
@@ -1032,7 +1034,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
         <audio
           ref={audioRef}
-          preload="none"
+          preload="auto"
           src={audioSource}
           onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
           onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}

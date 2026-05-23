@@ -4,8 +4,7 @@
   ],
   "favoriteMoods": [
     "回忆感",
-    "通勤",
-    "夜晚"
+    "通勤"
   ],
   "favoriteLanguages": [
     "英文",
@@ -13,10 +12,10 @@
   ],
   "anchorArtists": [
     "BEYOND",
-    "周杰伦",
+    "Unknown Artist",
     "DJ",
-    "Albums",
-    "Lady Gaga"
+    "Lady Gaga",
+    "Taylor Swift"
   ],
   "radioPersona": "那个会优先从你本地音乐库里把熟悉感捞出来的 DJ"
 }
