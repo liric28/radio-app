@@ -423,8 +423,7 @@
   pointer-events: none;
 }
 
-.dotGrid::before,
-.dotGrid::after {
+.dotGrid::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -434,28 +433,6 @@
 .dotGrid::before {
   background-image: radial-gradient(rgba(173, 167, 210, 0.34) 1.1px, transparent 1.1px);
   opacity: 0.32;
-}
-
-.dotGrid::after {
-  background-image: radial-gradient(rgba(74, 255, 214, 0.92) 1.2px, transparent 1.2px);
-  -webkit-mask-image: radial-gradient(
-    circle 108px at var(--mx, 50%) var(--my, 20%),
-    rgba(0, 0, 0, 0.98) 0,
-    rgba(0, 0, 0, 0.94) 30%,
-    transparent 70%
-  );
-  mask-image: radial-gradient(
-    circle 108px at var(--mx, 50%) var(--my, 20%),
-    rgba(0, 0, 0, 0.98) 0,
-    rgba(0, 0, 0, 0.94) 30%,
-    transparent 70%
-  );
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.panelGlowActive .dotGrid::after {
-  opacity: 1;
 }
 
 .clockWrap {
