@@ -1072,6 +1072,7 @@
 .sendButton {
   border-radius: 999px;
   font-size: 20px;
+  aspect-ratio: 1;
 }
 
 .sendButton {
