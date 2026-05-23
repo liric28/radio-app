@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { type CSSProperties, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { DotmHex1 } from "@/components/ui/dotm-hex-1";
 import { DotmHex10 } from "@/components/ui/dotm-hex-10";
 import { DotmSquare15 } from "@/components/ui/dotm-square-15";
@@ -273,7 +273,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     "/Users/lipan/Music/Music/Media/Music",
   );
   const [libraryLimit, setLibraryLimit] = useState<string>("300");
-  const [, startTransition] = useTransition();
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
   const [pointerGlow, setPointerGlow] = useState({ x: 50, y: 18, active: false });
   const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("circular8");
@@ -348,7 +347,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   }, []);
 
   /**
-   * 切 block 时，只润色当前 block 的推荐语。
+   * 当前 block 的推荐语润色器（懒加载，不阻塞首屏）。
+   *
+   * 触发时机（依赖项变化即触发）：
+   *   - schedule.currentBlockPeriod 变化：切到新时段，润色新时段
+   *   - program.scene 变化：场景文案变了，重新润色
+   *   - program.currentTrack.id 变化：点 ⌁ 重新生成了歌单（关键），
+   *     此时 schedule 里所有 reason 都是 reasonSeed 占位，必须重新润色当前段
+   *
+   * 调 /api/rewrite-reasons 拿一段的 DJ 风格推荐语，
+   * 回来后 setSchedule / setProgram 把对应 track 的 reason 替换掉。
+   * 其他三段保持 reasonSeed 占位，等用户切到那段时再触发润色。
    */
   useEffect(() => {
     // 用 SSR 的 currentBlockPeriod 找当前 block（而非实时 hours）
@@ -396,7 +405,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         }));
       })
       .catch(() => {});
-  }, [program.scene, schedule.currentBlockPeriod]);
+  }, [program.scene, schedule.currentBlockPeriod, program.currentTrack.id]);
 
   function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -405,7 +414,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     return `${minutes}:${String(remainder).padStart(2, "0")}`;
   }
 
-  function requestProgram(
+  async function requestProgram(
     url: string,
     options?: RequestInit,
     nextLabel?: string,
@@ -417,37 +426,42 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     shouldResumePlaybackRef.current = keepPlaying;
     const previousProgram = program;
 
-    startTransition(async () => {
-      try {
-        const response = await fetch(url, options);
-        const payload = (await response.json()) as RadioResponse;
-        if (!response.ok || !payload.ok) {
-          throw new Error("节目更新失败");
-        }
-        if (rememberCurrent) {
-          setHistory((currentHistory) => [
-            previousProgram,
-            ...currentHistory,
-          ].slice(0, 24));
-        }
-        setProgram(payload.program);
-        if (payload.schedule) {
-          setSchedule(payload.schedule);
-        }
-        setChatHistory((currentHistory) => {
-          const nextIntro: ChatMessage = {
-            id: `assistant-program-${Date.now()}`,
-            role: "assistant",
-            content: payload.program.hostIntro,
-          };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45_000);
 
-          return [...currentHistory, nextIntro].slice(-12);
-        });
-      } catch (fetchError) {
-        shouldResumePlaybackRef.current = false;
-        setError(fetchError instanceof Error ? fetchError.message : "请求失败");
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      const payload = (await response.json()) as RadioResponse;
+
+      if (!response.ok || !payload.ok) {
+        throw new Error("节目更新失败");
       }
-    });
+
+      if (rememberCurrent) {
+        setHistory((currentHistory) => [
+          previousProgram,
+          ...currentHistory,
+        ].slice(0, 24));
+      }
+      setProgram(payload.program);
+      if (payload.schedule) {
+        setSchedule(payload.schedule);
+      }
+      setChatHistory((currentHistory) => {
+        const nextIntro: ChatMessage = {
+          id: `assistant-program-${Date.now()}`,
+          role: "assistant",
+          content: payload.program.hostIntro,
+        };
+
+        return [...currentHistory, nextIntro].slice(-12);
+      });
+    } catch (fetchError) {
+      shouldResumePlaybackRef.current = false;
+      setError(fetchError instanceof Error ? fetchError.message : "请求失败");
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   async function togglePlayback() {
@@ -563,6 +577,30 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         body: JSON.stringify({ trackId }),
       },
       "LIVE",
+      isPlaying,
+    );
+  }
+
+  /**
+   * 输入框旁边 ⌁ 按钮：重新生成今天的四段歌单。
+   *
+   * 全链路：
+   *   1. POST /api/regenerate-schedule（详见该 route 注释）
+   *   2. requestProgram 收到 { program, schedule } → setProgram + setSchedule
+   *   3. UI 立刻刷新（TRACKS 数字、四段列表、Now Playing、queue）
+   *   4. program.currentTrack.id 变了 → 上面那个 useEffect 自动触发，
+   *      后台异步润色当前段的推荐语（不阻塞）
+   *
+   * 注意：keepPlaying=isPlaying，所以如果当前在播音乐，
+   *      新歌单的当前段第一首会自动续播。
+   */
+  function regenerateSchedule() {
+    requestProgram(
+      "/api/regenerate-schedule",
+      {
+        method: "POST",
+      },
+      "REFRESHING",
       isPlaying,
     );
   }
@@ -936,7 +974,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               onChange={(event) => setChatInput(event.target.value)}
               onKeyDown={handleInputKeyDown}
             />
-            <button type="button" className={styles.iconButton} onClick={importLocalLibrary}>
+            <button type="button" className={styles.iconButton} onClick={regenerateSchedule}>
               ⌁
             </button>
             <button

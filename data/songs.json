@@ -1214,5 +1214,1577 @@
     ],
     "reasonSeed": "它来自你的本地音乐库，不是样例数据",
     "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/Unknown Album/爱的故事上集.mp3"
+  },
+  {
+    "id": "local-unknown-artist-许巍《曾经的你》-80",
+    "title": "许巍《曾经的你》",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/Unknown Album/许巍《曾经的你》.mp3"
+  },
+  {
+    "id": "local-unknown-artist-都是你的错dj-81",
+    "title": "都是你的错DJ",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/Unknown Album/都是你的错DJ.mp3"
+  },
+  {
+    "id": "local-unknown-artist-长城dj-82",
+    "title": "长城DJ",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/Unknown Album/长城DJ.mp3"
+  },
+  {
+    "id": "local-unknown-artist-飘向北方-83",
+    "title": "飘向北方",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/Unknown Album/飘向北方.mp3"
+  },
+  {
+    "id": "local-unknown-artist-情人---邓紫棋dj-84",
+    "title": "情人 - 邓紫棋DJ",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/情人 - 邓紫棋DJ/情人 - 邓紫棋DJ.mp3"
+  },
+  {
+    "id": "local-unknown-artist-我走后dj-85",
+    "title": "我走后DJ",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/我走后DJ/我走后DJ.mp3"
+  },
+  {
+    "id": "local-unknown-artist-望故乡dj-86",
+    "title": "望故乡DJ",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/望故乡DJ/望故乡DJ.mp3"
+  },
+  {
+    "id": "local-unknown-artist-爱似水仙dj-87",
+    "title": "爱似水仙DJ",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/金海心/爱似水仙DJ.mp3"
+  },
+  {
+    "id": "local-unknown-artist-风中的遗憾dj-88",
+    "title": "风中的遗憾DJ",
+    "artist": "Unknown Artist",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Unknown Artist/风中的遗憾DJ/风中的遗憾DJ.mp3"
+  },
+  {
+    "id": "local-vicetone、tony-igy-astronomia-89",
+    "title": "Astronomia",
+    "artist": "Vicetone、Tony Igy",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "英文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Vicetone、Tony Igy/Astronomia/Astronomia.mp3"
+  },
+  {
+    "id": "local-xgprmi-相思的人（2024dj版）-90",
+    "title": "相思的人（2024DJ版）",
+    "artist": "XGPRMI",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/XGPRMI/难过的事情那么多/相思的人（2024DJ版）.mp3"
+  },
+  {
+    "id": "local-dj郭小蝶、圈妹、阿迪sir、寐加岛-不该用情-91",
+    "title": "不该用情",
+    "artist": "dj郭小蝶、圈妹、阿迪Sir、寐加岛",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/dj郭小蝶、圈妹、阿迪Sir、寐加岛/赤诚年少/不该用情.mp3"
+  },
+  {
+    "id": "local-kie音乐-必杀技-(dj-house版)-92",
+    "title": "必杀技 (DJ House版)",
+    "artist": "kie音乐",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/kie音乐/必杀技 (DJ House版)/必杀技 (DJ House版).mp3"
+  },
+  {
+    "id": "local-love-the-way-you-lie-love-the-way-you-lie-93",
+    "title": "love the way you lie",
+    "artist": "love the way you lie",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "英文",
+    "tags": [
+      "情绪",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/love the way you lie/love the way you lie/love the way you lie.mp3"
+  },
+  {
+    "id": "local-xxxcr3-everytime-we-touch-94",
+    "title": "Everytime We Touch",
+    "artist": "xxxCr3",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "英文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/xxxCr3/Everytime We Touch/Everytime We Touch.mp3"
+  },
+  {
+    "id": "local-бамбинтон-зая-95",
+    "title": "Зая",
+    "artist": "Бамбинтон",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "英文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/Бамбинтон/Зая/Зая.mp3"
+  },
+  {
+    "id": "local-ラムジ-planet-96",
+    "title": "PLANET",
+    "artist": "ラムジ",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "英文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/ラムジ/3ラムジ/PLANET.mp3"
+  },
+  {
+    "id": "local-一只白羊-赐我-(dj版)-97",
+    "title": "赐我 (DJ版)",
+    "artist": "一只白羊",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/一只白羊/赐我 (DJ版)/赐我 (DJ版).mp3"
+  },
+  {
+    "id": "local-任然-飞鸟和蝉-98",
+    "title": "飞鸟和蝉",
+    "artist": "任然",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/任然/飞鸟和蝉/飞鸟和蝉.mp3"
+  },
+  {
+    "id": "local-何秋亊-他他他-(何秋亊版)-99",
+    "title": "他他他 (何秋亊版)",
+    "artist": "何秋亊",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/何秋亊/他他他 (何秋亊版)/他他他 (何秋亊版).mp3"
+  },
+  {
+    "id": "local-余音7iv-相逢的人还会再相逢-100",
+    "title": "相逢的人还会再相逢",
+    "artist": "余音7iv",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/余音7iv/阿玛是忠诚的伙伴/相逢的人还会再相逢.mp3"
+  },
+  {
+    "id": "local-你看你看月亮的脸dj-你看你看月亮的脸dj-101",
+    "title": "你看你看月亮的脸DJ",
+    "artist": "你看你看月亮的脸DJ",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/你看你看月亮的脸DJ/你看你看月亮的脸DJ/你看你看月亮的脸DJ.mp3"
+  },
+  {
+    "id": "local-刘昊霖、kidult.-landing-guy-102",
+    "title": "Landing Guy",
+    "artist": "刘昊霖、Kidult.",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/刘昊霖、Kidult_/鱼干铺里/Landing Guy.mp3"
+  },
+  {
+    "id": "local-半根萝卜-旧情绵绵-(女版)-103",
+    "title": "旧情绵绵 (女版)",
+    "artist": "半根萝卜",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/半根萝卜/旧情绵绵 (女版)/旧情绵绵 (女版).mp3"
+  },
+  {
+    "id": "local-华语群星-皮卡丘可爱版-104",
+    "title": "皮卡丘可爱版",
+    "artist": "华语群星",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "情绪",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/华语群星/Unknown Album/皮卡丘可爱版.mp3"
+  },
+  {
+    "id": "local-原来是夏夏-再也不是你-105",
+    "title": "再也不是你",
+    "artist": "原来是夏夏",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/原来是夏夏/再也不是你/再也不是你.mp3"
+  },
+  {
+    "id": "local-可可团队-dj乐乐-11月-你好-106",
+    "title": "11月 你好",
+    "artist": "可可团队-DJ乐乐",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/可可团队-DJ乐乐/DJ可可工作室-乐乐/11月 你好.mp3"
+  },
+  {
+    "id": "local-后弦-九公主-107",
+    "title": "九公主",
+    "artist": "后弦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/后弦/9公主/九公主.mp3"
+  },
+  {
+    "id": "local-吕口口-生日礼物-(dj沈念版)-108",
+    "title": "生日礼物 (DJ沈念版)",
+    "artist": "吕口口",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/吕口口/生日礼物（女生版）/生日礼物 (DJ沈念版).mp3"
+  },
+  {
+    "id": "local-周思涵-备爱-109",
+    "title": "备爱",
+    "artist": "周思涵",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "情绪",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周思涵/备爱/备爱.mp3"
+  },
+  {
+    "id": "local-周杰伦-mojito-110",
+    "title": "Mojito",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/Mojito/Mojito.mp3"
+  },
+  {
+    "id": "local-周杰伦-七里香-111",
+    "title": "七里香",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/七里香/七里香.mp3"
+  },
+  {
+    "id": "local-周杰伦-外婆-112",
+    "title": "外婆",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/七里香/外婆.mp3"
+  },
+  {
+    "id": "local-周杰伦-听妈妈的话-113",
+    "title": "听妈妈的话",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/依然范特西/听妈妈的话.mp3"
+  },
+  {
+    "id": "local-周杰伦-夜曲-114",
+    "title": "夜曲",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "夜晚",
+    "energy": 4,
+    "language": "中文",
+    "tags": [
+      "夜晚",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/十一月的萧邦/夜曲.mp3"
+  },
+  {
+    "id": "local-周杰伦-晴天-115",
+    "title": "晴天",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/叶惠美/晴天.mp3"
+  },
+  {
+    "id": "local-周杰伦-告白气球-116",
+    "title": "告白气球",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/周杰伦的睡前故事/告白气球.mp3"
+  },
+  {
+    "id": "local-周杰伦-彩虹-117",
+    "title": "彩虹",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/彩虹/彩虹.mp3"
+  },
+  {
+    "id": "local-周杰伦-甜甜的-118",
+    "title": "甜甜的",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/我很忙/甜甜的.mp3"
+  },
+  {
+    "id": "local-周杰伦-稻香-119",
+    "title": "稻香",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/魔杰座/稻香.mp3"
+  },
+  {
+    "id": "local-周杰伦-给我一首歌的时间-120",
+    "title": "给我一首歌的时间",
+    "artist": "周杰伦",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/周杰伦/魔杰座/给我一首歌的时间.mp3"
+  },
+  {
+    "id": "local-夏日入侵企画-想去海边-121",
+    "title": "想去海边",
+    "artist": "夏日入侵企画",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/夏日入侵企画/想去海边/想去海边.mp3"
+  },
+  {
+    "id": "local-大籽-白月光与朱砂痣-122",
+    "title": "白月光与朱砂痣",
+    "artist": "大籽",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/大籽/白月光与朱砂痣/白月光与朱砂痣.mp3"
+  },
+  {
+    "id": "local-宋佳---醒着醉-宋佳---醒着醉-123",
+    "title": "宋佳 - 醒着醉",
+    "artist": "宋佳 - 醒着醉",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/宋佳 - 醒着醉/宋佳 - 醒着醉/宋佳 - 醒着醉.mp3"
+  },
+  {
+    "id": "local-小安安-心之火-(dj版)-124",
+    "title": "心之火 (DJ版)",
+    "artist": "小安安",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/小安安/音乐来自生活/心之火 (DJ版).mp3"
+  },
+  {
+    "id": "local-张宇-月亮惹的祸-125",
+    "title": "月亮惹的祸",
+    "artist": "张宇",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/张宇/月亮 太阳/月亮惹的祸.mp3"
+  },
+  {
+    "id": "local-张宇-雨一直下-126",
+    "title": "雨一直下",
+    "artist": "张宇",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/张宇/雨一直下/雨一直下.mp3"
+  },
+  {
+    "id": "local-张家旺、悦开心-别怕我伤心-(对唱版)-127",
+    "title": "别怕我伤心 (对唱版)",
+    "artist": "张家旺、悦开心",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/张家旺、悦开心/别怕我伤心/别怕我伤心 (对唱版).mp3"
+  },
+  {
+    "id": "local-张洪量-你知道我在等你吗-128",
+    "title": "你知道我在等你吗",
+    "artist": "张洪量",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/张洪量/你知道我在等你吗/你知道我在等你吗.mp3"
+  },
+  {
+    "id": "local-张韶涵-头号甜心-129",
+    "title": "头号甜心",
+    "artist": "张韶涵",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/张韶涵/Ang 5.0/头号甜心.mp3"
+  },
+  {
+    "id": "local-张韶涵-欧若拉-130",
+    "title": "欧若拉",
+    "artist": "张韶涵",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/张韶涵/欧若拉/欧若拉.mp3"
+  },
+  {
+    "id": "local-张韶涵-喜欢你没道理-131",
+    "title": "喜欢你没道理",
+    "artist": "张韶涵",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/张韶涵/潘朵拉/喜欢你没道理.mp3"
+  },
+  {
+    "id": "local-很美味-假面舞会-132",
+    "title": "假面舞会",
+    "artist": "很美味",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/很美味/假面舞会/假面舞会.mp3"
+  },
+  {
+    "id": "local-新干cc-口是心非（dj版）-133",
+    "title": "口是心非（DJ版）",
+    "artist": "新干Cc",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/新干Cc/潮音Cc/口是心非（DJ版）.mp3"
+  },
+  {
+    "id": "local-新裤子-你要跳舞吗-134",
+    "title": "你要跳舞吗",
+    "artist": "新裤子",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/新裤子/生命因你而火热/你要跳舞吗.mp3"
+  },
+  {
+    "id": "local-暗里着迷-暗里着迷-135",
+    "title": "暗里着迷",
+    "artist": "暗里着迷",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/暗里着迷/暗里着迷/暗里着迷.mp3"
+  },
+  {
+    "id": "local-朱小朱、dj京仔-我曾用心爱着你-136",
+    "title": "我曾用心爱着你",
+    "artist": "朱小朱、DJ京仔",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/朱小朱、DJ京仔/我曾用心爱着你/我曾用心爱着你.mp3"
+  },
+  {
+    "id": "local-李思婷-无眠的夜更让人成长-137",
+    "title": "无眠的夜更让人成长",
+    "artist": "李思婷",
+    "year": 2024,
+    "mood": "夜晚",
+    "energy": 4,
+    "language": "中文",
+    "tags": [
+      "夜晚",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/李思婷/我只相信金钱铺路/无眠的夜更让人成长.mp3"
+  },
+  {
+    "id": "local-李荣浩-麻雀-138",
+    "title": "麻雀",
+    "artist": "李荣浩",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/李荣浩/麻雀/麻雀.mp3"
+  },
+  {
+    "id": "local-杨友友-特别的爱给特别的你-(女声版)-139",
+    "title": "特别的爱给特别的你 (女声版)",
+    "artist": "杨友友",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "情绪",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/杨友友/特别的爱给特别的你 (女声版)/特别的爱给特别的你 (女声版).mp3"
+  },
+  {
+    "id": "local-林俊杰-不潮不用花钱-140",
+    "title": "不潮不用花钱",
+    "artist": "林俊杰",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/林俊杰/JJ陆/不潮不用花钱.mp3"
+  },
+  {
+    "id": "local-林俊杰-可惜没如果-(自白版)-141",
+    "title": "可惜没如果 (自白版)",
+    "artist": "林俊杰",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/林俊杰/Unknown Album/可惜没如果 (自白版).mp3"
+  },
+  {
+    "id": "local-林凡freya-五天几年-142",
+    "title": "五天几年",
+    "artist": "林凡Freya",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/林凡Freya/犀利人妻幸福秘笈 音乐图文原声带/五天几年.mp3"
+  },
+  {
+    "id": "local-林清樱-you-are-beautiful-143",
+    "title": "You are beautiful",
+    "artist": "林清樱",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/林清樱/抱紧我靠在我胸口/You are beautiful.mp3"
+  },
+  {
+    "id": "local-橘子妹-胆小鬼-144",
+    "title": "胆小鬼",
+    "artist": "橘子妹",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/橘子妹/胆小鬼 (橘子妹版)/胆小鬼.mp3"
+  },
+  {
+    "id": "local-歌者阿文、mc水公主-总会有不期而遇的温暖和希望-145",
+    "title": "总会有不期而遇的温暖和希望",
+    "artist": "歌者阿文、MC水公主",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/歌者阿文、MC水公主/11月的第一张/总会有不期而遇的温暖和希望.mp3"
+  },
+  {
+    "id": "local-汤不唱-情意结-146",
+    "title": "情意结",
+    "artist": "汤不唱",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/汤不唱/情意结/情意结.mp3"
+  },
+  {
+    "id": "local-洋澜一-谁-(djr7版)-147",
+    "title": "谁 (DJR7版)",
+    "artist": "洋澜一",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/洋澜一/谁（DJR7版）/谁 (DJR7版).mp3"
+  },
+  {
+    "id": "local-添儿呗;克里-杀死我的孤独-148",
+    "title": "杀死我的孤独",
+    "artist": "添儿呗;克里",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/添儿呗;克里/杀死我的孤独/杀死我的孤独.mp3"
+  },
+  {
+    "id": "local-王宇宙leto、乔浚丞-若月亮没来-(若是月亮还没来)-149",
+    "title": "若月亮没来 (若是月亮还没来)",
+    "artist": "王宇宙Leto、乔浚丞",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/王宇宙Leto、乔浚丞/若月亮没来 (若是月亮还没来)/若月亮没来 (若是月亮还没来).mp3"
+  },
+  {
+    "id": "local-王恩信est、二胖u-你走以后-150",
+    "title": "你走以后",
+    "artist": "王恩信Est、二胖u",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/王恩信Est、二胖u/你走以后/你走以后.mp3"
+  },
+  {
+    "id": "local-王晴-秋来秋去（又名：秋去秋来）-151",
+    "title": "秋来秋去（又名：秋去秋来）",
+    "artist": "王晴",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/王晴/秋来秋去（又名：秋去秋来）/秋来秋去（又名：秋去秋来）.mp3"
+  },
+  {
+    "id": "local-王理文-庸人自扰-152",
+    "title": "庸人自扰",
+    "artist": "王理文",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/王理文/庸人自扰/庸人自扰.mp3"
+  },
+  {
+    "id": "local-王雨缦、dj京仔-梦醒时分-(dj京仔版)-153",
+    "title": "梦醒时分 (DJ京仔版)",
+    "artist": "王雨缦、DJ京仔",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/王雨缦、DJ京仔/梦醒时分/梦醒时分 (DJ京仔版).mp3"
+  },
+  {
+    "id": "local-甜瓜儿不是呆瓜-快乐阿拉蕾-(喘姐版)-154",
+    "title": "快乐阿拉蕾 (喘姐版)",
+    "artist": "甜瓜儿不是呆瓜",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/甜瓜儿不是呆瓜/快乐阿拉蕾 (喘姐版)/快乐阿拉蕾 (喘姐版).mp3"
+  },
+  {
+    "id": "local-田馥甄-你是魔鬼中的天使dj-155",
+    "title": "你是魔鬼中的天使DJ",
+    "artist": "田馥甄",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/田馥甄/你是魔鬼中的天使DJ/你是魔鬼中的天使DJ.mp3"
+  },
+  {
+    "id": "local-秋月moon-the-sea-of-love-156",
+    "title": "The Sea of Love",
+    "artist": "秋月Moon",
+    "year": 2024,
+    "mood": "夜晚",
+    "energy": 4,
+    "language": "中文",
+    "tags": [
+      "夜晚",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/秋月Moon/The Sea of Love/The Sea of Love.mp3"
+  },
+  {
+    "id": "local-窝窝-月亮照山川-157",
+    "title": "月亮照山川",
+    "artist": "窝窝",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/窝窝/月亮照山川/月亮照山川.mp3"
+  },
+  {
+    "id": "local-米雅-如果你是我的传说-158",
+    "title": "如果你是我的传说",
+    "artist": "米雅",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/米雅/如果你是我的传说/如果你是我的传说.mp3"
+  },
+  {
+    "id": "local-群星-眉飞色舞-(remix)-159",
+    "title": "眉飞色舞 (Remix)",
+    "artist": "群星",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/群星/野狼王的士高/眉飞色舞 (Remix).mp3"
+  },
+  {
+    "id": "local-老板-思念成灾-(dj阿诺版)-160",
+    "title": "思念成灾 (DJ阿诺版)",
+    "artist": "老板",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/老板/思念成灾（遗憾男版）/思念成灾 (DJ阿诺版).mp3"
+  },
+  {
+    "id": "local-胡66-后来遇见他-161",
+    "title": "后来遇见他",
+    "artist": "胡66",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/胡66/后来遇见他/后来遇见他.mp3"
+  },
+  {
+    "id": "local-能哥-江山万里不及你-162",
+    "title": "江山万里不及你",
+    "artist": "能哥",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/能哥/DJ永远的神/江山万里不及你.mp3"
+  },
+  {
+    "id": "local-苏星婕-听悲伤的情歌-163",
+    "title": "听悲伤的情歌",
+    "artist": "苏星婕",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/苏星婕/听悲伤的情歌/听悲伤的情歌.mp3"
+  },
+  {
+    "id": "local-莫叫姐姐-下辈子不一定还能遇见你dj-164",
+    "title": "下辈子不一定还能遇见你DJ",
+    "artist": "莫叫姐姐",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/莫叫姐姐/下辈子不一定还能遇见你DJ/下辈子不一定还能遇见你DJ.mp3"
+  },
+  {
+    "id": "local-莫叫姐姐-当我娶过她-165",
+    "title": "当我娶过她",
+    "artist": "莫叫姐姐",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/莫叫姐姐/当我娶过她/当我娶过她.mp3"
+  },
+  {
+    "id": "local-虎二-你应该很快乐-166",
+    "title": "你应该很快乐",
+    "artist": "虎二",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/虎二/你应该很快乐/你应该很快乐.mp3"
+  },
+  {
+    "id": "local-袁娅维-说散就散dj-167",
+    "title": "说散就散DJ",
+    "artist": "袁娅维",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/袁娅维/说散就散DJ/说散就散DJ.mp3"
+  },
+  {
+    "id": "local-赵乃吉-最初的温柔-(dj版)-168",
+    "title": "最初的温柔 (DJ版)",
+    "artist": "赵乃吉",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/赵乃吉/最初的温柔/最初的温柔 (DJ版).mp3"
+  },
+  {
+    "id": "local-赵天蔚（冰淇）-不了了之-169",
+    "title": "不了了之",
+    "artist": "赵天蔚（冰淇）",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/赵天蔚（冰淇）/Unknown Album/不了了之.mp3"
+  },
+  {
+    "id": "local-赵方婧-芒种-170",
+    "title": "芒种",
+    "artist": "赵方婧",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/赵方婧/芒种/芒种.mp3"
+  },
+  {
+    "id": "local-蹦瞎卡拉卡-蹦瞎卡拉卡-171",
+    "title": "蹦瞎卡拉卡",
+    "artist": "蹦瞎卡拉卡",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/蹦瞎卡拉卡/蹦瞎卡拉卡/蹦瞎卡拉卡.mp3"
+  },
+  {
+    "id": "local-阿梨粤-晚风心里吹-172",
+    "title": "晚风心里吹",
+    "artist": "阿梨粤",
+    "year": 2024,
+    "mood": "夜晚",
+    "energy": 4,
+    "language": "中文",
+    "tags": [
+      "夜晚",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/阿梨粤/晚风心里吹/晚风心里吹.mp3"
+  },
+  {
+    "id": "local-阿衣莫-(越南鼓)-阿衣莫-(越南鼓)-173",
+    "title": "阿衣莫 (越南鼓)",
+    "artist": "阿衣莫 (越南鼓)",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/阿衣莫 (越南鼓)/阿衣莫 (越南鼓)/阿衣莫 (越南鼓).mp3"
+  },
+  {
+    "id": "local-霈丹(浪哥);若心-你的眼神-174",
+    "title": "你的眼神",
+    "artist": "霈丹(浪哥);若心",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/霈丹(浪哥);若心/你的眼神(国粤语合唱版)/你的眼神.mp3"
+  },
+  {
+    "id": "local-面具dj-面具dj-175",
+    "title": "面具DJ",
+    "artist": "面具DJ",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/面具DJ/DJ可可音乐工作室/面具DJ.mp3"
+  },
+  {
+    "id": "local-鞠文娴-病变dj-176",
+    "title": "病变DJ",
+    "artist": "鞠文娴",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/鞠文娴/病变DJ/病变DJ.mp3"
+  },
+  {
+    "id": "local-音阙诗听、锦零-空山新雨后-177",
+    "title": "空山新雨后",
+    "artist": "音阙诗听、锦零",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/音阙诗听、锦零/听/空山新雨后.mp3"
+  },
+  {
+    "id": "local-马阿俊-我是真的爱上你-178",
+    "title": "我是真的爱上你",
+    "artist": "马阿俊",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "情绪",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/马阿俊/你只是一个过客/我是真的爱上你.mp3"
+  },
+  {
+    "id": "local-麦小兜、苏星婕-叹离别-179",
+    "title": "叹离别",
+    "artist": "麦小兜、苏星婕",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/麦小兜、苏星婕/叹离别/叹离别.mp3"
+  },
+  {
+    "id": "local-麻园诗人-泸沽湖-180",
+    "title": "泸沽湖",
+    "artist": "麻园诗人",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "情绪",
+      "回忆"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/麻园诗人/不爱说话的人/泸沽湖.mp3"
+  },
+  {
+    "id": "local-麻园诗人-现在现在-181",
+    "title": "现在现在",
+    "artist": "麻园诗人",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/麻园诗人/现在现在/现在现在.mp3"
+  },
+  {
+    "id": "local-黄静美-我热情如火,你冰冻成河-182",
+    "title": "我热情如火,你冰冻成河",
+    "artist": "黄静美",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "它来自你的本地音乐库，不是样例数据",
+    "sourcePath": "/Users/lipan/Music/Music/Media/Music/黄静美/我热情如火,你冰冻成河/我热情如火,你冰冻成河.mp3"
   }
 ]

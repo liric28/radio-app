@@ -43,10 +43,21 @@ export async function recommendBlockTrackCount(
   moods: string[],
   catalogSize: number,
 ): Promise<number> {
-  void scene;
-  void moods;
-  void catalogSize;
-  return 10;
+  const base = (() => {
+    if (scene.includes("晨")) return 6;
+    if (scene.includes("白天")) return 12;
+    if (scene.includes("傍晚")) return 9;
+    if (scene.includes("深夜")) return 7;
+    return 10;
+  })();
+
+  const moodAdjust = Math.min(moods.length, 3) - 1;
+  const jitter = Math.floor(Math.random() * 5) - 2;
+  const raw = base + moodAdjust + jitter;
+
+  const minCount = 4;
+  const maxPerBlock = Math.max(minCount, Math.floor(catalogSize / 4));
+  return Math.min(Math.max(raw, minCount), maxPerBlock);
 }
 
 const INTRO_TEMPLATES = [

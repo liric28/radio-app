@@ -8,7 +8,7 @@ import {
   readTasteProfile,
 } from "@/lib/profile";
 import type { ChatIntentAction, ScheduledTrack } from "@/lib/types";
-import { batchRewriteTrackReasons, recommendBlockTrackCount, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
+import { recommendBlockTrackCount, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
 import { dataDir } from "@/lib/paths";
 import type {
   DailySchedule,
@@ -139,6 +139,19 @@ function scoreSongForIntent(
   return score;
 }
 
+/**
+ * 生成一天的四段歌单（morning / daytime / evening / late-night）。
+ *
+ * 关键决策：这里不调 LLM 润色推荐语，每首歌的 reason 用 reasonSeed 占位。
+ * 原因：早期版本每段都 await batchRewriteTrackReasons，4 段串行 ≈ 30s，
+ * 用户点 ⌁ 后要等很久 UI 才更新。现在改成：
+ *   - schedule 本身快速生成（<1s，纯本地打分排序）
+ *   - 推荐语由 player-shell.tsx 的 useEffect 监听 currentTrack.id 变化后，
+ *     调 /api/rewrite-reasons 只润色当前 block（懒加载）
+ *
+ * 每段歌曲数走 recommendBlockTrackCount(scene, moods, catalogSize)，
+ * 内部按场景给基线 + 随机抖动 ±2，所以每次总数都不一样（典型 27-42 首）。
+ */
 async function generateDailySchedule(): Promise<DailySchedule> {
   const [taste, playlists, routines, songs, memory] = await Promise.all([
     readTasteProfile(),
@@ -170,10 +183,9 @@ async function generateDailySchedule(): Promise<DailySchedule> {
     const fallbackSongs = [...songs].filter((song) => !usedTrackIds.has(song.id));
     const pickedSongs = [...rankedSongs, ...fallbackSongs].slice(0, trackCount);
 
-    const reasonMap = await batchRewriteTrackReasons(pickedSongs, routine.scene);
     const withReason = pickedSongs.map((track) => ({
       ...track,
-      reason: reasonMap.get(track.id) ?? track.reasonSeed,
+      reason: track.reasonSeed,
     }));
 
     for (const track of pickedSongs) {
