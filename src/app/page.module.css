@@ -244,6 +244,14 @@
   cursor: pointer;
 }
 
+.streamingCursor {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  vertical-align: middle;
+  opacity: 0.85;
+}
+
 .topGhost {
   padding: 10px 16px;
   border-radius: 999px;

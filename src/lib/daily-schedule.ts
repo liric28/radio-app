@@ -1,3 +1,36 @@
+/**
+ * 一天四段歌单（schedule）的持久化 + 操作层。
+ *
+ * 数据：data/daily-schedule.json，结构是
+ *   { date, stationName, currentBlockPeriod, currentTrackIndex, blocks: [{ period, scene, title, tracks }] }
+ *
+ * 函数分类：
+ *   读 / 写：
+ *     readDailySchedule        读盘 + normalize；过期或损坏 → 重生成
+ *     ensureDailySchedule      readDailySchedule 的别名（语义化）
+ *     writeDailySchedule       原子写盘
+ *
+ *   生成 / 重生成：
+ *     generateDailySchedule    全量生成（recommendBlockTrackCount + 打分排序，不调 LLM）
+ *     regenerateDailySchedule  ⌁ 按钮入口，generate + write
+ *
+ *   定位 / 取数：
+ *     resolveCurrentScheduleBlock  根据 currentBlockPeriod 找当前段
+ *     getCurrentScheduledTrack     拿当前段的 currentTrack + 剩余 queue
+ *
+ *   游标操作：
+ *     advanceDailyScheduleTrack    next：游标 +1，到段尾跳下一段，到日尾回卷
+ *     selectScheduledTrack         在 4 段里找指定 trackId，把游标移过去
+ *     switchDailySchedulePeriod    切到指定 period，currentTrackIndex 重置 0
+ *
+ *   重排：
+ *     rewriteCurrentScheduleBlock  reapply intent（fresh/calmer/familiar）重写当前段
+ *
+ *   辅助：
+ *     normalizeDailySchedule       从曲库 hydrate 缺字段的 track（兼容旧 schedule）
+ *     summarizeDailySchedule       生成 explanation 三行摘要
+ *     scoreSongForBlock/Intent     评分：偏好情绪 / 最近播放 / 锚点艺人 / 反馈偏移
+ */
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { readMemory } from "@/lib/memory";
@@ -209,6 +242,15 @@ async function generateDailySchedule(): Promise<DailySchedule> {
   };
 }
 
+/**
+ * 读取今天的 schedule。三种情况：
+ *   1. 文件存在 + 日期是今天 → 直接返回 normalize 后的数据
+ *   2. 文件存在 + 日期不是今天 → 视为过期，重新生成并落盘
+ *   3. 文件不存在 / JSON 解析失败 → catch 后直接重生成
+ *
+ * normalizeDailySchedule 的作用：曲库可能比 schedule 新（导入了新歌），
+ * 用 catalog hydrate 一遍，让 track 缺的字段（reasonSeed/sourcePath 等）补全。
+ */
 export async function readDailySchedule() {
   try {
     const content = await fs.readFile(dailySchedulePath, "utf8");
@@ -278,6 +320,14 @@ export async function regenerateDailySchedule() {
   return schedule;
 }
 
+/**
+ * 游标 +1（下一首）。三种情况：
+ *   1. 当前段还有下一首 → currentTrackIndex + 1
+ *   2. 当前段播完 → 跳到下一段（currentBlockPeriod 切换、index 归零）
+ *   3. 整天播完（最后一段也播完）→ 回卷到第一段重头开始
+ *
+ * 不重新打分排序、不调 LLM，纯游标移动，~10ms 完成。
+ */
 export async function advanceDailyScheduleTrack() {
   const schedule = await readDailySchedule();
   const currentBlockIndex = schedule.blocks.findIndex(
@@ -319,6 +369,10 @@ export async function advanceDailyScheduleTrack() {
   return wrappedSchedule;
 }
 
+/**
+ * 跳到指定 trackId：在 4 段里搜，找到就把游标移到那段那首。找不到原 schedule 不变。
+ * 用于点 queue 列表里的歌、聊天精确点歌。
+ */
 export async function selectScheduledTrack(trackId: string) {
   const schedule = await readDailySchedule();
 
@@ -339,6 +393,11 @@ export async function selectScheduledTrack(trackId: string) {
   return schedule;
 }
 
+/**
+ * 切到指定时段：currentBlockPeriod = targetPeriod，currentTrackIndex 重置为 0。
+ * 用于聊天意图 scene-change（"切到深夜" / "白天来一段"）。
+ * 找不到目标段就保持原状（防止聊天乱传 period 把游标搞坏）。
+ */
 export async function switchDailySchedulePeriod(targetPeriod: string) {
   const schedule = await readDailySchedule();
   const nextBlock = schedule.blocks.find((block) => block.period === targetPeriod);
@@ -371,6 +430,21 @@ function resolveTargetPeriodFromAction(
   );
 }
 
+/**
+ * 重写当前段（或指定段）的 queue 顺序，应用 fresh/calmer/familiar 偏好。
+ *
+ * 关键策略（保护已播部分）：
+ *   - 已播过的 tracks（含当前曲）都保留在前面，避免聊天反馈后跳回上一首
+ *   - keepPlayed = 已播 - 1（最后一首不算"已播"，保留为 anchor）
+ *   - 剩余位置用 scoreSongForIntent 按 action 偏好排序填上
+ *
+ * scoreSongForIntent vs scoreSongForBlock：
+ *   - familiar：偏中文 + 锚点艺人 + 老歌（year < 2020）
+ *   - calmer：偏低 energy + 安静/夜晚情绪
+ *   - fresh：偏高 energy + 排除最近播过 + 非锚点艺人
+ *
+ * 调用者：sendFeedback（fresh/calmer/familiar）、applyChatIntentWithProgram
+ */
 export async function rewriteCurrentScheduleBlock(
   action: ChatIntentAction,
   targetPeriod?: string,

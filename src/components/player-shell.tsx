@@ -263,6 +263,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   ]);
   const [isChatSending, setIsChatSending] = useState<boolean>(false);
   const chatPollTimerRef = useRef<number | null>(null);
+  /**
+   * 正在进行的聊天请求 AbortController。
+   * 用户在等待回复时再次点发送 → abort 当前请求，开启新请求。
+   */
+  const chatAbortRef = useRef<AbortController | null>(null);
   const [history, setHistory] = useState<RadioProgram[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -277,9 +282,27 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const [pointerGlow, setPointerGlow] = useState({ x: 50, y: 18, active: false });
   const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("circular8");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  /**
+   * 自动播放开关。
+   *
+   * 链路：把它设为 true → 紧接着 setProgram(新 program) → currentTrack.sourcePath 变
+   *      → audioSource useMemo 重算 → audioSource useEffect 触发
+   *      → pause / load 后判断本 ref，true 才 .play()
+   *
+   * 谁会把它设为 true：
+   *   - regenerateSchedule()：点 ⌁，新歌单第一首自动播
+   *   - 聊天 SSE state 事件里 currentTrack.id 变化时：切时段/换歌自动播
+   *   - 其它走 requestProgram 的按钮：next/previous/select 等按 keepPlaying 参数传
+   *
+   * 浏览器自动播放策略：首次未交互时 .play() 会被拒绝。
+   * 上面这些路径都是用户主动点击/发消息触发的，权限会延续，没问题。
+   */
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const latestDjMessage = chatHistory[chatHistory.length - 1];
+  // 流式中的 assistant 气泡 id：用于在内容末尾追加 loading 指示
+  const streamingMessageId =
+    isChatSending && latestDjMessage?.role === "assistant" ? latestDjMessage.id : null;
   const currentBlockPeriod = schedule.currentBlockPeriod;
   const currentTrackIndex = schedule.currentTrackIndex;
   const now = new Date();
@@ -303,7 +326,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath)}`;
   }, [program.currentTrack.sourcePath]);
 
-  // Audio source change handler
+  /**
+   * audioSource 切换处理（自动播放链路的"消费端"）。
+   *
+   * 触发：program.currentTrack.sourcePath 变化 → audioSource useMemo 变 → 本 effect 跑
+   *
+   * 行为：
+   *   1. pause() + load() 重置 audio 元素到新源
+   *   2. 清零 UI 时间显示（isPlaying / currentTime / duration）
+   *   3. 看 shouldResumePlaybackRef.current —— true 才 .play()，否则停留在暂停状态
+   *   4. 不管 play 成不成功，最后把 ref 重置为 false，避免下次源切换误触发
+   *
+   * 这是整个"自动播放"机制的唯一出口，所有 setProgram(...) 是否会续播都汇聚到这里。
+   */
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -338,6 +373,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     audioRef.current.volume = volume;
   }, [volume]);
 
+  /**
+   * 组件卸载时清掉 chatPollTimerRef 上挂的 setTimeout，防止内存泄漏。
+   * 注：当前代码里 chatPollTimerRef 似乎没有写入点，留作保险（旧轮询机制残留）。
+   * 后续如果确认彻底不用，可以连同 ref 一起删。
+   */
   useEffect(() => {
     return () => {
       if (chatPollTimerRef.current) {
@@ -414,6 +454,28 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     return `${minutes}:${String(remainder).padStart(2, "0")}`;
   }
 
+  /**
+   * 通用的"改变当前节目"请求器。所有按钮（除聊天）都走这里。
+   *
+   * 用途：next / previous / select / feedback / regenerate / import library
+   * 这些动作都会让服务端产出新的 program（可能附带新 schedule），
+   * 本函数统一处理"发请求 → 拿响应 → 更 state → 续播控制"。
+   *
+   * 参数：
+   *   - url / options：fetch 标准参数（一般 POST + body）
+   *   - nextLabel：右上角状态标签（"NEXT" / "REFRESHING" / "LIVE" 等）
+   *   - keepPlaying：是否在新歌出来后自动续播
+   *       ↳ true 时设 shouldResumePlaybackRef = true（详见 ref 定义处的注释）
+   *       ↳ 失败时强制改回 false，避免错误状态下乱播
+   *   - rememberCurrent：是否把当前 program 推入 history（影响 previous 能不能回退）
+   *
+   * 副作用顺序：
+   *   1. clear error / set label / 记录 previousProgram
+   *   2. 45s 超时 AbortController 兜底（防 hermes 卡死）
+   *   3. fetch + 解析；非 2xx 或 payload.ok=false → throw
+   *   4. 入栈 history → setProgram → setSchedule(可选) → 追加 hostIntro 到 chat
+   *   5. 异常：复位 resume flag + setError；finally 清 timeout
+   */
   async function requestProgram(
     url: string,
     options?: RequestInit,
@@ -464,6 +526,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     }
   }
 
+  /**
+   * 播放 / 暂停切换（中间那个 ▶ 圆按钮）。
+   *
+   * 关键差异 vs 其它播放路径：
+   *   - 不切歌，纯操作当前 audio 元素
+   *   - 主动把 shouldResumePlaybackRef 设回 false——
+   *     用户手动 pause 后，即使下一次 audioSource 变化（比如自动 next）也不要偷偷续播
+   *   - 没本地曲库（audioSource 为空）时直接报错，不能空播
+   */
   async function togglePlayback() {
     const audio = audioRef.current;
     if (!audioSource || !audio) {
@@ -508,7 +579,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   }
 
   /**
-   * 回到上一首，优先用前端历史，避免再向后端随机取一首。
+   * 回到上一首。
+   *
+   * 设计取舍：纯前端 history 栈，不打后端。
+   *   - history 由 requestProgram 在每次切歌前 unshift 进 program 快照（上限 24）
+   *   - 这里取 history[0] 直接 setProgram 还原；同时把 history 头部弹掉
+   *   - keepPlaying = isPlaying：原来在播就续播，原来暂停就保持暂停
+   *
+   * 不走 requestProgram → 不会再触发后端推荐算法，避免"上一首"变成"另一首随机"。
    */
   function playPreviousTrack() {
     const previousProgram = history[0];
@@ -546,6 +624,10 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     }
   }
 
+  /**
+   * 下一首：让后端按今天的 schedule + 反馈记忆推下一首。
+   * keepPlaying=true：next 按钮天然意味着"继续听"，所以恒续播。
+   */
   function playNextTrack() {
     requestProgram(
       "/api/next-track",
@@ -555,6 +637,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     );
   }
 
+  /**
+   * 反馈按钮（SKIP / FRESH / CALMER / FAMILIAR）。
+   *
+   * 后端 /api/feedback 做两件事：
+   *   1. 更新 memory.feedbackBias（影响后续打分排序）
+   *   2. 直接产出下一首 program 返回
+   *
+   * keepPlaying=isPlaying：在播就续播，暂停就保持暂停（尊重当前状态）。
+   */
   function sendFeedback(action: FeedbackAction) {
     requestProgram(
       "/api/feedback",
@@ -568,6 +659,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     );
   }
 
+  /**
+   * 点 queue 列表里某一首 → 跳到那首播。
+   *
+   * 后端 /api/select-track 会把 schedule.currentTrackIndex 移到目标 track，
+   * 然后 buildRadioProgram 重建 program。keepPlaying=isPlaying。
+   */
   function selectQueueTrack(trackId: string) {
     requestProgram(
       "/api/select-track",
@@ -591,8 +688,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    *   4. program.currentTrack.id 变了 → 上面那个 useEffect 自动触发，
    *      后台异步润色当前段的推荐语（不阻塞）
    *
-   * 注意：keepPlaying=isPlaying，所以如果当前在播音乐，
-   *      新歌单的当前段第一首会自动续播。
+   * 注意：keepPlaying=true，新歌单出来后无论之前是否在播，
+   *      当前段第一首都会自动开播（按用户要求"自动播放"）。
    */
   function regenerateSchedule() {
     requestProgram(
@@ -601,10 +698,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         method: "POST",
       },
       "REFRESHING",
-      isPlaying,
+      true,
     );
   }
 
+  /**
+   * 底部"读取本地曲库"按钮：从用户填的目录路径全量导入 mp3，替换 songs.json。
+   *
+   * mode:"replace" → 后端清掉旧曲库再写新的（带 limit 参数限制条数防卡爆）。
+   * 完成后会自动重新生成 schedule，requestProgram 拿到新的 program。
+   * 谨慎：会覆盖手动调过的歌单。
+   */
   function importLocalLibrary() {
     requestProgram(
       "/api/import-library",
@@ -622,12 +726,41 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     );
   }
 
+  /**
+   * 聊天发送 / 流式接收主流程。
+   *
+   * 全链路：
+   *   1. 取输入框文本，空则忽略
+   *   2. 中止上一条还在进行中的请求（chatAbortRef.abort()）
+   *      → 旧请求会在 catch 里捕获 AbortError，悄悄清掉占位符
+   *   3. 在 chatHistory 尾部追加 user 消息 + 空 assistant 占位符
+   *   4. POST /api/agent（SSE 流），signal 绑定本次 controller
+   *   5. 服务端先吐一条 type:"state" 事件（program / schedule / weather 变更）
+   *      → 如果 currentTrack.id 变了，设 shouldResumePlaybackRef = true（自动续播新轨）
+   *   6. 然后开始吐 Hermes 的 token（choices[0].delta.content）
+   *      → 每个 token 累加到 pendingContent，30ms 内合并 setChatHistory 一次
+   *      → 关键优化：避免每个字符都触发整个 PlayerShell 重渲染
+   *   7. 流结束（[DONE] 或 reader.done）→ flushPending 收尾，避免最后一段 token 被吞
+   *   8. 一条 token 都没收到 → 写个默认兜底文案
+   *
+   * 取消 / 重发：
+   *   - 用户在 isChatSending 时再点发送 → 顶部 abort + 重新进入本函数
+   *   - 旧请求 fetch reject AbortError → catch 分支识别后只清占位符，不报错
+   *
+   * 视觉反馈：
+   *   - streamingMessageId（组件顶部计算）= 最新 assistant 消息 id（仅 isChatSending 时）
+   *   - 该气泡末尾会渲染 DotmHex10 mini loader 表示"还在流式中"
+   *   - 发送按钮在 isChatSending 时也变成同款 loader
+   */
   async function sendChatMessage() {
     const message = chatInput.trim();
+    if (!message) return;
 
-    if (!message || isChatSending) {
-      return;
-    }
+    // 如果有正在进行的请求 → 中止它，让新消息立刻发出去
+    // 旧请求的 try/catch 会捕获 AbortError，不影响新流程
+    chatAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -646,6 +779,34 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     setActiveLabel("DJ LIVE");
     setChatHistory([...nextHistory, placeholder]);
 
+    // 流式 token 批量提交：N 毫秒内的所有 token 合并成一次 setState
+    // 避免每个字符触发整个 PlayerShell 重渲染
+    //
+    // 调优参考（Hermes 本地模型典型 30-60 tokens/s ≈ 间隔 15-30ms）：
+    //   - 10ms：几乎一个 token 一次 setState，批量优化基本无效，但视觉最丝滑
+    //   - 30-50ms：平均合并 1-3 个 token，渲染次数减半到 1/3，体感仍实时（推荐区间）
+    //   - 100ms+：明显"一段段"，但最省 CPU
+    // 当前值偏视觉流畅，若有性能问题可调大。
+    let pendingContent = "";
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushPending = () => {
+      if (!pendingContent) return;
+      const buf = pendingContent;
+      pendingContent = "";
+      setChatHistory((prev) =>
+        prev.map((m) =>
+          m.id === placeholderId ? { ...m, content: m.content + buf } : m,
+        ),
+      );
+    };
+    const scheduleFlush = () => {
+      if (flushTimer) return;
+      flushTimer = setTimeout(() => {
+        flushTimer = null;
+        flushPending();
+      }, 30);
+    };
+
     try {
       const response = await fetch("/api/agent", {
         method: "POST",
@@ -655,6 +816,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           program,
           history: nextHistory,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -696,6 +858,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             if (chunk.type === "state") {
               if (chunk.program) {
                 setHistory((currentHistory) => [program, ...currentHistory].slice(0, 24));
+                // 聊天触发的歌曲/时段切换：自动续播新轨
+                // 仅在 currentTrack.id 变化时才设 resume，避免 weather 等无关回复也强制开播
+                if (chunk.program.currentTrack?.id !== program.currentTrack.id) {
+                  shouldResumePlaybackRef.current = true;
+                }
                 setProgram(chunk.program);
               }
               if (chunk.schedule) setSchedule(chunk.schedule);
@@ -709,11 +876,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             }
             if (typeof content === "string" && content) {
               receivedContent = true;
-              setChatHistory((prev) =>
-                prev.map((m) =>
-                  m.id === placeholderId ? { ...m, content: m.content + content } : m,
-                ),
-              );
+              pendingContent += content;
+              scheduleFlush();
             }
           } catch {
             // ignore parse errors
@@ -726,6 +890,13 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         }
       }
 
+      // 流结束后立即清掉残留 pending，避免最后一段 token 被吞
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      flushPending();
+
       if (!receivedContent) {
         setChatHistory((prev) =>
           prev.map((m) =>
@@ -734,9 +905,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         );
       }
     } catch (chatError) {
+      // 用户主动 abort（点了第二次发送）不算错误，悄悄丢掉占位符就行
+      if (chatError instanceof DOMException && chatError.name === "AbortError") {
+        if (flushTimer) clearTimeout(flushTimer);
+        setChatHistory((prev) => prev.filter((m) => m.id !== placeholderId));
+        return;
+      }
       setError(chatError instanceof Error ? chatError.message : "Claudio 掉线了");
       setChatHistory((prev) => prev.filter((m) => m.id !== placeholderId));
     } finally {
+      // 只有当前 controller 就是 ref 里的那个才清掉（防止覆盖到后来的新请求）
+      if (chatAbortRef.current === controller) {
+        chatAbortRef.current = null;
+      }
       setIsChatSending(false);
     }
   }
@@ -951,6 +1132,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                     <p className={styles.chatBubbleWithLabel}>
                       <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
+                      {message.id === streamingMessageId && message.content && (
+                        <span className={styles.streamingCursor} aria-label="streaming">
+                          <DotmHex10 dotSize={3} color="#54d88c" size={20} speed={1.2} />
+                        </span>
+                      )}
                     </p>
                   </>
                 ) : (
@@ -981,9 +1167,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               type="button"
               className={styles.sendButton}
               onClick={() => void sendChatMessage()}
-              disabled={isChatSending}
+              aria-label={isChatSending ? "中止当前并重新发送" : "发送"}
+              title={isChatSending ? "正在接收 Hermes 回复，点击中止并发新消息" : "发送"}
             >
-              ↑
+              {isChatSending ? (
+                <DotmHex10 dotSize={3} color="currentColor" size={16} speed={1.4} />
+              ) : (
+                "↑"
+              )}
             </button>
           </section>
 

@@ -1,3 +1,23 @@
+/**
+ * 聊天 Agent 编排层：消息进来 → 判定意图 → 调对应工具 → 装配给 LLM 的 messages。
+ *
+ * /api/agent route 的唯一入口，下游只剩 Hermes 出 token 这一步流式发回前端。
+ *
+ * 三种 mode：
+ *   - weather：触发关键词（天气/温度/下雨等，见 weather.isWeatherQuestion）
+ *              → 调 readWeatherSnapshot，结果塞进 state.weather
+ *   - music-control：resolveChatIntent 命中（切歌 / 切段 / 反馈）
+ *              → 调 applyChatIntentWithProgram 真的改 program / schedule
+ *   - chat：什么都没命中，纯闲聊，不调任何工具
+ *
+ * 输出 RunChatAgentResult：
+ *   - state：含 mode/tool/intent/summary/weather，给前端做 SSE 第一帧
+ *   - program / schedule：可能被工具改过，前端 setProgram/setSchedule
+ *   - hermesMessages：装配好的 LLM 提示词，route 直接转发给 Hermes
+ *
+ * 注意：所有控制动作（切歌切段等）在 runChatAgent 内部已经完成，
+ *      Hermes 只负责"用自然语言确认"，不再决定"要不要切"——避免幻觉。
+ */
 import { ensureDailySchedule } from "@/lib/daily-schedule";
 import { readMemory } from "@/lib/memory";
 import {

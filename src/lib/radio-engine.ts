@@ -1,3 +1,28 @@
+/**
+ * 中央节目生成器：把"曲库 + 画像 + 当天 schedule + 反馈记忆"装配成 RadioProgram。
+ *
+ * 上游调用（哪些 API route 进来）：
+ *   - /api/radio              → buildRadioProgram()         首页 SSR、客户端首次加载
+ *   - /api/next-track         → advanceProgramRandomly()    下一首按钮
+ *   - /api/feedback           → applyFeedbackAndBuildProgram 反馈按钮
+ *   - /api/select-track       → selectTrackProgram()        选 queue 里的歌
+ *   - /api/regenerate-schedule→ buildRadioProgram()         ⌁ 按钮（先重生成 schedule）
+ *   - /api/agent              → applyChatIntentWithProgram  聊天意图分发
+ *
+ * 下游依赖：
+ *   - profile.ts：曲库 / 画像 / 时段 / 情绪规则（只读 JSON）
+ *   - memory.ts：用户反馈记忆（读写 memory.json）
+ *   - daily-schedule.ts：一天四段歌单（读写 daily-schedule.json）
+ *   - providers/llm.ts：Hermes 推荐语 + DJ 串词
+ *
+ * 两条主路径：
+ *   1. buildProgramFromDailySchedule：默认走当天 schedule，性能快，不调 LLM 排序
+ *   2. buildRadioProgram(forceRandom/pinned/targetPeriod)：跳过 schedule 重新打分排序，
+ *      用于 skip / 聊天换段等需要立刻产新 program 的场景
+ *
+ * 评分逻辑核心是 scoreSong：偏好情绪 +4，最近播过 -6，锚点艺人 +5，
+ * 加上 memory.feedbackBias 对 calmer/fresh/familiar 的累积偏移。
+ */
 import {
   readMoodRules,
   readPlaylistProfiles,
@@ -145,6 +170,27 @@ export async function buildRadioProgramForScene(targetPeriod: string): Promise<R
   return buildRadioProgram();
 }
 
+/**
+ * 主入口。无 options 时走"轻量路径"（直接读 schedule，最快）；
+ * 带任一 option 时走"重路径"（重新打分排序、可能调 LLM 批量生成推荐语）。
+ *
+ * 轻量路径（默认）：buildProgramFromDailySchedule
+ *   - 读 daily-schedule.json 取当前段 currentTrack + queue
+ *   - 只调 LLM 做 hostIntro 一句串词（其它已经在 schedule 阶段填好）
+ *
+ * 重路径（forceRandom / pinnedTrackId / targetPeriod 任一）：
+ *   1. 拉曲库 + 画像 + memory
+ *   2. 按 routine.preferredMoods 打分排序（或 pickRandomizedTracks 加权随机）
+ *   3. pinnedTrack 强制置顶；其它按分数排
+ *   4. 一次性 batchRewriteTrackReasons 调 Hermes 批量生成所有推荐语（~7s）
+ *   5. 拼出 hostIntro + explanation + memorySummary
+ *
+ * options 谁会传：
+ *   - forceRandom：skip 反馈、advanceProgramRandomly
+ *   - pinnedTrackId：selectTrackProgram（聊天点歌也会路由到这里）
+ *   - targetPeriod：聊天"切到深夜"类意图
+ *   - excludeTrackIds：避免最近播过的，由 memory.recentTrackIds 提供
+ */
 export async function buildRadioProgram(
   options: BuildProgramOptions = {},
 ): Promise<RadioProgram> {
@@ -232,6 +278,20 @@ export async function buildRadioProgram(
   };
 }
 
+/**
+ * 轻量路径：从当天已经编好的 schedule 里直接取当前段当前曲。
+ *
+ * 性能特征：
+ *   - 不打分、不洗牌、不调 Hermes 批量推荐语（reason 已经在 schedule 里）
+ *   - 仅调一次 LLM 做 hostIntro 串词
+ *   - 典型耗时 < 1s
+ *
+ * 当前段定位：
+ *   resolveCurrentScheduleBlock → 优先用 schedule.currentBlockPeriod，
+ *   找不到则回落到本机 hour 推断的 period（resolveCurrentPeriod）
+ *
+ * 失败条件：schedule 没歌（曲库空 / 未导入）→ 直接抛错，上游会显示报错。
+ */
 async function buildProgramFromDailySchedule(): Promise<RadioProgram> {
   const [taste, memory, schedule] = await Promise.all([
     readTasteProfile(),
@@ -281,6 +341,22 @@ type ApplyFeedbackOptions = {
   avoidTrackId?: string;
 };
 
+/**
+ * 反馈动作主流程（SKIP / FRESH / CALMER / FAMILIAR）。
+ *
+ * 6 步：
+ *   1. 拉 memory + moodRules + 当天 schedule
+ *   2. 累加 feedbackBias（skip+1 fresh / fresh+2 / calmer+2 / familiar+2）
+ *      ↳ 这个偏移会影响后续 scoreSong 的打分（calmer 优先低能量曲、fresh 反之）
+ *   3. moodRules 命中"settle"再 +1 calmer
+ *   4. writeMemory 落盘
+ *   5. 根据 action 分两路：
+ *      - fresh/calmer/familiar → rewriteCurrentScheduleBlock 重排当前段 → buildRadioProgram
+ *      - skip → buildRadioProgram(forceRandom=true)；如果选中曲撞 avoidTrackId 再随机一次
+ *   6. 记 recentTrackIds（前 6 首） + recentProgramTitles（前 4 个）防重复
+ *
+ * avoidTrackId：聊天意图特有，避免"切到深夜"时新 program 又是同一首歌。
+ */
 async function applyFeedbackAndBuildProgramWithOptions(
   action: string,
   options: ApplyFeedbackOptions = {},
@@ -442,7 +518,21 @@ function resolveTargetPeriod(message: string) {
 }
 
 /**
- * 聊天意图只做可预测的本地规则判断，避免把实际控制权直接交给模型。
+ * 聊天意图分类器。**故意不用 LLM**，全是中文关键词匹配。
+ * 设计原则：实际控制权（切歌 / 切段 / 反馈）不交给模型，避免幻觉造成误操作。
+ * 模型只负责把分类结果包装成自然语言回复。
+ *
+ * 判定优先级（自上而下，命中即返）：
+ *   1. queue 里能匹配到具体歌名/艺人 → select-track
+ *   2. "下一首/切歌/跳过/skip/next" → skip
+ *   3. 含时段关键词 + "切/换/到/进/播" → scene-change
+ *   4. "熟/回忆/老歌/familiar" → familiar
+ *   5. "安静/轻/慢/calm/softer" → calmer
+ *   6. "新/换个感觉/fresh/switch" → fresh
+ *   7. 什么都没命中 → none（纯闲聊，纯吐 LLM 回复）
+ *
+ * targetPeriod 是平行解析（不一定是 action 的主体），所有意图都会带上，
+ * scene-change 时直接用，feedback 类用它定位要重写的 block。
  */
 export function resolveChatIntent(message: string, program: RadioProgram): ChatIntent {
   const normalized = message.trim().toLowerCase();
@@ -539,7 +629,17 @@ export async function applyChatIntent(intent: ChatIntent) {
 }
 
 /**
- * 聊天控制型意图需要更强的即时反馈，优先直接离开当前曲目。
+ * 聊天意图执行器（带"当前 program 上下文"版本，比 applyChatIntent 更智能）。
+ *
+ * 分派：
+ *   - scene-change + targetPeriod → buildRadioProgramForScene（切段后取新段第一首）
+ *   - fresh/calmer/familiar → applyFeedbackAndBuildProgramWithOptions
+ *       ↳ 传 avoidTrackId = 当前曲，确保聊天后必定换曲
+ *       ↳ 再 rewriteCurrentScheduleBlock 重排剩余 queue 的顺序
+ *       ↳ 最后 buildRadioProgram 取最新 program
+ *   - 其它（select-track / skip / none）→ 回落到 applyChatIntent
+ *
+ * 返回值：新 program（可能为 null，由调用方决定是否更新前端 program 状态）。
  */
 export async function applyChatIntentWithProgram(
   intent: ChatIntent,

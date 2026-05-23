@@ -1,3 +1,24 @@
+/**
+ * 聊天 SSE 代理。客户端 sendChatMessage 发的 POST 都到这里。
+ *
+ * 三步：
+ *   1. runChatAgent：识别意图 → 执行工具（切歌 / 查天气）→ 装配 Hermes messages
+ *      ↳ 这一步可能改 program / schedule（音乐控制类意图）
+ *      ↳ 详见 src/lib/chat-agent.ts 头部说明
+ *   2. 先吐一帧 SSE：type:"state" 含 program / schedule / weather / intent
+ *      ↳ 让前端立刻 setProgram / setSchedule（自动续播链就在这里启动）
+ *   3. 然后把 Hermes 的 stream 透传过来（每个 token 一帧），最后吐 [DONE]
+ *
+ * 透传 buffer 处理：
+ *   - Hermes 的 SSE 帧可能跨 TCP chunk 切到一半
+ *   - 用 buffer.split("\n\n") 切完整 event，余数留到下次循环
+ *
+ * Headers 关键点：
+ *   - Content-Type: text/event-stream（不能改）
+ *   - Cache-Control: no-cache + X-Accel-Buffering: no（关 nginx/CDN 缓冲）
+ *
+ * 错误：runChatAgent 异常 → 500 JSON；Hermes 非 2xx → 502 JSON。
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { runChatAgent } from "@/lib/chat-agent";
 import type { ChatMessage, RadioProgram } from "@/lib/types";

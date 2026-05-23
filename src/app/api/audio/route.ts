@@ -14,8 +14,22 @@ const mimeTypes: Record<string, string> = {
 };
 
 /**
- * 将本地音乐文件以浏览器可访问的音频响应暴露给前端播放器。
- * 大文件使用流式响应，支持 HTTP Range 请求（seek），并设置长期缓存。
+ * 本地音乐文件代理。前端 audio 元素的 src 就是 /api/audio?path=...
+ *
+ * 安全（重点）：
+ *   - path.resolve 把 ?path 归一化（处理 .. / 软链等）
+ *   - 必须落在 readAllowedAudioRoots() 返回的白名单目录内，否则 403
+ *   - 白名单在 data/audio-roots.json，由"导入本地曲库"按钮自动加入
+ *   - 不允许任意路径读盘，防止用户构造 ?path=/etc/passwd 这类攻击
+ *
+ * Range 请求（HTTP 206）：
+ *   - audio/video 标签拖进度条会发 Range: bytes=START-END
+ *   - 这里支持，读对应字节区间返回 206 Partial Content
+ *
+ * 完整请求：
+ *   - 流式读 512KB 一块，避免大文件全部加载到内存
+ *
+ * 缓存：immutable + max-age=1y。音频文件路径变了就是不同 URL，可以放心缓存。
  */
 export async function GET(request: NextRequest) {
   const filePath = request.nextUrl.searchParams.get("path");

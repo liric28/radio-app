@@ -1,3 +1,29 @@
+/**
+ * Hermes LLM 封装层。所有跟本地 LLM 服务（http://127.0.0.1:8642）的交互都在这里。
+ *
+ * 函数分类：
+ *   推荐语生成：
+ *     - rewriteTrackReason         单首调一次 LLM（个别润色，~1s）
+ *     - batchRewriteTrackReasons   多首一次性调用（schedule 阶段批量，~7s 一段）
+ *     - buildFallbackTrackReason   LLM 失败时的本地模板兜底
+ *
+ *   DJ 串词 & 摘要：
+ *     - composeHostIntro           节目开场串词（用本地模板，不调 LLM，<1ms）
+ *     - summarizeReasons           推荐理由清单截断（不调 LLM）
+ *
+ *   聊天回复：
+ *     - buildRuleBasedDjReply      纯规则生成 DJ 回复（fallback）
+ *     - buildHermesDjMessages      把 program/memory/intent 装配成 Hermes 消息列表
+ *     - describeAgentState         把 agent 执行结果压成一句话给模型
+ *
+ *   推荐数量：
+ *     - recommendBlockTrackCount   每段歌曲数（场景基线 + 情绪 + ±2 抖动）
+ *
+ * 设计原则：
+ *   - 所有 LLM 调用都有 try/catch + 本地兜底，绝不阻塞主流程
+ *   - 失败要 logReasonRewrite 打 console，方便后端排查
+ *   - Hermes 不能并发太多（约 8 个就开始卡），尽量批量；schedule 生成时单次一段
+ */
 import type {
   ChatAgentState,
   ChatIntent,
@@ -85,7 +111,13 @@ function fillIntro(template: string, input: ComposeIntroInput) {
 }
 
 /**
- * 第一版先用本地规则模拟 DJ 串词，后续再替换为真实模型调用。
+ * 节目开场串词。**不调 LLM**，10 个本地模板里随机一个，<1ms 返回。
+ *
+ * 模板里有 {persona} {currentArtist} {currentTitle} {nextArtist} {nextTitle}
+ * {scene} {moodHint} 七个占位符，fillIntro 直接做字符串替换。
+ *
+ * 不上 LLM 的原因：开场串词不能等 1s，会拖慢首屏 / 切歌响应；
+ * 模板已经够自然，不会让用户觉得生硬。如果以后要做"个性化欢迎"再换成 Hermes。
  */
 export async function composeHostIntro(input: ComposeIntroInput) {
   const template = INTRO_TEMPLATES[Math.floor(Math.random() * INTRO_TEMPLATES.length)];
@@ -141,6 +173,15 @@ export function describeAgentState({
   return "用户在正常聊天，先自然接话，不要解释系统。";
 }
 
+/**
+ * 纯规则 DJ 回复生成（Hermes fallback / 离线模式 / 不想等 LLM 的场景）。
+ *
+ * 按 intent.action 和 message 关键词分支，每条意图都有手写的 DJ 口语化回复。
+ * 优势：0ms 返回、零成本、风格稳定
+ * 劣势：套路化，问相同的话总是同一句
+ *
+ * 当前架构里走 SSE Hermes 流式回复，这个函数只作为兜底。
+ */
 export function buildRuleBasedDjReply({
   message,
   program,
@@ -218,6 +259,19 @@ export function buildRuleBasedDjReply({
   return `${artist} 这首《${title}》还挂着呢。你要闲聊也行，要我动后面的歌也行。`;
 }
 
+/**
+ * 把当前节目状态 / 用户消息 / agent 执行结果装配成 Hermes 的 messages 数组。
+ *
+ * 装配内容：
+ *   - system：Claudio DJ 人设 + 风格规则 + 当前节目快照
+ *   - assistant（可选）：agent 的执行摘要（"已经把歌切到 X"），让模型不重复说
+ *   - history：最近 6 条聊天上下文（user/assistant 交替）
+ *   - user：本轮消息
+ *
+ * 输出消息给 /api/agent route 拿去喂 Hermes /v1/chat/completions（开 stream=true）。
+ * 整段是"提示词工程"：人设硬约束在 system 里，agent 工具结果用 assistant 角色"假装"
+ * Claudio 自己已经做完，让模型只负责自然语气回话，不用再"推理"该不该切歌。
+ */
 export function buildHermesDjMessages(input: ComposeDjReplyInput) {
   const history = (input.history ?? []).slice(-6);
   const nextTrack = input.program.queue[0];
@@ -261,11 +315,16 @@ export function buildHermesDjMessages(input: ComposeDjReplyInput) {
 }
 
 /**
- * 用 AI 润色单首歌的推荐理由，保留 DJ 口吻。
- * 失败时退回模板句，不阻塞播放流程。
+ * 单首歌的推荐语润色（DJ 口吻，12-25 字，无引号无列表）。
+ *
+ * 调用者：rewrite-reasons API（懒加载润色当前 block）、daily-schedule hydrate 时缺字段也会走
+ *
+ * 失败路径：HTTP 非 2xx / 内容为空 / 网络异常
+ *   → logReasonRewrite 打日志 → 返回 buildFallbackTrackReason（本地模板）
+ *
+ * 性能：单调用 ~1s。**不要批量并发调这个**，会把 Hermes 打挂——
+ *      批量场景必须走 batchRewriteTrackReasons。
  */
-// 真正的串行化信号灯，防止 Hermes 被 48 个并发请求打挂
-
 export async function rewriteTrackReason(
   song: Song,
   scene: string,
@@ -334,8 +393,22 @@ export async function rewriteTrackReason(
 }
 
 /**
- * 批量生成推荐语。一次调用生成多条，5秒超时。
- * 专给 SSR 用，避免 48 个并发请求打挂 Hermes。
+ * 批量推荐语生成：一次 LLM 调用生成 N 条推荐语，60s 超时。
+ *
+ * 提示词形式：
+ *   user message 是"1. 场景:X 氛围:Y 种子:Z / 2. ... / 3. ..."编号清单
+ *   system message 要求每行一句，按序号顺序输出
+ *
+ * 解析：拿到 content 后按 \n 切，前缀 "1. " 这种序号去掉，按 index 对回 track.id
+ *
+ * 容错：
+ *   - 超时 / 非 2xx / 解析失败 → 留空 map（调用方会用 reasonSeed 占位）
+ *   - 模型返回行数比 tracks 少 → 缺的行用 reasonSeed
+ *
+ * 用法约束：
+ *   - schedule 生成阶段每段调一次（4 段 * ~10 首 = 一段 7s，串行 4 段 ~30s）
+ *   - 当前已改成懒加载，只在切到段时调一次（见 rewrite-reasons route）
+ *   - **不能并发**多个 batchRewrite 调用，Hermes 不抗多路并发
  */
 export async function batchRewriteTrackReasons(
   tracks: Song[],
