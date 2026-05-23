@@ -49,11 +49,36 @@ export async function recommendBlockTrackCount(
   return 10;
 }
 
+const INTRO_TEMPLATES = [
+  `这里是 {persona}。把 {currentArtist} 的《{currentTitle}》放在前面，不是因为煽情，而是因为 {scene} 更适合先用 {moodHint} 打底。下一首自然滑到 {nextArtist} 的《{nextTitle}》，让情绪过门更顺。`,
+  `欢迎回到 {persona}。我选了 {currentArtist} 的《{currentTitle}》开场，原因是 {scene} 需要一点 {moodHint} 垫底。接下来的 {nextArtist}《{nextTitle}》，是顺着一个情绪弧度走的。`,
+  `{persona} 时间。先上 {currentArtist} 的《{currentTitle}》，{scene} 的节奏里，{moodHint} 是最好的切入点。后面 {nextArtist}《{nextTitle}》，刚好接住这个情绪。`,
+  `{currentArtist} 的《{currentTitle}》——这是 {scene} 最好的开场。{moodHint} 打底，情绪先落下来，再让 {nextArtist} 的《{nextTitle}》把氛围顺上去。`,
+  `{persona} 回来了。《{currentTitle}》是今天的起点，{scene} 里 {moodHint} 能让人快速沉进去。然后是 {nextArtist} 的《{nextTitle}》，自然过渡，不打断。`,
+  `今天的开场，我选 {currentArtist} 的《{currentTitle}》。{scene} 的基调，先用 {moodHint} 定住。《{nextTitle}》跟在后面，是同一个情绪方向的自然延伸。`,
+  `{currentArtist}《{currentTitle}》，这首歌放在 {scene} 最合适。{moodHint} 是引子，把人带进去，之后 {nextArtist} 的《{nextTitle}》顺势把情绪展开。`,
+  `{persona} 这里。先让 {currentArtist} 的《{currentTitle}》响起，{scene} 需要这种 {moodHint} 铺底。{nextArtist} 的《{nextTitle}》会在后面接上，保持连贯。`,
+  `《{currentTitle}》，{currentArtist} 的声音打开 {scene}。我在这首歌后面藏了一个情绪钩子——{nextArtist} 的《{nextTitle}》。{moodHint} 先行，过渡就不生硬。`,
+  `{persona} 的节目从这里开始。《{currentTitle}》对应 {scene}，先用 {moodHint} 建立氛围感，然后 {nextArtist} 的《{nextTitle}》把这种感觉延续下去，不割裂。`,
+];
+
+function fillIntro(template: string, input: ComposeIntroInput) {
+  return template
+    .replaceAll("{persona}", input.persona)
+    .replaceAll("{currentArtist}", input.currentTrack.artist)
+    .replaceAll("{currentTitle}", input.currentTrack.title)
+    .replaceAll("{nextArtist}", input.nextTrack.artist)
+    .replaceAll("{nextTitle}", input.nextTrack.title)
+    .replaceAll("{scene}", input.scene)
+    .replaceAll("{moodHint}", input.moodHint);
+}
+
 /**
  * 第一版先用本地规则模拟 DJ 串词，后续再替换为真实模型调用。
  */
 export async function composeHostIntro(input: ComposeIntroInput) {
-  return `这里是 ${input.persona}。现在把 ${input.currentTrack.artist} 的《${input.currentTrack.title}》放在前面，不是为了煽情，而是因为 ${input.scene} 更适合先用 ${input.moodHint} 打底，下一首会顺着滑到 ${input.nextTrack.artist} 的《${input.nextTrack.title}》，让情绪过门更自然。`;
+  const template = INTRO_TEMPLATES[Math.floor(Math.random() * INTRO_TEMPLATES.length)];
+  return fillIntro(template, input);
 }
 
 /**
