@@ -261,34 +261,49 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 一起发过去。chatHistory 原本只在 React useState 里，刷新/报错就丢光，
    * 下次发消息时 history 是空的 → Hermes "失忆"。
    *
-   * 方案：每次 chatHistory 变就写 localStorage，组件挂载时尝试读回。
-   * 读失败（key 不存在 / JSON 损坏 / SSR 时 window 不存在）→ 回落到 hostIntro 开场。
+   * 为什么读 localStorage 必须放在 useEffect 里、不能在 useState 初始化里：
+   *   useState 初始化函数在 SSR 时跑（window 不存在 → 返回 intro），CSR 首屏
+   *   再跑一次（拿 localStorage → 返回累积历史）。两次结果不一致 → React 报
+   *   hydration mismatch（SSR 渲染的 djSpeech 是 hostIntro，CSR 是上次的最后一条）。
+   *   放到 useEffect 里，首屏始终用 intro 渲染（与 SSR 一致），挂载后再恢复历史。
    */
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
+    { id: "assistant-intro", role: "assistant", content: initialProgram.hostIntro },
+  ]);
+
+  /**
+   * 挂载后读 localStorage 恢复历史。
+   * hydratedRef 是个门闸：只有恢复尝试完成后，下面的写入 effect 才允许把 chatHistory
+   * 写回 localStorage——否则 mount 时写入 effect 立刻跑会把 intro 写进去覆盖累积的旧历史。
+   */
+  const chatHydratedRef = useRef<boolean>(false);
+  useEffect(() => {
     if (typeof window === "undefined") {
-      return [{ id: "assistant-intro", role: "assistant", content: initialProgram.hostIntro }];
+      chatHydratedRef.current = true;
+      return;
     }
     try {
       const stored = window.localStorage.getItem("radio.chatHistory");
       if (stored) {
         const parsed = JSON.parse(stored) as ChatMessage[];
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          setChatHistory(parsed);
         }
       }
     } catch {
       // JSON 损坏 / 权限不足，忽略
     }
-    return [{ id: "assistant-intro", role: "assistant", content: initialProgram.hostIntro }];
-  });
+    chatHydratedRef.current = true;
+  }, []);
 
   /**
    * chatHistory 持久化到 localStorage。
-   * 同步写不会卡 UI（数据量小），且能立刻在 storage 事件里看到。
    * 写失败（隐私模式 / 满了）静默忽略——不能因此挂掉聊天。
+   * 挂载首跑时 hydratedRef 还是 false，直接返回，让恢复 effect 先把旧历史读进来。
    */
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!chatHydratedRef.current) return;
     try {
       window.localStorage.setItem("radio.chatHistory", JSON.stringify(chatHistory));
     } catch {
@@ -1280,7 +1295,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           </div>
 
           <div className={styles.chatLog}>
-            {chatHistory.slice(-4).map((message) => (
+            {chatHistory.map((message) => (
               <div
                 key={message.id}
                 className={`${styles.chatLine} ${
