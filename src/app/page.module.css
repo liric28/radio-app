@@ -233,10 +233,34 @@
   box-shadow: 0 0 16px rgba(67, 255, 198, 0.15);
 }
 
+/*
+ * Claudio 像素字外层容器。
+ *
+ * 调整像素字大小的唯一入口：改这里的 --dot-size 和 --dot-gap。
+ *
+ * 为什么必须写在这里（而不是叶子 .brandDot 上）：
+ *   .dotGlyph（grid 容器，控制格子尺寸）和 .brandDot（叶子 <i>，控制圆点大小）
+ *   都读这两个 CSS 变量。变量只能从父继承到子，写在叶子上 grid 容器拿不到
+ *   → 你单独缩圆点，但格子尺寸不变，结果字形塌陷或重叠。
+ *   写在共同祖先 .dotWord 上，圆点和格子才能同步缩放。
+ *
+ * 视觉高度估算公式（用于判断要不要再调）：
+ *   字符整体高度 ≈ 7 * dot-size + 6 * dot-gap   （字形是 7 行点阵）
+ *   单字符宽度  ≈ 5 * dot-size + 4 * dot-gap   （多数字形 5 列）
+ *
+ * 参考尺寸（旁边 logo .avatar 高度 34px）：
+ *   3px / 1px → 整体高 27px（当前桌面默认，比 logo 矮一点）
+ *   4px / 1px → 整体高 34px（与 logo 齐高）
+ *   2px / 1px → 整体高 20px（明显比 logo 矮）
+ *
+ * 移动断点（≤720px）的覆盖在文件末尾 @media 里，结构一样。
+ */
 .dotWord {
+  --dot-size: 3px;
+  --dot-gap: 1px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex-wrap: nowrap;
   min-width: 0;
   overflow: visible;
@@ -264,15 +288,11 @@
     box-shadow 120ms ease;
 }
 
-.brandDot {
-  --dot-size: 7px;
-  --dot-gap: 3px;
-}
-
-.clockDot {
-  --dot-size: 11px;
-  --dot-gap: 5px;
-}
+/*
+ * .brandDot / .clockDot 单点。
+ * --dot-size / --dot-gap 都统一由各自的外层容器（.dotWord / .dotClock）控制，
+ * 叶子上不要定义——见 .dotWord 注释的"为什么必须写在这里"。
+ */
 
 .dotOn {
   background: currentColor;
@@ -499,7 +519,15 @@
   color: rgba(90, 75, 120, 0.55);
 }
 
+/*
+ * 时钟点阵字外层容器。
+ * 调整时钟字大小的唯一入口：改这里的 --dot-size 和 --dot-gap。
+ * 原理与 .dotWord 同——变量必须写在共同祖先上，.dotGlyph 和 .clockDot 才能同步读到。
+ * 视觉高度估算：7 * dot-size + 6 * dot-gap。
+ */
 .dotClock {
+  --dot-size: 11px;
+  --dot-gap: 5px;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -1294,18 +1322,15 @@
 }
 
 @media (max-width: 720px) {
-  .brandDot {
-    --dot-size: 5px;
-    --dot-gap: 2px;
+  .dotWord {
+    --dot-size: 2.5px;
+    --dot-gap: 1px;
+    gap: 2px;
   }
 
   .clockDot {
     --dot-size: 8px;
     --dot-gap: 4px;
-  }
-
-  .dotWord {
-    gap: 3px;
   }
 
   .controlDeck {

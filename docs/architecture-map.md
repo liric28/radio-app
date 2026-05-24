@@ -209,6 +209,49 @@ mount: effect-A (恢复)
 - `handlePanelPointerMove`（player-shell.tsx）**直接操 DOM** 设 `--mx/--my`，不走 React state
 - 否则每次 mousemove 都会 re-render 整个 1300 行的 PlayerShell
 
+### 像素字体调整速查（Claudio 顶 logo / 时钟字）
+
+文件：`src/app/page.module.css`
+
+| 字 | 外层容器 class | 叶子 class | 调整入口 |
+|---|---|---|---|
+| 顶部 Claudio | `.dotWord` | `.brandDot` | 改 `.dotWord` 的 `--dot-size` / `--dot-gap` |
+| 时钟 | `.dotClock` | `.clockDot` | 改 `.dotClock` 的 `--dot-size` / `--dot-gap` |
+
+**关键规则**：`--dot-size` 和 `--dot-gap` 必须定义在**外层容器**上，
+不能写在叶子（.brandDot / .clockDot）。
+
+为什么：
+
+```
+.dotWord  ← 变量必须定义在这里
+  ├─ .dotGlyph     ← grid 容器，读 var(--dot-size) 设格子尺寸
+  │    └─ .brandDot ← 叶子 <i>，读 var(--dot-size) 设圆点直径
+```
+
+CSS 变量只从父继承到子，写在 .brandDot 上 .dotGlyph 拿不到
+→ 圆点缩了但格子不缩 → 字形塌陷或重叠。
+这是之前"调小一直效果不好"的根因。
+
+**视觉高度估算公式**（字形 7 行 5 列点阵）：
+
+```
+整体高度 ≈ 7 * dot-size + 6 * dot-gap
+单字宽度 ≈ 5 * dot-size + 4 * dot-gap
+```
+
+**参考尺寸**（旁边 logo `.avatar` 高 34px）：
+
+| dot-size / dot-gap | 整体高 | 视觉效果 |
+|---|---|---|
+| 2px / 1px | 20px | 明显比 logo 矮，纤细 |
+| **3px / 1px** | **27px** | **当前桌面默认，比 logo 略矮，协调** |
+| 4px / 1px | 34px | 与 logo 齐高 |
+| 5px / 2px | 47px | 比 logo 高，醒目 |
+
+移动断点 `@media (max-width: 720px)` 里有同名变量覆盖，规则一样——
+改 `.dotWord { --dot-size: ... }` 即可，不要在叶子上覆盖。
+
 ## 常见调试入口
 
 - **点 ⌁ 没反应** → 看 `requestProgram` catch 分支 + Network 面板
@@ -225,6 +268,8 @@ mount: effect-A (恢复)
   写入 effect 在恢复 effect 之前把 intro 写回 localStorage，下次读就只剩 intro
 - **长按清空没反应** → 检查 `handleSendPointerDown` 的 setTimeout 有没有被 pointerLeave 提前清掉
 - **长按清空后多发了一条** → triggeredRef 没吞掉松手后的 click，检查 handleSendClick 分支
+- **像素字调小后字形塌陷 / 圆点和格子错位** → `--dot-size` 写到叶子 `.brandDot`/`.clockDot` 上了，
+  必须提到外层容器 `.dotWord`/`.dotClock`，否则 grid 容器拿不到变量
 
 ## 维护规则
 
