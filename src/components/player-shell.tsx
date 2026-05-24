@@ -2006,11 +2006,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           role="dialog"
           aria-modal="true"
           aria-label="搜索歌曲"
-          onClick={() => setShowSearchModal(false)}
         >
           <div
             className={styles.searchModal}
-            onClick={(event) => event.stopPropagation()}
           >
             <header className={styles.searchHeader}>
               <strong>SEARCH</strong>

@@ -1494,6 +1494,12 @@
 .searchBody {
   padding: 18px;
   overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.searchBody::-webkit-scrollbar {
+  display: none;
 }
 
 .searchPanel {
@@ -1609,10 +1615,17 @@
   gap: 8px;
   height: 392px;
   overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.searchResults::-webkit-scrollbar {
+  display: none;
 }
 
 .searchResultCard {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   min-height: 72px;
@@ -1634,7 +1647,8 @@
 }
 
 .searchResultText {
-  flex: 1;
+  width: min(50%, 100%);
+  max-width: 50%;
   min-width: 0;
 }
 
@@ -1642,6 +1656,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-self: end;
+  flex: 0 0 auto;
 }
 
 .searchPlay,
@@ -1674,6 +1690,7 @@
   font-size: 14px;
   font-weight: 600;
   color: #f6f2ff;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

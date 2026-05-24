@@ -1,5 +1,6 @@
 {
   "recentTrackIds": [
+    "local-unknown-artist-风中的遗憾dj-88",
     "local-unknown-artist-爱如潮水-75",
     "local-unknown-artist-爱如潮水-75",
     "local-unknown-artist-因为爱所以爱-73",
@@ -10,11 +11,10 @@
     "local-dj-masih-mencintainya-21",
     "local-big-cole;格雷西西西-飞向别人的窗-(节奏版)-17",
     "local-unknown-artist-无名的人-74",
-    "local-unknown-artist-因为爱所以爱-73",
-    "local-dj-姐姐微信来了dj-24"
+    "local-unknown-artist-因为爱所以爱-73"
   ],
   "recentProgramTitles": [
-    "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
@@ -26,5 +26,5 @@
     "familiar": 6,
     "fresh": 15
   },
-  "lastAction": "manual-pick"
+  "lastAction": "schedule-next"
 }
