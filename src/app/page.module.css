@@ -593,8 +593,15 @@
   font-size: 13px;
 }
 
-.onAir i,
-.liveTitle i {
+/*
+ * 直接子选择器（>）很重要：
+ * .liveTitle 和 .onAir 里现在嵌着 DotMatrixText，里面每个像素点也是 <i>。
+ * 不加 > 的话，这条规则会把像素字的每个点都强制成 10px 绿色圆点
+ * → Claudio 字会变又大又绿。
+ * 只想接管"指示灯"那一颗直接子 <i />，所以必须 > i。
+ */
+.onAir > i,
+.liveTitle > i {
   width: 10px;
   height: 10px;
   border-radius: 999px;
@@ -826,8 +833,33 @@
   color: #f5f2ff;
 }
 
+/*
+ * liveStrip 那行的 Claudio 像素字。
+ * 复用 .dotWord 的容器结构 + .brandDot 的叶子样式。
+ * 颜色：父级 .liveTitle 是 #f5f2ff，但 `.panelDark .dotOn { color: #f6f2ff }` 优先级更高
+ *       把点的 color 重写成白色，所以不需要额外处理就是白。
+ *       (panelLight 同理走 #121018 深色。)
+ */
+.liveStripWord {
+  --dot-size: 1.5px;
+  --dot-gap: 0.5px;
+}
+
+/*
+ * "LIVE" 徽章像素字（绿色）。
+ *
+ * 颜色覆盖：.panelDark .dotOn 把全局 .dotOn 的 color 锁成白色（specificity 0,2,0），
+ *           .liveBadge { color } 是 0,1,0 → 输了。
+ *           所以这里直接走 .liveBadge .dotOn 选择器（也是 0,2,0，但写在后面胜出），
+ *           而且直接覆盖 background 而非 color，更短路。
+ */
 .liveBadge {
-  color: #56d58c;
+  --dot-size: 1px;
+  --dot-gap: 0.5px;
+}
+
+.liveBadge .dotOn {
+  background: #56d58c;
 }
 
 /*

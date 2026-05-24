@@ -213,10 +213,29 @@ mount: effect-A (恢复)
 
 文件：`src/app/page.module.css`
 
-| 字 | 外层容器 class | 叶子 class | 调整入口 |
-|---|---|---|---|
-| 顶部 Claudio | `.dotWord` | `.brandDot` | 改 `.dotWord` 的 `--dot-size` / `--dot-gap` |
-| 时钟 | `.dotClock` | `.clockDot` | 改 `.dotClock` 的 `--dot-size` / `--dot-gap` |
+| 字 | 外层容器 class | 叶子 class | 当前尺寸 | 调整入口 |
+|---|---|---|---|---|
+| 顶部 Claudio | `.dotWord` | `.brandDot` | 3px / 1px | 改 `.dotWord` 的 `--dot-size` / `--dot-gap` |
+| 时钟 | `.dotClock` | `.clockDot` | 11px / 5px | 改 `.dotClock` 的 `--dot-size` / `--dot-gap` |
+| liveStrip Claudio | `.dotWord` + `.liveStripWord` | `.brandDot` | 1.5px / 0.5px | 改 `.liveStripWord` 的 `--dot-size` / `--dot-gap` |
+| LIVE 徽章 | `.dotWord` + `.liveBadge` | `.brandDot` | 1px / 0.5px | 改 `.liveBadge` 的 `--dot-size` / `--dot-gap` |
+
+#### 新增 / 修改像素字的标准流程（4 步）
+
+1. **JSX**：`<DotMatrixText text="XXX" className={`${styles.dotWord} ${styles.yourWord}`} cellClassName={styles.brandDot} />`
+   - 必须叠 `dotWord`（容器布局 + 变量传递），不要重写 flex/grid
+   - 文本里出现的字母如果不在 `player-shell.tsx` 顶部 `dotGlyphs` 表，
+     先补一个 7 行 6 列点阵（已有 A/C/D/E/I/L/O/U/V/0-9/空格）
+2. **CSS**：建一个独立 class（如 `.yourWord`）**只**覆盖 `--dot-size` / `--dot-gap`，别重定义布局
+3. **指示灯陷阱**：父容器若有 `.parent i { ... }` 这种宽泛选择器（强制 size/background），
+   会把 DotMatrixText 内部每个像素 `<i>` 一起接管 → 字会变形 + 全部染色。
+   必须改成 `.parent > i`（直接子选择器），只匹配同级指示灯。
+   现状：`.liveTitle > i` 和 `.onAir > i` 已修，新加父容器记得遵守。
+4. **颜色覆盖陷阱**：`.panelDark .dotOn { color: #f6f2ff }` specificity (0,2,0) 锁住了点的 color，
+   外层 class 上写 `color: #xxx`（specificity 0,1,0）会被压住。两种解法：
+   - `.yourWord .dotOn { background: #xxx }`（specificity 0,2,0 但写在后面胜出，且绕过 color）
+   - `.panelDark .yourWord .dotOn { color: #xxx }`（提到 0,3,0 干净覆盖）
+   现状：LIVE 用了第一种（`.liveBadge .dotOn { background: #56d58c }`）。
 
 **关键规则**：`--dot-size` 和 `--dot-gap` 必须定义在**外层容器**上，
 不能写在叶子（.brandDot / .clockDot）。
@@ -270,6 +289,10 @@ CSS 变量只从父继承到子，写在 .brandDot 上 .dotGlyph 拿不到
 - **长按清空后多发了一条** → triggeredRef 没吞掉松手后的 click，检查 handleSendClick 分支
 - **像素字调小后字形塌陷 / 圆点和格子错位** → `--dot-size` 写到叶子 `.brandDot`/`.clockDot` 上了，
   必须提到外层容器 `.dotWord`/`.dotClock`，否则 grid 容器拿不到变量
+- **像素字每个点变大成圆点 / 强制染色** → 父容器有 `.parent i {...}` 宽泛规则侵入了点的 `<i>`，
+  改成 `.parent > i` 限定直接子，参考 `.liveTitle > i`
+- **像素字外层设了 color 但不生效** → `.panelDark .dotOn { color }` specificity 更高把它压住了，
+  用 `.yourWord .dotOn { background: #xxx }` 直接覆盖背景，参考 `.liveBadge .dotOn`
 
 ## 维护规则
 

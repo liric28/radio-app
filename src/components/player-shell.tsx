@@ -63,6 +63,15 @@ const dotGlyphs: Record<string, string[]> = {
     "100010",
     "111100",
   ],
+  E: [
+    "111111",
+    "100000",
+    "100000",
+    "111110",
+    "100000",
+    "100000",
+    "111111",
+  ],
   I: [
     "111111",
     "001100",
@@ -98,6 +107,15 @@ const dotGlyphs: Record<string, string[]> = {
     "100001",
     "100001",
     "011110",
+  ],
+  V: [
+    "100001",
+    "100001",
+    "100001",
+    "100001",
+    "010010",
+    "010010",
+    "001100",
   ],
   0: [
     "011110",
@@ -1287,9 +1305,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         <section className={styles.liveStrip}>
           <div className={styles.liveTitle}>
             <i />
-            <span>Claudio</span>
+            <DotMatrixText
+              text="Claudio"
+              className={`${styles.dotWord} ${styles.liveStripWord}`}
+              cellClassName={styles.brandDot}
+            />
           </div>
-          <span className={styles.liveBadge}>LIVE</span>
+          <DotMatrixText
+            text="LIVE"
+            className={`${styles.dotWord} ${styles.liveBadge}`}
+            cellClassName={styles.brandDot}
+          />
         </section>
 
         <section className={styles.djPanel}>
