@@ -1023,6 +1023,19 @@
   overflow-y: auto;
   padding-right: 4px;
   scroll-behavior: smooth;
+  /*
+   * 隐藏滚动条但保留滚动功能。三套写法兼容三大引擎：
+   * - WebKit (Chrome/Safari/Edge)：::-webkit-scrollbar 设 display none
+   * - Firefox：scrollbar-width: none
+   * - 旧 IE/Edge：-ms-overflow-style: none
+   * 用户仍能滚轮 / 触屏滚动，只是看不到那条灰色指示器。
+   */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chatLog::-webkit-scrollbar {
+  display: none;
 }
 
 /*

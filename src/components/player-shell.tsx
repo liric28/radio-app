@@ -390,11 +390,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
   /**
-   * 聊天最底 anchor ref：发消息后 scrollIntoView 滚到这里，避免新气泡被遮挡。
-   * 用 anchor 而不是容器 scroll，比手算 scrollHeight 简单；同时会自动找最近的 scrollable parent，
-   * chatLog 自身有 overflow-y:auto 就先滚 chatLog，没滚动则继续往上滚到 page。
+   * chatLog 容器 ref：发消息后只滚 chatLog 自身的 scrollTop 到底，
+   * **不能用 anchor.scrollIntoView**——那样会把整个 page 也带着滚，
+   * 输入框被推出视口外，用户没法继续输入。
+   * 直接操作容器 scrollTop 只滚溢出区，page 不动。
    */
-  const chatLogBottomRef = useRef<HTMLDivElement | null>(null);
+  const chatLogRef = useRef<HTMLDivElement | null>(null);
   /**
    * queueOverlay（LIST 按钮弹出的内联卡片组）ref：点 LIST 后 scrollIntoView，
    * 让用户能立刻看到刚展开的歌单——否则在长聊天页里展开了也看不见。
@@ -420,14 +421,22 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const activeScheduleBlock = schedule.blocks.find((block) => block.period === currentBlockPeriod);
 
   /**
-   * 发消息后自动滚到聊天最底——避免新气泡被输入框、queueOverlay 或视口下半部分遮挡。
-   * 依赖 chatHistory.length 而不是 chatHistory 本身：流式 token 累计时 chatHistory
-   * 引用每次都新（map 返回新数组），监听 chatHistory 会每 30ms 滚一次扰用户；
-   * 监听 length 只在"加了新消息"时才滚，流式 token 不触发。
+   * 发消息后滚到聊天最底——只滚 chatLog 容器自身 scrollTop，不滚 page，输入框保留可见。
+   *
+   * 必须监听整个 chatHistory（不是 .length）——
+   *   发消息时 chatHistory length +1（新 user/placeholder），effect 跑滚到底 ✓
+   *   流式 token 累积时 length 不变但 content 增长，scrollHeight 持续撑大；
+   *   如果只监听 length，流式期间 effect 不跑 → scrollTop 卡在"消息追加那一刻"的位置
+   *   → 后续 token 把内容推下去看不见，用户看着像"卡在中间"。
+   *
+   * 监听 chatHistory（每次 setChatHistory 都触发，包括流式 30ms batch flush）让滚动持续贴底。
+   * 每次都直接 scrollTop = scrollHeight，即时不动画，不会被相邻 setState 打断。
    */
   useEffect(() => {
-    chatLogBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [chatHistory.length]);
+    const node = chatLogRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  }, [chatHistory]);
 
   /**
    * LIST 切到打开时滚动到 queueOverlay，让用户看到刚展开的歌单。
@@ -888,7 +897,21 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    *   - 该气泡末尾会渲染 DotmHex10 mini loader 表示"还在流式中"
    *   - 发送按钮在 isChatSending 时也变成同款 loader
    */
+  /**
+   * 防同步重入锁——只防一次事件循环里被触发两次（双 fire / Enter+click 同时来）。
+   * 不能用 isChatSending state（异步、且会 batch 滞后），必须 ref。
+   * setTimeout 0 在同步事件处理结束的下一 microtask 释放，所以后续异步"中止重发"
+   * （用户在等回复时再点发送）仍能正常工作。
+   */
+  const sendLockRef = useRef<boolean>(false);
+
   async function sendChatMessage() {
+    if (sendLockRef.current) return;
+    sendLockRef.current = true;
+    setTimeout(() => {
+      sendLockRef.current = false;
+    }, 0);
+
     const message = chatInput.trim();
     if (!message) return;
 
@@ -1408,7 +1431,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             </div>
           </div>
 
-          <div className={styles.chatLog}>
+          <div className={styles.chatLog} ref={chatLogRef}>
             {chatHistory.map((message) => (
               <div
                 key={message.id}
@@ -1440,8 +1463,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 )}
               </div>
             ))}
-            {/* 滚到底 anchor：chatHistory.length 变化时 scrollIntoView 这里。 */}
-            <div ref={chatLogBottomRef} aria-hidden />
           </div>
 
           {showQueueList && activeScheduleBlock && (

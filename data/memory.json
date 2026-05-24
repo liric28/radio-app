@@ -1,22 +1,22 @@
 {
   "recentTrackIds": [
+    "local-unknown-artist-爱如潮水-75",
+    "local-unknown-artist-爱如潮水-75",
+    "local-unknown-artist-因为爱所以爱-73",
+    "local-unknown-artist-因为爱所以爱-73",
+    "local-unknown-artist-爱如潮水-75",
+    "local-unknown-artist-爱如潮水-75",
     "local-dj-something-just-like-this-22",
     "local-dj-masih-mencintainya-21",
     "local-big-cole;格雷西西西-飞向别人的窗-(节奏版)-17",
     "local-unknown-artist-无名的人-74",
     "local-unknown-artist-因为爱所以爱-73",
-    "local-dj-姐姐微信来了dj-24",
-    "local-dj-好想大声说爱你-23",
-    "local-ava-max-salt-4",
-    "local-7revive-runaway-0",
-    "local-beyond-海阔天空-13",
-    "local-beyond-我是愤怒-12",
-    "local-beyond-我是愤怒-12"
+    "local-dj-姐姐微信来了dj-24"
   ],
   "recentProgramTitles": [
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律"
@@ -26,5 +26,5 @@
     "familiar": 6,
     "fresh": 15
   },
-  "lastAction": "schedule-next"
+  "lastAction": "manual-pick"
 }
