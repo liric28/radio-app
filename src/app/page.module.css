@@ -1144,6 +1144,144 @@
   color: #c9ffd8;
 }
 
+/*
+ * LIST 按钮弹出的"当前段歌单"卡片容器。
+ * 位置：chatLog 之后、inputDock 之前——视觉上像聊天流里插播的一组歌曲消息。
+ * 触发：顶部 LIST 按钮 toggle showQueueList state（player-shell.tsx）。
+ * 每个 .queueCard 是按钮，点击 selectQueueTrack 跳到该曲。
+ * 当前曲（.queueCardActive）绿色描边 + 浅绿背景 + 星标，对应截图视觉。
+ */
+/*
+ * 容器：靠左缩进 44px（约等于 .avatar 34px + chatLine 内 10px gap），
+ * 视觉上跟 Claudio 气泡左边缘对齐，像是 assistant 连续插播的一组卡片。
+ * 宽度由内层 .queueCard 的 max-width 控制，整体不全铺。
+ */
+.queueOverlay {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 12px 44px;
+}
+
+/*
+ * 单张歌曲卡片。
+ * - width: fit-content 让卡片按"标题最长那条"自动收缩，不全铺
+ * - max-width 280px 防止超长标题让卡片过宽，超出会 ellipsis（见 .queueCardTitle）
+ * - min-width 200px 防止标题特别短的曲名让卡片太窄不协调
+ */
+.queueCard {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: fit-content;
+  min-width: 200px;
+  max-width: 280px;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.queueCard:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.queueCard:active {
+  transform: scale(0.99);
+}
+
+.queueCardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  color: rgba(223, 218, 240, 0.4);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.queueCardText {
+  min-width: 0;
+}
+
+.queueCardTitle {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f6f2ff;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueCardArtist {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: rgba(223, 218, 240, 0.45);
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueCardActive {
+  border: 1.5px solid rgba(84, 216, 140, 0.75);
+  background: rgba(84, 216, 140, 0.08);
+  box-shadow: 0 0 0 1px rgba(84, 216, 140, 0.18) inset, 0 0 18px rgba(84, 216, 140, 0.12);
+}
+
+.queueCardActive .queueCardIcon {
+  color: #54d88c;
+  border-color: rgba(84, 216, 140, 0.6);
+}
+
+.queueCardActive .queueCardTitle {
+  color: #d8ffe8;
+}
+
+.panelLight .queueCard {
+  background: rgba(20, 18, 28, 0.04);
+  border-color: rgba(20, 18, 28, 0.08);
+}
+
+.panelLight .queueCardTitle {
+  color: #15131c;
+}
+
+.panelLight .queueCardArtist {
+  color: rgba(80, 70, 110, 0.6);
+}
+
+.panelLight .queueCardActive {
+  background: rgba(50, 180, 110, 0.08);
+  border-color: rgba(50, 180, 110, 0.6);
+}
+
+.panelLight .queueCardActive .queueCardTitle {
+  color: #18532f;
+}
+
+/*
+ * LIST 按钮激活态：用绿色描边表示"当前正在显示"。
+ */
+.chipButtonActive {
+  border-color: rgba(84, 216, 140, 0.55);
+  color: #d8ffe8;
+  background: rgba(84, 216, 140, 0.08);
+}
+
+/* legacy queueList—暂留以防其他地方引用，新 UI 用 .queueOverlay。 */
 .queueList {
   display: grid;
   gap: 0;

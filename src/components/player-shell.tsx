@@ -395,6 +395,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     isChatSending && latestDjMessage?.role === "assistant" ? latestDjMessage.id : null;
   const currentBlockPeriod = schedule.currentBlockPeriod;
   const currentTrackIndex = schedule.currentTrackIndex;
+  /**
+   * LIST 按钮 toggle：在聊天流和输入框之间插入"当前段歌单卡片"。
+   * 默认折叠避免占地，点 LIST 才展开——视觉上等同于一条"系统插播的歌单消息"。
+   */
+  const [showQueueList, setShowQueueList] = useState<boolean>(false);
+  const activeScheduleBlock = schedule.blocks.find((block) => block.period === currentBlockPeriod);
   const now = new Date();
   const currentClock = `${String(now.getHours()).padStart(2, "0")} ${String(
     now.getMinutes(),
@@ -755,7 +761,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 后端 /api/select-track 会把 schedule.currentTrackIndex 移到目标 track，
    * 然后 buildRadioProgram 重建 program。keepPlaying=isPlaying。
    */
-  function selectQueueTrack(trackId: string) {
+  /**
+   * @param forcePlay true 时无视当前 isPlaying，切完直接开播；false 时沿用旧语义（暂停就保持暂停）。
+   *                  LIST 弹出列表里点曲目希望"点了就放"，传 true；其他保留旧行为传默认 false。
+   */
+  function selectQueueTrack(trackId: string, forcePlay: boolean = false) {
     requestProgram(
       "/api/select-track",
       {
@@ -764,7 +774,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         body: JSON.stringify({ trackId }),
       },
       "LIVE",
-      isPlaying,
+      forcePlay || isPlaying,
     );
   }
 
@@ -1257,8 +1267,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             <button type="button" className={styles.roundButton} onClick={stopPlayback}>
               ■
             </button>
-            <button type="button" className={styles.chipButton} onClick={() => sendFeedback("fresh")}>
-              HIDE
+            <button
+              type="button"
+              className={`${styles.chipButton} ${showQueueList ? styles.chipButtonActive : ""}`}
+              onClick={() => setShowQueueList((value) => !value)}
+              aria-expanded={showQueueList}
+              aria-label="切换当前段歌单显示"
+            >
+              LIST
             </button>
             <button type="button" className={styles.chipButton} onClick={() => sendFeedback("familiar")}>
               FAV
@@ -1368,6 +1384,39 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             ))}
           </div>
 
+          {showQueueList && activeScheduleBlock && (
+            /*
+             * "当前段歌单"弹出卡片组。
+             * 触发：顶部 LIST 按钮 toggle showQueueList。
+             * 数据：schedule 当前 block（按 currentBlockPeriod 查找）的所有 tracks，
+             *      用 currentTrackIndex 高亮当前正在播放的一条。
+             * 排版：圆角卡片纵向排列，左侧 24px 图标列（▶/★），右侧标题+艺人。
+             * 点击任一卡片：等同 queueRow 旧行为，调 selectQueueTrack 跳到该曲。
+             */
+            <div className={styles.queueOverlay} role="list" aria-label="当前段歌单">
+              {activeScheduleBlock.tracks.map((track, index) => {
+                const isActive = index === currentTrackIndex;
+                return (
+                  <button
+                    key={track.id}
+                    type="button"
+                    role="listitem"
+                    className={`${styles.queueCard} ${isActive ? styles.queueCardActive : ""}`}
+                    onClick={() => selectQueueTrack(track.id, true)}
+                  >
+                    <span className={styles.queueCardIcon} aria-hidden>
+                      {isActive ? "★" : "▶"}
+                    </span>
+                    <div className={styles.queueCardText}>
+                      <strong className={styles.queueCardTitle}>{track.title}</strong>
+                      <p className={styles.queueCardArtist}>{track.artist}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <section className={styles.inputDock}>
             <input
               className={styles.djInput}
@@ -1397,55 +1446,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               )}
             </button>
           </section>
-
-          <p className={styles.nowPlayingText}>
-            Now playing: <span className={styles.trackTitle}>{program.currentTrack.title}</span> <span className={styles.trackTitle}>· {program.currentTrack.artist}</span>
-          </p>
-
-          <div className={styles.queueList}>
-            {program.queue.map((track) => (
-              <button
-                key={track.id}
-                type="button"
-                className={styles.queueRow}
-                onClick={() => selectQueueTrack(track.id)}
-              >
-                <div>
-                  <strong>{track.title}</strong>
-                  <p>{track.artist}</p>
-                </div>
-                <span>{track.reason}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.scheduleBlocks}>
-            {schedule.blocks.map((block) => (
-              <section key={block.period} className={styles.scheduleBlock}>
-                <div className={styles.scheduleBlockHeader}>
-                  <strong>{block.scene}</strong>
-                  <span>{block.tracks.length} 首</span>
-                </div>
-                <div className={styles.scheduleTrackList}>
-                  {block.tracks.map((track, index) => (
-                    <div
-                      key={track.id}
-                      className={`${styles.scheduleTrackRow} ${
-                        block.period === currentBlockPeriod && index === currentTrackIndex
-                          ? styles.scheduleTrackRowActive
-                          : ""
-                      }`}
-                    >
-                      <span>{String(index + 1).padStart(2, "0")}</span>
-                      <p>
-                        {track.title} · {track.artist}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
         </section>
 
         <footer className={styles.footerBar}>
