@@ -42,10 +42,13 @@
 | 706 | `importLocalLibrary` | fn | 底部读取本地曲库 | mode:"replace" 会覆盖手动调整 |
 | 717 | **`sendChatMessage`** | fn ⭐ | **聊天主流程**，8 步 SSE 接收 | abort 重发 + 30ms 批量 flush + loading 指示 |
 | 731 | flush 窗口 | const | 流式 token 批量提交 | 30ms（调优表见代码注释） |
-| 257 | `chatHistory` 持久化 | state | localStorage["radio.chatHistory"] | 刷新/报错不丢上下文（Hermes 无状态靠 client 带 history） |
-| 312 | `longPressTimerRef` / `longPressTriggeredRef` | ref | 长按 1s 清空对话 | triggeredRef 吞掉松手后的假 click |
-| 973 | `clearChatHistory` | fn | **清空 = 给 Hermes 开新会话** | abort 当前请求 + 保留 hostIntro 一条 + 刷新 localStorage |
-| 987 | `handleSendPointerDown/End/Click` | fn ×3 | 发送键长按检测三件套 | 1s 计时 + 松手清 timer + click 看 triggeredRef 决定吞不吞 |
+| 271 | `chatHistory` 初始化 | state | useState 固定 `[intro]` | **SSR/CSR 必须一致**，否则 hydration mismatch |
+| 281 | `chatHydratedRef` | ref | 门闸：恢复完成前禁止写入 | 防 mount 时写入 effect 用 intro 覆盖累积的旧 localStorage |
+| 283 | 恢复 effect | useEffect | mount 后读 `localStorage["radio.chatHistory"]` | 有则 setChatHistory(parsed)，末尾翻 hydratedRef=true |
+| 305 | 持久化 effect | useEffect | chatHistory 变 → 写 localStorage | hydratedRef=false 直接 return |
+| 327 | `longPressTimerRef` / `longPressTriggeredRef` | ref | 长按 1s 清空对话 | triggeredRef 吞掉松手后的假 click |
+| 988 | `clearChatHistory` | fn | **清空 = 给 Hermes 开新会话** | abort 当前请求 + 保留 hostIntro 一条 + 刷新 localStorage |
+| 1002 | `handleSendPointerDown/End/Click` | fn ×3 | 发送键长按检测三件套 | 1s 计时 + 松手清 timer + click 看 triggeredRef 决定吞不吞 |
 
 ## 两条核心数据流
 
@@ -83,19 +86,28 @@ sendChatMessage()
 
 **关键认知**：Hermes 是无状态推理 API，"对话连续"靠前端每次把 history 数组一起发过去。
 
-持久化（防刷新失忆）：
+#### 持久化（防刷新失忆 + SSR-safe）
+
+读取分两阶段：useState 用固定 `[intro]`，挂载后才异步从 localStorage 恢复。
+**为什么不能在 useState 初始化函数里读 localStorage**：SSR 时 `window` 不存在
+返回 intro，CSR 首屏读 localStorage 返回累积历史 → 两份 DOM 不一致 → React 报
+hydration mismatch（典型表现：`<p className="djSpeech">` 文案 server/client 对不上）。
 
 ```
-setChatHistory(...)
-  ↓ useEffect[chatHistory] 触发
-  ↓ localStorage.setItem("radio.chatHistory", JSON.stringify(...))
-
-页面挂载 → useState 初始化函数
-  ↓ 读 localStorage["radio.chatHistory"]
-  ↓ 有效 → 恢复对话；无效/不存在 → 回落到单条 hostIntro
+SSR  : useState 初始 = [intro]                    → DOM 输出 intro 文案
+CSR  : useState 初始 = [intro]                    → hydrate 与 SSR 一致 ✓
+mount: effect-A (恢复)
+        ├─ window 不存在 → hydratedRef=true，返回
+        ├─ localStorage["radio.chatHistory"] 有效 → setChatHistory(parsed)
+        └─ 末尾 hydratedRef=true（无论是否恢复）
+       effect-B (写入) 也跑了一次
+        └─ hydratedRef=false → return（不写入，防止 intro 覆盖旧累积）
+之后 : 任何 setChatHistory → effect-B 看到 hydratedRef=true → 正常写 localStorage
 ```
 
-重置（长按发送键 1s）：
+`chatHydratedRef` 是 effect 之间的 sentinel，用 ref 而非 state——不需要驱动 UI。
+
+#### 重置（长按发送键 1s）
 
 ```
 发送键 pointerDown
@@ -206,6 +218,11 @@ setChatHistory(...)
 - **推荐语都是 "它来自你的本地音乐库..."** → rewrite-reasons useEffect 没触发，检查 deps 是否更新
 - **Hermes 像失忆 / 接不上之前对话** → 检查 localStorage["radio.chatHistory"] 是否在；
   Hermes 本身无状态，连续性靠 client 每次带 history 数组
+- **报 hydration mismatch（djSpeech / chatLog 文案 server vs client 不一致）** →
+  说明读 localStorage 的逻辑又被挪回 useState 初始化函数里了，必须放在 useEffect 里，
+  并由 `chatHydratedRef` 门闸守住写入 effect 在 mount 首跑时的覆盖
+- **刷新后聊天历史全没了，只剩一条 intro** → 多半是 `chatHydratedRef` 门闸失效：
+  写入 effect 在恢复 effect 之前把 intro 写回 localStorage，下次读就只剩 intro
 - **长按清空没反应** → 检查 `handleSendPointerDown` 的 setTimeout 有没有被 pointerLeave 提前清掉
 - **长按清空后多发了一条** → triggeredRef 没吞掉松手后的 click，检查 handleSendClick 分支
 

@@ -266,6 +266,20 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    *   再跑一次（拿 localStorage → 返回累积历史）。两次结果不一致 → React 报
    *   hydration mismatch（SSR 渲染的 djSpeech 是 hostIntro，CSR 是上次的最后一条）。
    *   放到 useEffect 里，首屏始终用 intro 渲染（与 SSR 一致），挂载后再恢复历史。
+   *
+   * 时序：
+   *   1. SSR：useState 初始 = [intro]；DOM 输出 intro 文案
+   *   2. CSR hydrate：useState 初始 = [intro]；DOM 与 SSR 一致 → 无 mismatch
+   *   3. mount 后 effect-A 跑：读 localStorage
+   *        ├─ 有历史 → setChatHistory(parsed) → 触发 re-render，DOM 切到旧历史
+   *        └─ 无历史 → 留着 intro
+   *      effect-A 结尾把 chatHydratedRef 翻成 true
+   *   4. effect-B（写入）在 mount 时也跑了一次，但 hydratedRef 是 false → 直接 return，
+   *      不写 localStorage（关键：否则就会把 intro 立刻覆盖掉旧的累积历史）
+   *   5. 之后任何 setChatHistory → effect-B 看到 hydratedRef=true → 正常写 localStorage
+   *
+   * 门闸 chatHydratedRef 用 ref 而不是 state：
+   *   状态变化会触发额外 render；这里只是 effect 之间的 sentinel，没必要驱动 UI。
    */
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
     { id: "assistant-intro", role: "assistant", content: initialProgram.hostIntro },
