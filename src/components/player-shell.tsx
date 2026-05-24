@@ -1741,11 +1741,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 />
               ))}
             </div>
-            <div>
-              <strong>
-                {visibleTrack.title} · {visibleTrack.artist}
-              </strong>
-              <p>PLAYING</p>
+            <div className={styles.trackMeta}>
+              <span className={styles.trackTitle}>{visibleTrack.title}</span>
+              <span className={styles.trackArtist}>{visibleTrack.artist}</span>
             </div>
           </div>
 
