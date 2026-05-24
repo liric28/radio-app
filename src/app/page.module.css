@@ -322,6 +322,46 @@
   flex: 0 0 auto;
 }
 
+.searchBtn {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(84, 216, 140, 0.28);
+  background: rgba(84, 216, 140, 0.08);
+  color: #d8ffe8;
+  font-size: 18px;
+  line-height: 1;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.searchBtn:hover {
+  background: rgba(84, 216, 140, 0.14);
+  border-color: rgba(84, 216, 140, 0.42);
+  box-shadow: 0 0 18px rgba(84, 216, 140, 0.18);
+}
+
+.searchBtn:active {
+  transform: scale(0.98);
+}
+
+.panelLight .searchBtn {
+  color: #17643b;
+  background: rgba(44, 138, 79, 0.1);
+  border-color: rgba(44, 138, 79, 0.24);
+}
+
+.panelLight .searchBtn:hover {
+  background: rgba(44, 138, 79, 0.16);
+  border-color: rgba(44, 138, 79, 0.32);
+}
+
 .topGhost,
 .themeActive,
 .themeIdle,
@@ -1382,6 +1422,371 @@
 .pageLight .dayListClose:hover {
   background: rgba(20, 18, 28, 0.08);
   color: #15131c;
+}
+
+.searchBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(8, 6, 14, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: dayListFadeIn 180ms ease-out;
+}
+
+.searchModal {
+  width: min(640px, 100%);
+  max-height: min(78vh, 760px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid rgba(164, 146, 236, 0.22);
+  background:
+    radial-gradient(rgba(165, 155, 204, 0.16) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
+    linear-gradient(180deg, rgba(29, 29, 45, 0.98), rgba(18, 18, 26, 0.99)),
+    #12131b;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 80px 14px rgba(140, 100, 230, 0.12) inset;
+  animation: dayListPop 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.searchHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: rgba(223, 218, 240, 0.78);
+}
+
+.searchHeader strong {
+  font-weight: 600;
+  color: #f6f2ff;
+}
+
+.searchClose {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(223, 218, 240, 0.7);
+  font-size: 13px;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.searchClose:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6f2ff;
+}
+
+.searchBody {
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.searchPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.searchSourceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.searchSourceChip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(223, 218, 240, 0.72);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.searchSourceChipActive {
+  border-color: rgba(84, 216, 140, 0.48);
+  background: rgba(84, 216, 140, 0.14);
+  color: #d8ffe8;
+}
+
+.searchControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f6f2ff;
+  font-size: 14px;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: rgba(223, 218, 240, 0.35);
+}
+
+.searchInput:focus {
+  border-color: rgba(84, 216, 140, 0.52);
+  box-shadow: 0 0 0 3px rgba(84, 216, 140, 0.12);
+}
+
+.searchSubmit,
+.searchDownload {
+  border: 0;
+  border-radius: 12px;
+  background: #54d88c;
+  color: #08110b;
+  font-weight: 700;
+  transition: transform 160ms ease, filter 160ms ease, opacity 160ms ease;
+}
+
+.searchSubmit {
+  padding: 0 18px;
+  min-width: 92px;
+}
+
+.searchDownload {
+  padding: 9px 12px;
+  white-space: nowrap;
+}
+
+.searchSubmit:hover,
+.searchDownload:hover {
+  filter: brightness(1.04);
+}
+
+.searchSubmit:active,
+.searchDownload:active {
+  transform: scale(0.98);
+}
+
+.searchSubmit:disabled,
+.searchDownload:disabled {
+  opacity: 0.6;
+}
+
+.searchHint {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.54);
+  letter-spacing: 0.08em;
+}
+
+.searchError {
+  margin: 0;
+  font-size: 12px;
+  color: #ff8d8d;
+}
+
+.searchSuccess {
+  margin: 0;
+  font-size: 12px;
+  color: #7ce7a6;
+}
+
+.searchResults {
+  display: grid;
+  gap: 8px;
+  height: 392px;
+  overflow-y: auto;
+}
+
+.searchResultCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.searchResultCard:hover {
+  border-color: rgba(84, 216, 140, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.searchResultText {
+  flex: 1;
+  min-width: 0;
+}
+
+.searchActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchPlay,
+.searchDownload {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f6f2ff;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.searchPlay {
+  border-color: rgba(84, 216, 140, 0.28);
+  background: rgba(84, 216, 140, 0.1);
+  color: #d8ffe8;
+}
+
+.searchResultTitle,
+.searchResultMeta,
+.searchEmpty,
+.searchLoadingMore,
+.searchListEnd {
+  margin: 0;
+}
+
+.searchResultTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f6f2ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchResultMeta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.5);
+  letter-spacing: 0.06em;
+}
+
+.searchPaid {
+  font-size: 11px;
+  color: rgba(223, 218, 240, 0.42);
+}
+
+.searchEmpty {
+  padding: 28px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(223, 218, 240, 0.38);
+}
+
+.searchLoadingMore,
+.searchListEnd {
+  padding: 10px 6px 2px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.44);
+}
+
+.pageLight .searchBackdrop {
+  background: rgba(220, 215, 240, 0.6);
+}
+
+.pageLight .searchModal {
+  background:
+    radial-gradient(rgba(80, 70, 130, 0.18) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 243, 252, 0.99)),
+    #f8f6fc;
+  border-color: rgba(168, 159, 215, 0.4);
+}
+
+.pageLight .searchHeader {
+  color: rgba(50, 40, 80, 0.7);
+  border-bottom-color: rgba(20, 18, 28, 0.08);
+}
+
+.pageLight .searchHeader strong,
+.pageLight .searchResultTitle {
+  color: #15131c;
+}
+
+.pageLight .searchClose {
+  background: rgba(20, 18, 28, 0.04);
+  border-color: rgba(20, 18, 28, 0.12);
+  color: rgba(50, 40, 80, 0.7);
+}
+
+.pageLight .searchClose:hover {
+  background: rgba(20, 18, 28, 0.08);
+  color: #15131c;
+}
+
+.pageLight .searchInput {
+  background: rgba(20, 18, 28, 0.04);
+  border-color: rgba(20, 18, 28, 0.08);
+  color: #15131c;
+}
+
+.pageLight .searchInput::placeholder,
+.pageLight .searchHint,
+.pageLight .searchResultMeta,
+.pageLight .searchPaid,
+.pageLight .searchEmpty,
+.pageLight .searchLoadingMore,
+.pageLight .searchListEnd {
+  color: rgba(80, 70, 110, 0.6);
+}
+
+.pageLight .searchSuccess {
+  color: #1f8d50;
+}
+
+.pageLight .searchSourceChip {
+  background: rgba(20, 18, 28, 0.04);
+  border-color: rgba(20, 18, 28, 0.08);
+  color: rgba(80, 70, 110, 0.8);
+}
+
+.pageLight .searchSourceChipActive {
+  border-color: rgba(44, 138, 79, 0.42);
+  background: rgba(44, 138, 79, 0.12);
+  color: #18532f;
+}
+
+.pageLight .searchResultCard {
+  background: rgba(20, 18, 28, 0.04);
+  border-color: rgba(20, 18, 28, 0.08);
+}
+
+.pageLight .searchPlay,
+.pageLight .searchDownload {
+  background: rgba(20, 18, 28, 0.05);
+  border-color: rgba(20, 18, 28, 0.1);
+  color: #15131c;
+}
+
+.pageLight .searchPlay {
+  border-color: rgba(44, 138, 79, 0.28);
+  background: rgba(44, 138, 79, 0.12);
+  color: #18532f;
 }
 
 /*

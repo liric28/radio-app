@@ -35,6 +35,13 @@ export type Song = {
   tags: string[];
   reasonSeed: string;
   sourcePath?: string;
+  /**
+   * 入库渠道，区分调度策略和 UI 提示：
+   * - "local"：本地 import-library 扫描而来（默认，向后兼容字段缺失情况）
+   * - "kugou"：通过网络搜索下载到 data/downloads/ 的曲目，PayType=0 免费试听版本
+   * - "qq" / "netease"：通过搜索结果下载到 data/downloads/ 的网络曲目
+   */
+  source?: "local" | "kugou" | "qq" | "netease";
 };
 
 export type SongImportItem = {

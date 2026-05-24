@@ -2786,5 +2786,22 @@
     ],
     "reasonSeed": "它来自你的本地音乐库，不是样例数据",
     "sourcePath": "/Users/lipan/Music/Music/Media/Music/黄静美/我热情如火,你冰冻成河/我热情如火,你冰冻成河.mp3"
+  },
+  {
+    "id": "kugou-60185252",
+    "title": "眉飞色舞 (DJ版)",
+    "artist": "郑秀文",
+    "year": 2024,
+    "mood": "通勤",
+    "energy": 8,
+    "language": "中文",
+    "tags": [
+      "动感",
+      "DJ",
+      "上行"
+    ],
+    "reasonSeed": "刚从网上抓回来加进你的电台，先放一遍听听看合不合适",
+    "sourcePath": "/Users/lipan/Desktop/radio-app/data/downloads/眉飞色舞 (DJ版).mp3",
+    "source": "kugou"
   }
 ]

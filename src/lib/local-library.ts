@@ -54,8 +54,10 @@ async function walkAudioFiles(rootDir: string, bucket: string[] = []) {
 
 /**
  * 用 ffprobe 读取单首音频的基础元数据。
+ * Exported 后供下载路径（song-download.ts）复用，下载完的 mp3 也走同一份 tag 提取，
+ * 保证本地扫描和网络下载入库的字段结构、解析行为一致。
  */
-async function probeAudioFile(filePath: string) {
+export async function probeAudioFile(filePath: string): Promise<ProbeTags> {
   const { stdout } = await execFileAsync("ffprobe", [
     "-v",
     "error",
@@ -92,9 +94,18 @@ function inferMoodAndEnergy(filePath: string, title: string) {
 }
 
 /**
- * 将本地音乐文件映射成当前电台可消费的曲库结构。
+ * 从文件 path + tag 元数据构造一个 Song。
+ *
+ * options 让两条入库路径共用同一函数：
+ *   - 本地扫描 (scanLocalLibrary)：默认参数即可，id 形如 `local-{artist}-{title}-{index}`
+ *   - 网络下载 (song-download.ts)：传入 idOverride（用稳定的 kugou audioId）+ source: "kugou" + reasonSeed
  */
-function toSong(filePath: string, tags: ProbeTags, index: number): Song {
+function toSong(
+  filePath: string,
+  tags: ProbeTags,
+  index: number,
+  options: { idOverride?: string; source?: Song["source"]; reasonSeed?: string } = {},
+): Song {
   const title = tags.title?.trim() || path.basename(filePath, path.extname(filePath));
   const artist =
     tags.artist?.trim() || path.basename(path.dirname(path.dirname(filePath)));
@@ -106,7 +117,9 @@ function toSong(filePath: string, tags: ProbeTags, index: number): Song {
     .filter(Boolean);
 
   return {
-    id: `local-${artist}-${title}-${index}`.replace(/\s+/g, "-").toLowerCase(),
+    id:
+      options.idOverride ??
+      `local-${artist}-${title}-${index}`.replace(/\s+/g, "-").toLowerCase(),
     title,
     artist,
     year,
@@ -114,9 +127,32 @@ function toSong(filePath: string, tags: ProbeTags, index: number): Song {
     energy: inferred.energy,
     language: /[\u4e00-\u9fa5]/.test(`${title}${artist}`) ? "中文" : "英文",
     tags: [...new Set([...inferred.tags, ...genreTags])],
-    reasonSeed: "它来自你的本地音乐库，不是样例数据",
+    reasonSeed: options.reasonSeed ?? "它来自你的本地音乐库，不是样例数据",
     sourcePath: filePath,
+    source: options.source ?? "local",
   };
+}
+
+/**
+ * 统一入口：拿到本地文件路径 → ffprobe → 构造 Song。
+ * scanLocalLibrary 和 song-download.ts 都走这个函数，行为一致。
+ *
+ * @param knownTags 已知 tag（如网络下载时酷狗搜索结果给的 title/artist），优先级高于 ffprobe 探测值
+ */
+export async function buildSongFromFile(
+  filePath: string,
+  index: number,
+  options: { idOverride?: string; source?: Song["source"]; reasonSeed?: string } = {},
+  knownTags: ProbeTags = {},
+): Promise<Song> {
+  let probedTags: ProbeTags = {};
+  try {
+    probedTags = await probeAudioFile(filePath);
+  } catch {
+    // ffprobe 缺失 / 单文件读取失败 → 走纯文件名+目录名推断
+  }
+  const tags: ProbeTags = { ...probedTags, ...knownTags };
+  return toSong(filePath, tags, index, options);
 }
 
 /**
@@ -131,13 +167,8 @@ export async function scanLocalLibrary(
   const songs: Song[] = [];
 
   for (const [index, filePath] of targetFiles.entries()) {
-    try {
-      const tags = await probeAudioFile(filePath);
-      songs.push(toSong(filePath, tags, index));
-    } catch {
-      // 没有 ffprobe 或单文件探测失败时，退回到文件名/目录名推断，避免整批扫描失效。
-      songs.push(toSong(filePath, {}, index));
-    }
+    // buildSongFromFile 内部已 try/catch ffprobe，无需在这里再包一层
+    songs.push(await buildSongFromFile(filePath, index));
   }
 
   return songs;

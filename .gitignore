@@ -44,4 +44,5 @@ next-env.d.ts
 /data/audio-roots.json
 /data/chat-jobs.json
 /data/daily-schedule.json
+/data/downloads/
 /package-lock.json

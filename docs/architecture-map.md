@@ -15,6 +15,10 @@
 | SSE 代理 | `src/app/api/agent/route.ts` | 聊天流式接口 |
 | 音频代理 | `src/app/api/audio/route.ts` | 本地音乐文件白名单 + Range 请求 |
 | 歌单重生成 | `src/app/api/regenerate-schedule/route.ts` | ⌁ 按钮接口 |
+| 搜索聚合 | `src/lib/music-search.ts` | 酷狗 / QQ / 网易云搜索协议统一层 |
+| 下载入库 | `src/lib/song-download.ts` | 三路下载、文件重命名、补封面/歌词/tag |
+| 下载接口 | `src/app/api/song-download/route.ts` | 下载成功后重建画像 / schedule / program |
+| 试听接口 | `src/app/api/song-playback/route.ts` | 搜索结果转真实直链，临时试听不入库 |
 
 ## player-shell.tsx 速查
 
@@ -185,6 +189,111 @@ mount: effect-A (恢复)
 | `POST /api/select-track` | selectTrackProgram |
 | `POST /api/rewrite-reasons` | 懒加载润色当前段推荐语 |
 | `POST /api/import-library` | 全量扫描本地音乐目录写 songs.json |
+| `GET /api/song-search` | 搜索三路来源，前端通过 `source` 切换 |
+| `POST /api/song-playback` | 只解析搜索结果的可播直链，不改节目单 |
+| `POST /api/song-download` | 下载搜索结果并刷新整个电台状态 |
+
+## 搜索 / 下载链路
+
+### 搜索来源切换
+
+前端入口在 `src/components/player-shell.tsx`：
+
+- 顶部 `⌕` 按钮打开搜索弹层
+- `SearchPanelInline` 维护关键词、来源切换、结果列表、下载成功提示
+- 如果输入框里已有关键词，点 `酷狗 / QQ 音乐 / 网易云` 会立刻自动重搜
+- 结果容器固定 5 条卡片高度，超过后内部滚动
+- 滚动接近底部时自动继续加载下一页，不需要额外“加载更多”按钮
+
+请求流：
+
+```
+SearchPanelInline
+  ↓ searchSongsFromSource(keyword, source, page)
+  ↓ GET /api/song-search?keyword=...&source=...&page=...&limit=20
+  ↓ src/app/api/song-search/route.ts
+  ↓ src/lib/music-search.ts
+      ├─ kugou   -> signed gateway
+      ├─ qq      -> u.y.qq.com search
+      └─ netease -> eapi search
+  ↓ 统一返回 MusicSearchHit[]
+  ↓ 若当前页返回满 20 条，前端继续允许滚动触底拉下一页
+```
+
+`MusicSearchHit` 是三路共用的数据模型，前端不再分来源写三套 UI。
+
+### 搜索试听
+
+点击搜索卡片或“▶ 播放”后，走的是临时试听分支：
+
+```
+SearchPanelInline.handlePlay()
+  ↓ playSearchSong(hit)
+  ↓ POST /api/song-playback
+  ↓ resolvePlaybackUrlForHit(hit)
+      ├─ kugou   -> getPlaybackUrl(hash)
+      ├─ qq      -> ts.tempmusics.tk/url/tx/{songmid}/128k
+      └─ netease -> ts.tempmusics.tk/url/wy/{songId}/128k
+  ↓ 返回 { url }
+  ↓ 前端 setSearchPreview({ title, artist, url })
+  ↓ audioSource 优先切到 searchPreview.url
+  ↓ 复用原有 audio 元素开始播放
+```
+
+边界：
+
+- 试听不会写 `songs.json`
+- 试听不会重建 `schedule / program`
+- 试听播完后自动退出，回到正常电台链路
+- 用户点击 `上一首 / 下一首 / 反馈 / 重生成 / 跳队列` 时，也会先退出试听
+
+### 下载入库
+
+点击搜索结果里的“下载”后，链路如下：
+
+```
+SearchPanelInline.handleDownload()
+  ↓ downloadSong(hit)
+  ↓ POST /api/song-download
+  ↓ downloadAndIngestSong(hit)
+      1. 计算目标文件名
+         - 优先 `歌名.mp3`
+         - 同名冲突时退到 `歌名 - 歌手.mp3`
+         - 老的数字文件名会迁移到新名字
+      2. 按来源拿直链
+         - kugou   -> getPlaybackUrl(hash)
+         - qq      -> ts.tempmusics.tk/url/tx/{songmid}/128k
+         - netease -> ts.tempmusics.tk/url/wy/{songId}/128k
+      3. 流式下载到 `data/downloads/*.tmp`，成功后 rename 为最终文件
+      4. 补资源
+         - 三路：写 title / artist / album tag，抓封面，写同名 jpg
+         - kugou：额外抓歌词，写同名 lrc
+      5. buildSongFromFile() 统一生成 Song
+      6. 写回 songs.json
+  ↓ route.ts 后处理
+      7. deriveTasteProfileFromSongs()
+      8. regenerateDailySchedule()
+      9. buildRadioProgram()
+  ↓ 前端 setProgram / setSchedule，主界面立即刷新
+```
+
+### 命名策略
+
+下载文件不再用纯 `audioId` / `songmid` 数字落盘，统一改成可读文件名：
+
+- 默认：`歌名.mp3`
+- 冲突：`歌名 - 歌手.mp3`
+- 再冲突：`歌名 - 歌手 (source-id).mp3`
+
+这样 Finder 和播放器里更容易直接识别。`songs.json` 里的 `sourcePath` 也会跟着更新。
+
+### Git 忽略
+
+下载目录 `data/downloads/` 整体在 `.gitignore` 里忽略：
+
+- 不上传 mp3
+- 不上传同名 jpg / lrc
+- 仓库里只保留代码和结构数据，不保留运行时抓下来的媒体文件
 
 ## 视觉效果
 

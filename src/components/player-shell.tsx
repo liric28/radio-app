@@ -7,6 +7,7 @@ import { DotmSquare15 } from "@/components/ui/dotm-square-15";
 import { DotmSquare18 } from "@/components/ui/dotm-square-18";
 import { DotmCircular8 } from "@/components/ui/dotm-circular-8";
 import styles from "@/app/page.module.css";
+import type { MusicSearchHit, MusicSearchSource } from "@/lib/music-search";
 import type {
   ChatMessage,
   DailySchedule,
@@ -218,6 +219,281 @@ const dotGlyphs: Record<string, string[]> = {
   ],
 };
 
+type SearchPanelInlineProps = {
+  source: MusicSearchSource;
+  onSourceChange: (source: MusicSearchSource) => void;
+  searchFn: (
+    keyword: string,
+    source: MusicSearchSource,
+    page: number,
+  ) => Promise<MusicSearchHit[]>;
+  playFn: (hit: MusicSearchHit) => Promise<void>;
+  playingKey: string | null;
+  downloadFn: (hit: MusicSearchHit) => Promise<void>;
+};
+
+const SEARCH_PAGE_SIZE = 20;
+
+function formatClockTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+  const minutes = Math.floor(seconds / 60);
+  const remainder = Math.floor(seconds % 60);
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function SearchPanelInline({
+  source,
+  onSourceChange,
+  searchFn,
+  playFn,
+  playingKey,
+  downloadFn,
+}: SearchPanelInlineProps) {
+  const [keyword, setKeyword] = useState("");
+  const [results, setResults] = useState<MusicSearchHit[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextPage, setNextPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+
+  async function runSearch(
+    nextKeyword: string,
+    nextSource: MusicSearchSource,
+    page = 1,
+    append = false,
+  ) {
+    /**
+     * 搜索主流程兼容“首屏搜索”和“滚动续页”两种模式。
+     * - append=false：重置旧结果，从第 1 页开始搜
+     * - append=true：把下一页结果去重后接到列表尾部
+     */
+    const trimmedKeyword = nextKeyword.trim();
+    if (!trimmedKeyword) {
+      setResults([]);
+      setError(null);
+      setHasMore(false);
+      setNextPage(1);
+      return;
+    }
+
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setResults([]);
+      setHasMore(false);
+      setNextPage(1);
+    }
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const hits = await searchFn(trimmedKeyword, nextSource, page);
+      setResults((current) => {
+        if (!append) return hits;
+        const merged = [...current];
+        const seen = new Set(current.map(createSearchHitKey));
+        for (const hit of hits) {
+          const key = createSearchHitKey(hit);
+          if (!seen.has(key)) {
+            merged.push(hit);
+            seen.add(key);
+          }
+        }
+        return merged;
+      });
+      setHasMore(hits.length === SEARCH_PAGE_SIZE);
+      setNextPage(page + 1);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    setResults([]);
+    setError(null);
+    setSuccessMessage(null);
+    setHasMore(false);
+    setNextPage(1);
+  }, [source]);
+
+  useEffect(() => {
+    const container = resultsRef.current;
+    if (!container) return;
+
+    // 固定 5 条高度的滚动容器，接近底部时自动请求下一页。
+    const handleScroll = () => {
+      if (loading || loadingMore || !hasMore) return;
+      const remain = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (remain > 72) return;
+      void runSearch(keyword, source, nextPage, true);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [hasMore, keyword, loading, loadingMore, nextPage, source]);
+
+  async function handleSearch() {
+    await runSearch(keyword, source);
+  }
+
+  async function handleSourceChange(nextSource: MusicSearchSource) {
+    onSourceChange(nextSource);
+    if (!keyword.trim()) return;
+    await runSearch(keyword, nextSource);
+  }
+
+  async function handleDownload(hit: MusicSearchHit) {
+    setDownloadingId(`${hit.source}-${hit.title}-${hit.artist}`);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await downloadFn(hit);
+      setSuccessMessage(`已下载入库：${hit.title} · ${hit.artist}`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
+  async function handlePlay(hit: MusicSearchHit) {
+    // 搜索结果支持直接试听，不会改 program/schedule，只是临时接管主播放器的 audioSource。
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await playFn(hit);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  return (
+    <div className={styles.searchPanel}>
+      <div className={styles.searchSourceRow}>
+        {(["kugou", "qq", "netease"] as MusicSearchSource[]).map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={`${styles.searchSourceChip} ${source === item ? styles.searchSourceChipActive : ""}`}
+            onClick={() => void handleSourceChange(item)}
+          >
+            {item === "kugou" ? "酷狗" : item === "qq" ? "QQ 音乐" : "网易云"}
+          </button>
+        ))}
+      </div>
+      <div className={styles.searchControls}>
+        <input
+          ref={inputRef}
+          className={styles.searchInput}
+          placeholder="搜索歌名或歌手..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
+        />
+        <button
+          type="button"
+          className={styles.searchSubmit}
+          onClick={() => void handleSearch()}
+          disabled={loading}
+        >
+          {loading ? "搜索中..." : "搜索"}
+        </button>
+      </div>
+      <p className={styles.searchHint}>搜索结果支持直接下载入库。</p>
+      {successMessage && <p className={styles.searchSuccess}>{successMessage}</p>}
+      {error && <p className={styles.searchError}>{error}</p>}
+      <div ref={resultsRef} className={styles.searchResults}>
+        {results.map((hit) => (
+          <div
+            key={`${hit.source}-${hit.title}-${hit.artist}`}
+            className={styles.searchResultCard}
+            onClick={() => void handlePlay(hit)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                void handlePlay(hit);
+              }
+            }}
+          >
+            <div className={styles.searchResultText}>
+              <p className={styles.searchResultTitle}>{hit.title}</p>
+              <p className={styles.searchResultMeta}>
+                {hit.artist || "未知歌手"} · {formatClockTime(hit.duration)}
+              </p>
+            </div>
+            <div className={styles.searchActions}>
+              <button
+                type="button"
+                className={styles.searchPlay}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void handlePlay(hit);
+                }}
+              >
+                {playingKey === createSearchHitKey(hit) ? "播放中" : "▶ 播放"}
+              </button>
+              {hit.downloadable ? (
+                <button
+                  type="button"
+                  className={styles.searchDownload}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleDownload(hit);
+                  }}
+                  disabled={downloadingId === `${hit.source}-${hit.title}-${hit.artist}`}
+                >
+                  {downloadingId === `${hit.source}-${hit.title}-${hit.artist}` ? "下载中..." : "↓ 下载"}
+                </button>
+              ) : (
+                <span className={styles.searchPaid}>暂不可下</span>
+              )}
+            </div>
+          </div>
+        ))}
+        {!loading && results.length === 0 && !error && (
+          <p className={styles.searchEmpty}>
+            {source === "kugou" ? "输入关键词搜索酷狗免费歌曲" : "输入关键词搜索当前来源歌曲"}
+          </p>
+        )}
+        {loadingMore && <p className={styles.searchLoadingMore}>继续加载中...</p>}
+        {!loading && !loadingMore && results.length > 0 && !hasMore && (
+          <p className={styles.searchListEnd}>没有更多结果了</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function createSearchHitKey(hit: MusicSearchHit) {
+  if (hit.source === "kugou") {
+    const raw = hit.raw as { audioId?: number; hash?: string };
+    return `${hit.source}-${String(raw.audioId ?? raw.hash ?? hit.title)}`;
+  }
+  if (hit.source === "qq") {
+    const raw = hit.raw as { songmid?: string };
+    return `${hit.source}-${String(raw.songmid ?? hit.title)}`;
+  }
+  const raw = hit.raw as { songId?: number };
+  return `${hit.source}-${String(raw.songId ?? hit.title)}`;
+}
+
 function DotMatrixText({
   text,
   className,
@@ -418,7 +694,32 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 两个开关互不干涉，可同时打开/独立关闭。
    */
   const [showDayList, setShowDayList] = useState<boolean>(false);
+  /**
+   * 顶部搜索按钮触发的"网络歌曲搜索"弹层。
+   * 搜索酷狗免费曲库，下载入库后自动进入当日节目单。
+   */
+  const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
+  const [searchSource, setSearchSource] = useState<MusicSearchSource>("kugou");
+  const [searchPreview, setSearchPreview] = useState<{
+    key: string;
+    title: string;
+    artist: string;
+    url: string;
+  } | null>(null);
   const activeScheduleBlock = schedule.blocks.find((block) => block.period === currentBlockPeriod);
+
+  useEffect(() => {
+    if (!showDayList && !showSearchModal) return;
+
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setShowDayList(false);
+      setShowSearchModal(false);
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showDayList, showSearchModal]);
 
   /**
    * 发消息后滚到聊天最底——只滚 chatLog 容器自身 scrollTop，不滚 page，输入框保留可见。
@@ -460,12 +761,23 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     .replace(/ /g, " · ")
     .toUpperCase();
   const audioSource = useMemo(() => {
+    if (searchPreview?.url) {
+      return searchPreview.url;
+    }
     if (!program.currentTrack.sourcePath) {
       return "";
     }
 
     return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath)}`;
-  }, [program.currentTrack.sourcePath]);
+  }, [program.currentTrack.sourcePath, searchPreview?.url]);
+
+  const visibleTrack = searchPreview
+    ? { title: searchPreview.title, artist: searchPreview.artist }
+    : program.currentTrack;
+
+  function clearSearchPreview() {
+    setSearchPreview(null);
+  }
 
   /**
    * audioSource 切换处理（自动播放链路的"消费端"）。
@@ -589,10 +901,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   }, [program.scene, schedule.currentBlockPeriod, program.currentTrack.id]);
 
   function formatTime(seconds: number) {
-    if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
-    const minutes = Math.floor(seconds / 60);
-    const remainder = Math.floor(seconds % 60);
-    return `${minutes}:${String(remainder).padStart(2, "0")}`;
+    return formatClockTime(seconds);
   }
 
   /**
@@ -624,6 +933,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     keepPlaying = false,
     rememberCurrent = true,
   ) {
+    // 正式节目切换前先退出搜索试听态，避免 preview 远程流继续占着播放器。
+    clearSearchPreview();
     setError(null);
     if (nextLabel) setActiveLabel(nextLabel);
     shouldResumePlaybackRef.current = keepPlaying;
@@ -713,6 +1024,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
     audio.pause();
     audio.currentTime = 0;
+    clearSearchPreview();
     setCurrentTime(0);
     setIsPlaying(false);
     shouldResumePlaybackRef.current = false;
@@ -740,6 +1052,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     setError(null);
     setActiveLabel("PREV");
     shouldResumePlaybackRef.current = isPlaying;
+    clearSearchPreview();
     setHistory((currentHistory) => currentHistory.slice(1));
     setProgram(previousProgram);
   }
@@ -869,6 +1182,99 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       "SYNCING",
       isPlaying,
     );
+  }
+
+  /**
+   * 顶部"⌕"按钮：搜索多来源曲库并下载入库。
+   *
+   * page/limit 由前端显式控制：
+   *   - 首搜传 page=1
+   *   - 搜索列表滚动触底时继续传 page=2/3/4...
+   */
+  async function searchSongsFromSource(
+    keyword: string,
+    source: MusicSearchSource,
+    page: number,
+  ) {
+    const response = await fetch(
+      `/api/song-search?keyword=${encodeURIComponent(keyword)}&source=${encodeURIComponent(source)}&page=${page}&limit=${SEARCH_PAGE_SIZE}`,
+    );
+    const payload = (await response.json()) as { success: boolean; data?: unknown[]; error?: string };
+    if (!payload.success) throw new Error(payload.error ?? "搜索失败");
+    return payload.data as MusicSearchHit[];
+  }
+
+  async function playSearchSong(hit: MusicSearchHit) {
+    /**
+     * 搜索试听链路：
+     * 1. POST /api/song-playback 解析来源对应的真实可播直链
+     * 2. 把返回 url 填进 searchPreview
+     * 3. audioSource useMemo 优先使用 searchPreview.url
+     * 4. shouldResumePlaybackRef=true，沿用现有自动播放 effect 开播
+     *
+     * 试听不是 setProgram，不会污染今天的 schedule。
+     * 用户点上一首/下一首/反馈/重生成时，requestProgram 会先 clearSearchPreview 退出试听态。
+     */
+    const response = await fetch("/api/song-playback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(hit),
+    });
+    const payload = (await response.json()) as { ok: boolean; url?: string; error?: string };
+    if (!response.ok || !payload.ok || !payload.url) {
+      throw new Error(payload.error ?? "播放失败");
+    }
+
+    shouldResumePlaybackRef.current = true;
+    setSearchPreview({
+      key: createSearchHitKey(hit),
+      title: hit.title,
+      artist: hit.artist,
+      url: payload.url,
+    });
+    setActiveLabel("PREVIEW");
+  }
+
+  async function downloadSong(hit: MusicSearchHit) {
+    /**
+     * 下载成功后走“正式入库”链路：
+     *   搜索结果 -> /api/song-download -> songs.json / schedule / program 一起刷新。
+     * 跟试听的区别是：下载会真正改电台当前节目，试听只临时抢占 audioSource。
+     */
+    setError(null);
+    setActiveLabel("SYNCING");
+    const previousProgram = program;
+    shouldResumePlaybackRef.current = isPlaying;
+
+    const response = await fetch("/api/song-download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(hit),
+    });
+
+    const payload = (await response.json()) as RadioResponse & {
+      error?: string;
+      code?: string;
+    };
+    if (!response.ok || !payload.ok) {
+      shouldResumePlaybackRef.current = false;
+      throw new Error(payload.error ?? `下载失败 (${payload.code ?? "unknown"})`);
+    }
+
+    setHistory((currentHistory) => [previousProgram, ...currentHistory].slice(0, 24));
+    setProgram(payload.program);
+    if (payload.schedule) {
+      setSchedule(payload.schedule);
+    }
+    setChatHistory((currentHistory) => {
+      const nextIntro: ChatMessage = {
+        id: `assistant-download-${Date.now()}`,
+        role: "assistant",
+        content: payload.program.hostIntro,
+      };
+
+      return [...currentHistory, nextIntro].slice(-12);
+    });
   }
 
   /**
@@ -1259,6 +1665,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 LIGHT
               </button>
             </div>
+            <button
+              type="button"
+              className={styles.searchBtn}
+              onClick={() => setShowSearchModal(true)}
+              aria-label="搜索酷狗免费歌曲"
+              title="搜索歌曲"
+            >
+              ⌕
+            </button>
           </div>
         </header>
 
@@ -1307,7 +1722,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             </div>
             <div>
               <strong>
-                {program.currentTrack.title} · {program.currentTrack.artist}
+                {visibleTrack.title} · {visibleTrack.artist}
               </strong>
               <p>PLAYING</p>
             </div>
@@ -1573,12 +1988,54 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           onEnded={() => {
             setIsPlaying(false);
             setCurrentTime(0);
+            if (searchPreview) {
+              clearSearchPreview();
+              setActiveLabel("ON AIR");
+              return;
+            }
             playNextTrack();
           }}
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
         />
       </section>
+
+      {showSearchModal && (
+        <div
+          className={styles.searchBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-label="搜索歌曲"
+          onClick={() => setShowSearchModal(false)}
+        >
+          <div
+            className={styles.searchModal}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className={styles.searchHeader}>
+              <strong>SEARCH</strong>
+              <button
+                type="button"
+                className={styles.searchClose}
+                onClick={() => setShowSearchModal(false)}
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </header>
+            <div className={styles.searchBody}>
+              <SearchPanelInline
+                source={searchSource}
+                onSourceChange={setSearchSource}
+                searchFn={searchSongsFromSource}
+                playFn={playSearchSong}
+                playingKey={searchPreview?.key ?? null}
+                downloadFn={downloadSong}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDayList && (
         /*
