@@ -271,6 +271,75 @@ CSS 变量只从父继承到子，写在 .brandDot 上 .dotGlyph 拿不到
 移动断点 `@media (max-width: 720px)` 里有同名变量覆盖，规则一样——
 改 `.dotWord { --dot-size: ... }` 即可，不要在叶子上覆盖。
 
+### 弹层 Modal / Dialog 标准模式
+
+后续所有"弹出框 / alert / 全屏 dialog"都按这个模板做，复制改名即可，不要每次自己造一套。
+
+#### JSX 模板
+
+放在 `PlayerShell` return 的 `</section>` 之后、`</main>` 之前。**不要放在 `.panel` section 内**。
+
+```jsx
+{showXxx && (
+  <div
+    className={styles.xxxBackdrop}
+    role="dialog"
+    aria-modal="true"
+    aria-label="xxx"
+    onClick={() => setShowXxx(false)}
+  >
+    <div
+      className={styles.xxxModal}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <header className={styles.xxxHeader}>
+        <strong>标题</strong>
+        <button
+          type="button"
+          className={styles.xxxClose}
+          onClick={() => setShowXxx(false)}
+          aria-label="关闭"
+        >
+          ✕
+        </button>
+      </header>
+      <div className={styles.xxxBody}>...内容...</div>
+    </div>
+  </div>
+)}
+```
+
+#### CSS 模板（参考 `.dayListBackdrop` 实例）
+
+| class | 关键属性 |
+|---|---|
+| `.xxxBackdrop` | `position: fixed; inset: 0; z-index: 100;` 半透明 + `backdrop-filter: blur(6px);` 180ms 淡入 |
+| `.xxxModal` | `width: min(520px, 100%); max-height: min(78vh, 720px);` 圆角 18px + 点阵底纹 + 紫色 inset glow，220ms pop（scale + translateY） |
+| `.xxxHeader` | flex space-between，padding 16px 18px，底部 border |
+| `.xxxClose` | 28px 圆形 ✕，hover 提亮 |
+| `.xxxBody` | `overflow-y: auto;` padding 14px 18px 18px |
+
+#### 5 条必须遵守的约束（违反会出 bug）
+
+1. **渲染在 `.panel` 外**——`.panel` 有 `overflow: hidden`，fixed modal 在 ancestor stacking context 里可能被限制在 panel 区域。放到 `main` 直接子级最稳。
+2. **Backdrop + Modal 双层结构**——`onClick` 关闭绑在 backdrop 上，modal 内 `stopPropagation` 切断冒泡。绑在 modal 上点哪都会关。
+3. **亮色主题覆盖用 `.pageLight` 不是 `.panelLight`**——modal 在 main 内、panel 外，祖先链没有 `.panelLight`。写错亮色模式 modal 不变白。
+4. **`z-index ≥ 100`**——要高于 `.clickRipple` (20) 和 panel 内所有伪元素。
+5. **独立 state**——不要跟其他 toggle 复用 state，否则会出现"打开 A 时 B 也莫名其妙弹出来"。
+
+#### 交互必备
+
+- 点 backdrop 关闭 ✓
+- 点 ✕ 按钮关闭 ✓
+- 触发动作（如点歌）后自动关闭（参考 dayList 里 `onClick` 同时调 `setShowDayList(false)`）
+- ESC 关闭（未做，需要时加 `useEffect` 监听 `keydown`）
+
+#### 现存实例
+
+| 触发 | state | CSS 前缀 | 用途 |
+|---|---|---|---|
+| TODAY 行点击 | `showDayList` | `.dayList*` | 弹出全天 4 段歌单 |
+
 ## 常见调试入口
 
 - **点 ⌁ 没反应** → 看 `requestProgram` catch 分支 + Network 面板
@@ -293,6 +362,12 @@ CSS 变量只从父继承到子，写在 .brandDot 上 .dotGlyph 拿不到
   改成 `.parent > i` 限定直接子，参考 `.liveTitle > i`
 - **像素字外层设了 color 但不生效** → `.panelDark .dotOn { color }` specificity 更高把它压住了，
   用 `.yourWord .dotOn { background: #xxx }` 直接覆盖背景，参考 `.liveBadge .dotOn`
+- **新 modal 在亮色模式没变白** → 亮色覆盖写成 `.panelLight .xxx` 了；modal 在 `.panel` 外，
+  应该用 `.pageLight .xxx`
+- **modal 点哪都关 / 点内容也关闭** → onClick 关闭绑在 modal 自身而不是 backdrop；按"弹层 Modal 标准模式"
+  双层结构：关闭只绑 backdrop，modal 内 stopPropagation
+- **新 modal 被裁掉一半 / 显示不完整** → 渲染在 `.panel` section 内，受 `overflow: hidden` 限制；
+  挪到 `</section>` 之后、`</main>` 之前
 
 ## 维护规则
 

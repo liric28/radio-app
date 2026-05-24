@@ -1151,6 +1151,227 @@
 }
 
 /*
+ * ============ Modal 弹层标准模式（项目通用，不只 dayList 用）============
+ *
+ * 后续所有"弹出框 / alert / dialog"都按这个模板做，复制改名即可。
+ *
+ * JSX 结构（在 PlayerShell return 的 </section> 之后、</main> 之前渲染）：
+ *
+ *   {showXxx && (
+ *     <div className={styles.xxxBackdrop} role="dialog" aria-modal="true"
+ *          onClick={() => setShowXxx(false)}>
+ *       <div className={styles.xxxModal} onClick={e => e.stopPropagation()}>
+ *         <header className={styles.xxxHeader}>
+ *           <strong>标题</strong>
+ *           <button className={styles.xxxClose} onClick={() => setShowXxx(false)}>✕</button>
+ *         </header>
+ *         <div className={styles.xxxBody}>...内容...</div>
+ *       </div>
+ *     </div>
+ *   )}
+ *
+ * 关键约束（违反就会出 bug）：
+ *
+ * 1. **必须渲染在 .panel 外** — .panel 有 overflow: hidden，
+ *    fixed modal 虽然脱离正常流，但浏览器仍可能因为 ancestor stacking context
+ *    把 modal 限制在 panel 区域。放到 main 直接子级最稳。
+ *
+ * 2. **Backdrop + Modal 双层** — 不要把 onClick 关闭绑在 modal 本身，
+ *    否则点 modal 内任何地方都会关。一定用 backdrop onClick 关闭，
+ *    modal 内 stopPropagation 切断冒泡。
+ *
+ * 3. **亮色主题覆盖用 .pageLight 不是 .panelLight** — modal 在 main 内、panel 外，
+ *    祖先链上只有 .pageLight/.pageDark，没有 .panelLight/.panelDark。
+ *    搞错了亮色模式 modal 就不会变白。
+ *
+ * 4. **z-index ≥ 100** — 高于 .clickRipple(20)、.panel::before/::after 等所有 panel 内层。
+ *
+ * 5. **触发用独立 state** — 不要复用其他 toggle，比如 dayList 跟 LIST 列表共用 state
+ *    会导致打开 LIST 时 modal 也莫名其妙弹出来。
+ *
+ * 视觉规范（保持各 modal 一致）：
+ * - backdrop: rgba(8,6,14,0.72) + backdrop-filter: blur(6px)，180ms 淡入
+ * - modal: 圆角 18px、点阵底纹 + 紫色 inset glow、pop 220ms（scale 0.96→1 + translateY 8px→0）
+ * - header padding 16px 18px，关闭按钮 28px 圆形 ✕
+ *
+ * 现存实例：.dayListBackdrop / .dayListModal（TODAY 行触发，下方）
+ *
+ * ============ /Modal 标准模式 ============
+ */
+/*
+ * "全天 4 段歌单" modal 弹层（TODAY 行触发）。
+ * 与内联的 .queueOverlay（LIST 按钮触发）完全独立——这是覆盖式 alert/dialog 风格。
+ *
+ * 结构：
+ *   .dayListBackdrop  ← position:fixed 全屏遮罩，点击关闭（onClick → setShowDayList(false)）
+ *     └─ .dayListModal  ← 居中卡片容器，stopPropagation 防止穿透
+ *          ├─ .dayListHeader  ← 标题 + ✕
+ *          └─ .dayListBody    ← 滚动区，4 段 .queueBlock
+ */
+.dayListBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(8, 6, 14, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: dayListFadeIn 180ms ease-out;
+}
+
+@keyframes dayListFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dayListModal {
+  width: min(520px, 100%);
+  max-height: min(78vh, 720px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid rgba(164, 146, 236, 0.22);
+  background:
+    radial-gradient(rgba(165, 155, 204, 0.16) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
+    linear-gradient(180deg, rgba(29, 29, 45, 0.98), rgba(18, 18, 26, 0.99)),
+    #12131b;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 80px 14px rgba(140, 100, 230, 0.12) inset;
+  animation: dayListPop 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dayListPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dayListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: rgba(223, 218, 240, 0.78);
+}
+
+.dayListHeader strong {
+  font-weight: 600;
+  color: #f6f2ff;
+}
+
+.dayListClose {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(223, 218, 240, 0.7);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.dayListClose:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6f2ff;
+}
+
+.dayListBody {
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+}
+
+/*
+ * 段（时段）容器：场景标题 + 该段所有歌曲卡片。
+ * 用于全天歌单 modal 内每个时段，按 schedule.blocks 渲染一次。
+ */
+.queueBlock {
+  display: grid;
+  gap: 6px;
+}
+
+.queueBlockHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: rgba(223, 218, 240, 0.5);
+}
+
+.queueBlockHeader strong {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #f6f2ff;
+}
+
+/* 亮色主题覆盖 */
+.pageLight .dayListBackdrop {
+  background: rgba(220, 215, 240, 0.6);
+}
+
+.pageLight .dayListModal {
+  background:
+    radial-gradient(rgba(80, 70, 130, 0.18) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 243, 252, 0.99)),
+    #f8f6fc;
+  border-color: rgba(168, 159, 215, 0.4);
+}
+
+.pageLight .dayListHeader strong,
+.pageLight .queueBlockHeader strong {
+  color: #15131c;
+}
+
+/* dayList modal 在 .panel 外，亮色覆盖必须用 .pageLight。 */
+.pageLight .dayListHeader {
+  color: rgba(50, 40, 80, 0.7);
+  border-bottom-color: rgba(20, 18, 28, 0.08);
+}
+
+.pageLight .dayListBody {
+  color: #15131c;
+}
+
+.pageLight .queueBlockHeader {
+  color: rgba(80, 70, 110, 0.55);
+}
+
+.pageLight .dayListClose {
+  background: rgba(20, 18, 28, 0.04);
+  border-color: rgba(20, 18, 28, 0.12);
+  color: rgba(50, 40, 80, 0.7);
+}
+
+.pageLight .dayListClose:hover {
+  background: rgba(20, 18, 28, 0.08);
+  color: #15131c;
+}
+
+/*
  * 单张歌曲卡片。
  * - width: fit-content 让卡片按"标题最长那条"自动收缩，不全铺
  * - max-width 280px 防止超长标题让卡片过宽，超出会 ellipsis（见 .queueCardTitle）
@@ -1238,26 +1459,49 @@
   color: #d8ffe8;
 }
 
-.panelLight .queueCard {
+/*
+ * queueCard 亮色覆盖。
+ * 同时挂 .panelLight 和 .pageLight 两个祖先选择器——
+ * LIST 弹出的内联 .queueOverlay 在 .panel 内（祖先有 .panelLight），
+ * TODAY modal 在 .panel 外（祖先只有 .pageLight）。两边都覆盖才能在亮色模式下都生效。
+ */
+.panelLight .queueCard,
+.pageLight .queueCard {
   background: rgba(20, 18, 28, 0.04);
   border-color: rgba(20, 18, 28, 0.08);
 }
 
-.panelLight .queueCardTitle {
+.panelLight .queueCardTitle,
+.pageLight .queueCardTitle {
   color: #15131c;
 }
 
-.panelLight .queueCardArtist {
+.panelLight .queueCardArtist,
+.pageLight .queueCardArtist {
   color: rgba(80, 70, 110, 0.6);
 }
 
-.panelLight .queueCardActive {
-  background: rgba(50, 180, 110, 0.08);
+.panelLight .queueCardIcon,
+.pageLight .queueCardIcon {
+  color: rgba(50, 40, 80, 0.45);
+  border-color: rgba(20, 18, 28, 0.12);
+}
+
+.panelLight .queueCardActive,
+.pageLight .queueCardActive {
+  background: rgba(50, 180, 110, 0.1);
   border-color: rgba(50, 180, 110, 0.6);
 }
 
-.panelLight .queueCardActive .queueCardTitle {
+.panelLight .queueCardActive .queueCardTitle,
+.pageLight .queueCardActive .queueCardTitle {
   color: #18532f;
+}
+
+.panelLight .queueCardActive .queueCardIcon,
+.pageLight .queueCardActive .queueCardIcon {
+  color: #2c8a4f;
+  border-color: rgba(44, 138, 79, 0.6);
 }
 
 /*
@@ -1267,6 +1511,13 @@
   border-color: rgba(84, 216, 140, 0.55);
   color: #d8ffe8;
   background: rgba(84, 216, 140, 0.08);
+}
+
+/* 亮色模式下，激活态 chipButton 需要深绿文字，否则浅绿在浅底上看不清。 */
+.panelLight .chipButtonActive {
+  border-color: rgba(44, 138, 79, 0.6);
+  color: #18532f;
+  background: rgba(44, 138, 79, 0.12);
 }
 
 /* legacy queueList—暂留以防其他地方引用，新 UI 用 .queueOverlay。 */

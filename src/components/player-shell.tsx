@@ -400,6 +400,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 默认折叠避免占地，点 LIST 才展开——视觉上等同于一条"系统插播的歌单消息"。
    */
   const [showQueueList, setShowQueueList] = useState<boolean>(false);
+  /**
+   * TODAY 行触发的"全天四段歌单"弹层。
+   * 与 LIST 按钮的 showQueueList 完全独立——LIST 显示当前段、TODAY 显示 4 段全部，
+   * 两个开关互不干涉，可同时打开/独立关闭。
+   */
+  const [showDayList, setShowDayList] = useState<boolean>(false);
   const activeScheduleBlock = schedule.blocks.find((block) => block.period === currentBlockPeriod);
   const now = new Date();
   const currentClock = `${String(now.getHours()).padStart(2, "0")} ${String(
@@ -1307,16 +1313,38 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           </div>
         </section>
 
-        <section className={styles.queueHeader}>
+        {/*
+         * TODAY ... TRACKS 整行可点：toggle showDayList，弹出全天 4 段歌单。
+         * 中间天气块 stopPropagation 不触发——点天气不应该展开列表。
+         */}
+        <section
+          className={styles.queueHeader}
+          onClick={() => setShowDayList((value) => !value)}
+          role="button"
+          tabIndex={0}
+          aria-expanded={showDayList}
+          aria-label="切换全天歌单显示"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setShowDayList((value) => !value);
+            }
+          }}
+        >
           <span>TODAY</span>
           {weather && (
-            <div className={styles.weatherInHeader}>
+            <div
+              className={styles.weatherInHeader}
+              onClick={(event) => event.stopPropagation()}
+            >
               <span>{weather.conditionText}</span>
               <span className={styles.weatherTemp}>{weather.temperatureC}°</span>
             </div>
           )}
           <span>{schedule.blocks.reduce((sum, block) => sum + block.tracks.length, 0)} TRACKS</span>
         </section>
+
+{/* 全天 4 段歌单 modal 弹层渲染在 PlayerShell 末尾，见 .dayListBackdrop */}
 
         <section className={styles.liveStrip}>
           <div className={styles.liveTitle}>
@@ -1386,12 +1414,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
           {showQueueList && activeScheduleBlock && (
             /*
-             * "当前段歌单"弹出卡片组。
-             * 触发：顶部 LIST 按钮 toggle showQueueList。
-             * 数据：schedule 当前 block（按 currentBlockPeriod 查找）的所有 tracks，
-             *      用 currentTrackIndex 高亮当前正在播放的一条。
-             * 排版：圆角卡片纵向排列，左侧 24px 图标列（▶/★），右侧标题+艺人。
-             * 点击任一卡片：等同 queueRow 旧行为，调 selectQueueTrack 跳到该曲。
+             * "当前段歌单"弹出卡片组（LIST 按钮触发）。
+             * 数据：schedule 当前 block 的所有 tracks，用 currentTrackIndex 高亮当前曲。
+             * 注意：这里只显示当前段。要看全天 4 段请点 TODAY 行 → 另一个弹层 .dayList。
              */
             <div className={styles.queueOverlay} role="list" aria-label="当前段歌单">
               {activeScheduleBlock.tracks.map((track, index) => {
@@ -1496,6 +1521,74 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           onPlay={() => setIsPlaying(true)}
         />
       </section>
+
+      {showDayList && (
+        /*
+         * 全天 4 段歌单 modal 弹层。
+         * - 放在 .panel section 外层，避免被 .panel 的 overflow:hidden 裁剪
+         * - position: fixed 全屏遮罩 + 居中卡片
+         * - 点遮罩 / ESC / ✕ 都能关
+         */
+        <div
+          className={styles.dayListBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-label="全天歌单"
+          onClick={() => setShowDayList(false)}
+        >
+          <div
+            className={styles.dayListModal}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className={styles.dayListHeader}>
+              <strong>
+                TODAY · {schedule.blocks.reduce((sum, b) => sum + b.tracks.length, 0)} TRACKS
+              </strong>
+              <button
+                type="button"
+                className={styles.dayListClose}
+                onClick={() => setShowDayList(false)}
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </header>
+            <div className={styles.dayListBody}>
+              {schedule.blocks.map((block) => (
+                <section key={block.period} className={styles.queueBlock}>
+                  <header className={styles.queueBlockHeader}>
+                    <strong>{block.scene}</strong>
+                    <span>{block.tracks.length} 首</span>
+                  </header>
+                  {block.tracks.map((track, index) => {
+                    const isActive =
+                      block.period === currentBlockPeriod && index === currentTrackIndex;
+                    return (
+                      <button
+                        key={track.id}
+                        type="button"
+                        className={`${styles.queueCard} ${isActive ? styles.queueCardActive : ""}`}
+                        onClick={() => {
+                          selectQueueTrack(track.id, true);
+                          setShowDayList(false);
+                        }}
+                      >
+                        <span className={styles.queueCardIcon} aria-hidden>
+                          {isActive ? "★" : "▶"}
+                        </span>
+                        <div className={styles.queueCardText}>
+                          <strong className={styles.queueCardTitle}>{track.title}</strong>
+                          <p className={styles.queueCardArtist}>{track.artist}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
