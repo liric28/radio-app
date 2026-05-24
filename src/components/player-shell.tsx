@@ -6,6 +6,10 @@ import { DotmHex10 } from "@/components/ui/dotm-hex-10";
 import { DotmSquare15 } from "@/components/ui/dotm-square-15";
 import { DotmSquare18 } from "@/components/ui/dotm-square-18";
 import { DotmCircular8 } from "@/components/ui/dotm-circular-8";
+import {
+  PointerMatrixField,
+  type PointerMatrixFieldHandle,
+} from "@/components/pointer-matrix-field";
 import styles from "@/app/page.module.css";
 import type { MusicSearchHit, MusicSearchSource } from "@/lib/music-search";
 import type {
@@ -645,7 +649,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   );
   const [libraryLimit, setLibraryLimit] = useState<string>("300");
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
-  const [pointerGlow, setPointerGlow] = useState({ x: 50, y: 18, active: false });
   const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("circular8");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   /**
@@ -665,6 +668,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    */
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
+  const matrixFieldRef = useRef<PointerMatrixFieldHandle | null>(null);
   /**
    * chatLog 容器 ref：发消息后只滚 chatLog 自身的 scrollTop 到底，
    * **不能用 anchor.scrollIntoView**——那样会把整个 page 也带着滚，
@@ -1590,36 +1594,24 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   }
 
   /**
-   * 鼠标在面板内移动 → 写 --mx/--my CSS 变量驱动透镜跟随。
-   *
-   * 性能：直接操 DOM 设置 style 而非 setState，避免每次 mousemove 触发
-   *      PlayerShell（1300 行）整体重渲染。仅 active 状态走 React。
-   *
-   * 排除聊天区：鼠标在 .djPanel 范围内时关闭透镜（视觉上保持聊天区干净，
-   * 不让点阵盖在文字上影响阅读）。
+   * 鼠标在面板内移动时，把指针坐标喂给背景点阵层。
+   * 点阵层自己做补间和回弹，不走 React state。
    */
   function handlePanelPointerMove(event: MouseEvent<HTMLElement>) {
     const node = panelRef.current;
     if (!node) return;
 
-    // 检测鼠标是否在聊天区内（含其子元素）
     const target = event.target as HTMLElement | null;
     const inDjPanel = target?.closest(`.${styles.djPanel}`) !== null;
     if (inDjPanel) {
-      if (pointerGlow.active) {
-        setPointerGlow((prev) => ({ ...prev, active: false }));
-      }
+      matrixFieldRef.current?.clearPointer();
       return;
     }
 
     const rect = node.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-    node.style.setProperty("--mx", `${x}%`);
-    node.style.setProperty("--my", `${y}%`);
-    if (!pointerGlow.active) {
-      setPointerGlow((prev) => ({ ...prev, active: true }));
-    }
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    matrixFieldRef.current?.setPointer(x, y);
   }
 
   /**
@@ -1651,16 +1643,18 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     <main className={`${styles.page} ${theme === "light" ? styles.pageLight : styles.pageDark}`}>
       <section
         ref={panelRef}
-        className={`${styles.panel} ${theme === "light" ? styles.panelLight : styles.panelDark} ${
-          pointerGlow.active ? styles.panelGlowActive : ""
-        }`}
+        className={`${styles.panel} ${theme === "light" ? styles.panelLight : styles.panelDark}`}
         onMouseMove={handlePanelPointerMove}
-        onMouseLeave={() =>
-          setPointerGlow((currentGlow) => ({ ...currentGlow, active: false }))
-        }
+        onMouseLeave={() => matrixFieldRef.current?.clearPointer()}
         onClick={handlePanelClick}
       >
-        <header className={styles.topbar}>
+        <PointerMatrixField
+          ref={matrixFieldRef}
+          className={styles.panelMatrix}
+          theme={theme}
+        />
+        <div className={styles.panelContent}>
+          <header className={styles.topbar}>
           <div className={styles.brand}>
             <div className={styles.avatar} />
             <DotMatrixText
@@ -1850,22 +1844,16 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         </section>
 
         <section className={styles.djPanel}>
-          <p className={styles.serverLine}>Connected to Claudio server</p>
-          <div className={styles.djBubble}>
-            <div className={styles.djAvatar} />
-            <div className={styles.djContent}>
-              <p className={styles.djTag}>CLAUDIO</p>
-              <p className={styles.djSpeech}>{latestDjMessage?.content ?? program.hostIntro}</p>
-              <div className={styles.replayRow}>
-                <span>{formatTime(currentTime)}</span>
-                <button type="button" className={styles.replayButton} onClick={() => void replayCurrentTrack()}>
-                  ▶ REPLAY
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div className={styles.chatLog} ref={chatLogRef}>
+            {chatHistory.length === 0 && (
+              <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
+                <div className={styles.avatar} />
+                <p className={styles.chatBubbleWithLabel}>
+                  <span className={styles.chatBubbleLabel}>CLAUDIO</span>
+                  {program.hostIntro}
+                </p>
+              </div>
+            )}
             {chatHistory.map((message) => (
               <div
                 key={message.id}
@@ -2017,6 +2005,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
         />
+        </div>
       </section>
 
       {showSearchModal && (

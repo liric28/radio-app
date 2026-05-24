@@ -12,7 +12,6 @@
 }
 
 .page button,
-.page input,
 .page a {
   /* 交互元素上换成 pointer 版本：稍微高亮的蓝色 + 表示可点击 */
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M3 2 L3 22 L9 17 L13 25 L17 23 L13 15 L21 15 Z' fill='%237ec8ff' stroke='%23ffffff' stroke-width='1.4' stroke-linejoin='round'/></svg>") 2 2, pointer;
@@ -55,74 +54,18 @@
   animation: breathe-glow 3.5s ease-in-out infinite;
 }
 
-/*
- * 双层透镜点阵，营造 3D 缩放景深感。
- *
- * 原理：两层 radial-gradient 点阵叠加，各自被一个跟鼠标走的圆形 mask 限制可见区域
- *   - ::after  外层：1.2px 小点，宽 mask（半径 200px），稀薄如远景
- *   - ::before 内核：2.6px 大点，窄 mask（半径 90px），密集明亮如近焦
- *   合在一起肉眼看到"中间大、外圈小"的渐变 → 立体透视感
- *
- * 鼠标位置由 player-shell.tsx 的 handlePanelPointerMove 写入 --mx/--my（百分比）。
- * 离开 panel 时 .panelGlowActive 被移除，整体透明度回 0（fade out）。
- *
- * drop-shadow 给点加微光晕，增强"发光"质感而不是平面圆点。
- */
-.panel::after {
-  content: "";
+.panelMatrix {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(74, 255, 214, 0.85) 1.2px, transparent 1.4px);
-  background-size: 18px 18px;
-  -webkit-mask-image: radial-gradient(
-    circle 200px at var(--mx, 50%) var(--my, 20%),
-    rgba(0, 0, 0, 0.85) 0,
-    rgba(0, 0, 0, 0.55) 45%,
-    transparent 90%
-  );
-  mask-image: radial-gradient(
-    circle 200px at var(--mx, 50%) var(--my, 20%),
-    rgba(0, 0, 0, 0.85) 0,
-    rgba(0, 0, 0, 0.55) 45%,
-    transparent 90%
-  );
-  opacity: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  transition: opacity 160ms ease;
-  filter: drop-shadow(0 0 1.5px rgba(74, 255, 214, 0.5));
+  z-index: 0;
 }
 
-.panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
+.panelContent {
+  position: relative;
   z-index: 1;
-  background-image: radial-gradient(rgba(120, 255, 220, 1) 2.6px, transparent 2.8px);
-  background-size: 18px 18px;
-  -webkit-mask-image: radial-gradient(
-    circle 90px at var(--mx, 50%) var(--my, 20%),
-    rgba(0, 0, 0, 1) 0,
-    rgba(0, 0, 0, 0.65) 40%,
-    transparent 80%
-  );
-  mask-image: radial-gradient(
-    circle 90px at var(--mx, 50%) var(--my, 20%),
-    rgba(0, 0, 0, 1) 0,
-    rgba(0, 0, 0, 0.65) 40%,
-    transparent 80%
-  );
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 160ms ease;
-  filter: drop-shadow(0 0 3px rgba(120, 255, 220, 0.75));
-}
-
-.panelGlowActive::after {
-  opacity: 0.95;
-}
-
-.panelGlowActive::before {
-  opacity: 1;
 }
 
 .pageLight {
@@ -139,16 +82,9 @@
   color: #f1eefb;
 }
 
-/*
- * 整面 panel 底纹：18px 网格的点阵，作为最顶层 background-image 叠在主渐变之上。
- * 之前是各 section 各自 ::before 铺一遍（topbar / clockStage / controlDeck / djPanel / footerBar），
- * 中间会有 section 间距没点阵覆盖；现在统一在 .panel 上一层全铺，所有区段共享同一张连续底纹。
- * 调浓淡：改第一个 radial-gradient 的 rgba alpha；改间距：改 18px / 18px。
- */
 .panelLight {
   border: 1px solid rgba(168, 159, 215, 0.2);
   background:
-    radial-gradient(rgba(80, 70, 130, 0.18) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 243, 252, 0.98)),
     #f8f6fc;
   box-shadow:
@@ -159,7 +95,6 @@
 .panelDark {
   border: 1px solid rgba(164, 146, 236, 0.18);
   background:
-    radial-gradient(rgba(165, 155, 204, 0.18) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
     linear-gradient(180deg, rgba(29, 29, 45, 0.92), rgba(18, 18, 26, 0.97)),
     #12131b;
 }
@@ -638,11 +573,34 @@
  */
 .onAir > i,
 .liveTitle > i {
+  position: relative;
   width: 10px;
   height: 10px;
   border-radius: 999px;
   background: #54d88c;
   box-shadow: 0 0 10px rgba(84, 216, 140, 0.8);
+}
+
+.liveTitle > i::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(84, 216, 140, 0.58);
+  box-shadow: 0 0 10px rgba(84, 216, 140, 0.24);
+  animation: live-dot-breathe 1.9s ease-in-out infinite;
+}
+
+@keyframes live-dot-breathe {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.92;
+  }
 }
 
 .controlDeck {
@@ -908,7 +866,7 @@
  * 防止亮色透镜盖在文字上影响阅读。
  */
 .djPanel {
-  padding: 18px 20px 20px;
+  padding: 0 20px 20px;
   position: relative;
 }
 
@@ -919,30 +877,38 @@
  */
 .clickRipple {
   position: absolute;
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(65, 148, 255, 0.24) 0%, rgba(65, 148, 255, 0.14) 38%, rgba(65, 148, 255, 0.04) 62%, transparent 72%);
-  border: 3px solid rgba(47, 132, 255, 0.8);
+  background: transparent;
+  border: 2px solid rgba(74, 164, 255, 0.92);
   box-shadow:
-    0 0 0 8px rgba(47, 132, 255, 0.16),
-    0 0 26px rgba(47, 132, 255, 0.26);
-  transform: translate(-50%, -50%) scale(0.18);
+    0 0 0 4px rgba(74, 164, 255, 0.12),
+    0 0 14px rgba(74, 164, 255, 0.24),
+    inset 0 0 0 1px rgba(192, 228, 255, 0.42);
+  transform: translate(-50%, -50%) scale(0.32);
   pointer-events: none;
   z-index: 10;
-  animation: clickRippleAnim 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: clickRippleAnim 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.clickRipple::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+  border: 1px solid rgba(74, 164, 255, 0.55);
+  opacity: 0.9;
 }
 
 @keyframes clickRippleAnim {
   0% {
-    transform: translate(-50%, -50%) scale(0.18);
+    transform: translate(-50%, -50%) scale(0.32);
     opacity: 1;
-    border-width: 3px;
   }
   100% {
-    transform: translate(-50%, -50%) scale(2.8);
+    transform: translate(-50%, -50%) scale(1.9);
     opacity: 0;
-    border-width: 1px;
   }
 }
 
@@ -1064,7 +1030,7 @@
 .chatLog {
   display: grid;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 0;
   max-height: 420px;
   overflow-y: auto;
   padding-right: 4px;
@@ -1818,7 +1784,7 @@
  * - max-width 280px 防止超长标题让卡片过宽，超出会 ellipsis（见 .queueCardTitle）
  * - min-width 200px 防止标题特别短的曲名让卡片太窄不协调
  */
-.queueCard {
+.page .queueCard {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
@@ -1827,9 +1793,10 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
   color: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: text;
   width: fit-content;
   min-width: 200px;
   max-width: 280px;
@@ -1886,9 +1853,14 @@
 }
 
 .queueCardActive {
-  border: 1.5px solid rgba(84, 216, 140, 0.75);
-  background: rgba(84, 216, 140, 0.08);
-  box-shadow: 0 0 0 1px rgba(84, 216, 140, 0.18) inset, 0 0 18px rgba(84, 216, 140, 0.12);
+  background:
+    linear-gradient(180deg, rgba(84, 216, 140, 0.08), rgba(84, 216, 140, 0.02) 78%, rgba(84, 216, 140, 0.14) 100%),
+    rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(84, 216, 140, 0.88);
+  box-shadow:
+    inset 0 -1px 0 rgba(132, 255, 182, 0.78),
+    0 10px 18px -16px rgba(84, 216, 140, 0.9);
 }
 
 .queueCardActive .queueCardIcon {
@@ -1910,6 +1882,7 @@
 .pageLight .queueCard {
   background: rgba(20, 18, 28, 0.04);
   border-color: rgba(20, 18, 28, 0.08);
+  border-bottom-color: rgba(20, 18, 28, 0.12);
 }
 
 .panelLight .queueCardTitle,
@@ -1930,8 +1903,14 @@
 
 .panelLight .queueCardActive,
 .pageLight .queueCardActive {
-  background: rgba(50, 180, 110, 0.1);
-  border-color: rgba(50, 180, 110, 0.6);
+  background:
+    linear-gradient(180deg, rgba(50, 180, 110, 0.08), rgba(50, 180, 110, 0.02) 78%, rgba(50, 180, 110, 0.16) 100%),
+    rgba(20, 18, 28, 0.04);
+  border-color: rgba(20, 18, 28, 0.08);
+  border-bottom-color: rgba(50, 180, 110, 0.82);
+  box-shadow:
+    inset 0 -1px 0 rgba(96, 214, 141, 0.85),
+    0 10px 18px -16px rgba(50, 180, 110, 0.7);
 }
 
 .panelLight .queueCardActive .queueCardTitle,
@@ -2078,16 +2057,6 @@
   background: rgba(5, 6, 10, 0.96);
   color: rgba(223, 218, 240, 0.7);
   font-size: 16px;
-  /*
-   * 强制蓝色箭头光标。input 默认 focus 后会变 I-beam（竖条），
-   * 即使 .page input 设了 url cursor 也会被 focus 状态打回 text。
-   * 这里再显式声明一遍，并把 focus 状态也覆盖掉。
-   */
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M3 2 L3 22 L9 17 L13 25 L17 23 L13 15 L21 15 Z' fill='%237ec8ff' stroke='%23ffffff' stroke-width='1.4' stroke-linejoin='round'/></svg>") 2 2, pointer;
-}
-
-.djInput:focus {
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M3 2 L3 22 L9 17 L13 25 L17 23 L13 15 L21 15 Z' fill='%237ec8ff' stroke='%23ffffff' stroke-width='1.4' stroke-linejoin='round'/></svg>") 2 2, pointer;
 }
 
 .iconButton,
