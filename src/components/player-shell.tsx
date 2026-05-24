@@ -542,7 +542,7 @@ function DotMatrixText({
  */
 
 export function PlayerShell({ initialProgram, initialSchedule, initialWeather }: PlayerShellProps) {
-  const waveformBars = [0.2, 0.45, 0.7, 0.55, 0.85, 0.6, 0.9, 0.4, 0.75, 0.5, 0.65, 0.35, 0.8, 0.55, 0.45, 0.7];
+  const [waveformBars, setWaveformBars] = useState([0.24, 0.68, 0.36, 0.82]);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [program, setProgram] = useState<RadioProgram>(initialProgram);
   const [schedule, setSchedule] = useState<DailySchedule>(initialSchedule);
@@ -825,6 +825,27 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     if (!audioRef.current) return;
     audioRef.current.volume = volume;
   }, [volume]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setWaveformBars([0.24, 0.68, 0.36, 0.82]);
+      return;
+    }
+
+    const pickHeights = () => ([
+      0.18 + Math.random() * 0.2,
+      0.46 + Math.random() * 0.34,
+      0.22 + Math.random() * 0.24,
+      0.58 + Math.random() * 0.34,
+    ]);
+
+    setWaveformBars(pickHeights());
+    const timer = window.setInterval(() => {
+      setWaveformBars(pickHeights());
+    }, 180);
+
+    return () => window.clearInterval(timer);
+  }, [isPlaying]);
 
   /**
    * 组件卸载时清掉 chatPollTimerRef 上挂的 setTimeout，防止内存泄漏。
