@@ -389,6 +389,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    */
   const shouldResumePlaybackRef = useRef<boolean>(false);
   const panelRef = useRef<HTMLElement | null>(null);
+  /**
+   * 聊天最底 anchor ref：发消息后 scrollIntoView 滚到这里，避免新气泡被遮挡。
+   * 用 anchor 而不是容器 scroll，比手算 scrollHeight 简单；同时会自动找最近的 scrollable parent，
+   * chatLog 自身有 overflow-y:auto 就先滚 chatLog，没滚动则继续往上滚到 page。
+   */
+  const chatLogBottomRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * queueOverlay（LIST 按钮弹出的内联卡片组）ref：点 LIST 后 scrollIntoView，
+   * 让用户能立刻看到刚展开的歌单——否则在长聊天页里展开了也看不见。
+   */
+  const queueOverlayRef = useRef<HTMLDivElement | null>(null);
   const latestDjMessage = chatHistory[chatHistory.length - 1];
   // 流式中的 assistant 气泡 id：用于在内容末尾追加 loading 指示
   const streamingMessageId =
@@ -407,6 +418,25 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    */
   const [showDayList, setShowDayList] = useState<boolean>(false);
   const activeScheduleBlock = schedule.blocks.find((block) => block.period === currentBlockPeriod);
+
+  /**
+   * 发消息后自动滚到聊天最底——避免新气泡被输入框、queueOverlay 或视口下半部分遮挡。
+   * 依赖 chatHistory.length 而不是 chatHistory 本身：流式 token 累计时 chatHistory
+   * 引用每次都新（map 返回新数组），监听 chatHistory 会每 30ms 滚一次扰用户；
+   * 监听 length 只在"加了新消息"时才滚，流式 token 不触发。
+   */
+  useEffect(() => {
+    chatLogBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [chatHistory.length]);
+
+  /**
+   * LIST 切到打开时滚动到 queueOverlay，让用户看到刚展开的歌单。
+   * 关闭时不滚——用户点 LIST 关掉就行。block: "center" 让卡片整体居中可视区。
+   */
+  useEffect(() => {
+    if (!showQueueList) return;
+    queueOverlayRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [showQueueList]);
   const now = new Date();
   const currentClock = `${String(now.getHours()).padStart(2, "0")} ${String(
     now.getMinutes(),
@@ -1410,6 +1440,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 )}
               </div>
             ))}
+            {/* 滚到底 anchor：chatHistory.length 变化时 scrollIntoView 这里。 */}
+            <div ref={chatLogBottomRef} aria-hidden />
           </div>
 
           {showQueueList && activeScheduleBlock && (
@@ -1418,7 +1450,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
              * 数据：schedule 当前 block 的所有 tracks，用 currentTrackIndex 高亮当前曲。
              * 注意：这里只显示当前段。要看全天 4 段请点 TODAY 行 → 另一个弹层 .dayList。
              */
-            <div className={styles.queueOverlay} role="list" aria-label="当前段歌单">
+            <div
+              className={styles.queueOverlay}
+              ref={queueOverlayRef}
+              role="list"
+              aria-label="当前段歌单"
+            >
               {activeScheduleBlock.tracks.map((track, index) => {
                 const isActive = index === currentTrackIndex;
                 return (
