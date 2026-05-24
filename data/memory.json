@@ -1,5 +1,6 @@
 {
   "recentTrackIds": [
+    "local-beyond-海阔天空-13",
     "local-beyond-我是愤怒-12",
     "local-beyond-我是愤怒-12",
     "local-unknown-artist-光辉岁月-77",
@@ -10,8 +11,7 @@
     "local-unknown-artist-情人---邓紫棋dj-84",
     "local-unknown-artist-长城dj-82",
     "local-unknown-artist-都是你的错dj-81",
-    "local-周杰伦-给我一首歌的时间-120",
-    "local-周杰伦-稻香-119"
+    "local-周杰伦-给我一首歌的时间-120"
   ],
   "recentProgramTitles": [
     "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
@@ -26,5 +26,5 @@
     "familiar": 4,
     "fresh": 15
   },
-  "lastAction": "manual-pick"
+  "lastAction": "schedule-next"
 }

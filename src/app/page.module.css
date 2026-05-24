@@ -140,9 +140,16 @@
   color: #f1eefb;
 }
 
+/*
+ * 整面 panel 底纹：18px 网格的点阵，作为最顶层 background-image 叠在主渐变之上。
+ * 之前是各 section 各自 ::before 铺一遍（topbar / clockStage / controlDeck / djPanel / footerBar），
+ * 中间会有 section 间距没点阵覆盖；现在统一在 .panel 上一层全铺，所有区段共享同一张连续底纹。
+ * 调浓淡：改第一个 radial-gradient 的 rgba alpha；改间距：改 18px / 18px。
+ */
 .panelLight {
   border: 1px solid rgba(168, 159, 215, 0.2);
   background:
+    radial-gradient(rgba(80, 70, 130, 0.18) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 243, 252, 0.98)),
     #f8f6fc;
   box-shadow:
@@ -153,6 +160,7 @@
 .panelDark {
   border: 1px solid rgba(164, 146, 236, 0.18);
   background:
+    radial-gradient(rgba(165, 155, 204, 0.18) 0.8px, transparent 0.8px) 0 0 / 18px 18px,
     linear-gradient(180deg, rgba(29, 29, 45, 0.92), rgba(18, 18, 26, 0.97)),
     #12131b;
 }
@@ -169,19 +177,7 @@
   position: relative;
 }
 
-.topbar::before,
-.clockStage::before,
-.controlDeck::before,
-.djPanel::before,
-.footerBar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(165, 155, 204, 0.25) 0.8px, transparent 0.8px);
-  background-size: 18px 18px;
-  opacity: 0.22;
-  pointer-events: none;
-}
+/* 点阵底纹现在统一由 .panelLight / .panelDark 的 background-image 全铺，无需各 section 重复 ::before。 */
 
 .topbar {
   display: flex;
@@ -863,22 +859,14 @@
 }
 
 /*
- * 聊天区。给一层略不透明的卡片背景 + z-index 抬升，
- * 把底层 .panel::before/::after 的点阵透镜挡住，保持文字阅读区干净。
- * 同时 player-shell.tsx 里的 handlePanelPointerMove 检测到鼠标进入此区域
- * 也会主动关闭透镜 active 状态。
+ * 聊天区。背景透出全 panel 的点阵底纹，不再独立加卡片层。
+ * z-index 仅用于让点击 ripple/输入框可正常交互，不再用于抬升挡底纹。
+ * handlePanelPointerMove 仍会在鼠标进入此区域时关闭鼠标跟随透镜的 active 态，
+ * 防止亮色透镜盖在文字上影响阅读。
  */
 .djPanel {
   padding: 18px 20px 20px;
   position: relative;
-  z-index: 3;
-  background: linear-gradient(180deg, rgba(18, 18, 26, 0.7), rgba(12, 12, 18, 0.85));
-  border-radius: 18px;
-  margin: 4px 6px;
-}
-
-.panelLight .djPanel {
-  background: linear-gradient(180deg, rgba(252, 251, 255, 0.78), rgba(244, 241, 252, 0.9));
 }
 
 /*
