@@ -469,7 +469,7 @@ function SearchPanelInline({
         ))}
         {!loading && results.length === 0 && !error && (
           <p className={styles.searchEmpty}>
-            {source === "kugou" ? "输入关键词搜索酷狗免费歌曲" : "输入关键词搜索当前来源歌曲"}
+            {source === "kugou" ? "输入关键词搜索当前来源歌曲" : "输入关键词搜索当前来源歌曲"}
           </p>
         )}
         {loadingMore && <p className={styles.searchLoadingMore}>继续加载中...</p>}
@@ -1690,7 +1690,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               type="button"
               className={styles.searchBtn}
               onClick={() => setShowSearchModal(true)}
-              aria-label="搜索酷狗免费歌曲"
+              aria-label="搜索当前来源歌曲"
               title="搜索歌曲"
             >
               ⌕
