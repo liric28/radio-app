@@ -2186,14 +2186,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             className={`${styles.searchModal} ${styles.claudioLiveModal}`}
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className={styles.searchClose}
-              onClick={() => setShowClaudioLiveModal(false)}
-              aria-label="关闭 Claudio live"
-            >
-              ✕
-            </button>
             <ClaudioLiveShell />
           </div>
         </div>

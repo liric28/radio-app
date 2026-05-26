@@ -67,6 +67,7 @@ export function ClaudioLiveShell() {
   const programClockStartedAtRef = useRef<number | null>(null);
   const waveCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const autoStartRequestedRef = useRef(false);
+  const refillRequestedForTrackRef = useRef(-1);
 
   function fmt(seconds: number) {
     if (!Number.isFinite(seconds)) return "0:00";
@@ -139,6 +140,7 @@ export function ClaudioLiveShell() {
       setActiveTurnId(null);
       setCurrentWordIndex(-1);
       setActiveWordCount(0);
+      refillRequestedForTrackRef.current = -1;
       return;
     }
 
@@ -324,20 +326,30 @@ export function ClaudioLiveShell() {
 
   async function playSegmentSequence(items: ClaudioSegment[], token: number) {
     const audio = ttsAudioRef.current;
-    if (!audio) return;
+    if (!audio) return false;
     for (const item of items) {
-      if (playbackTokenRef.current !== token) return;
+      if (playbackTokenRef.current !== token) return false;
+      if (!item.ttsUrl) {
+        if (item.text && item.status === "tts_failed") {
+          appendSystemLine(`TTS failed: ${item.error || item.id}`);
+          setStatus("TTS Failed");
+          return false;
+        }
+        continue;
+      }
       if (item.text) {
         appendTurn("Claudio", item.text, programTimeLabel());
       }
-      if (!item.ttsUrl) continue;
       audio.src = item.ttsUrl;
       setStatus("Speaking");
-      await audio.play().catch(() => {
+      const started = await audio.play().then(() => true).catch(() => {
         setStatus("Tap Play");
+        return false;
       });
+      if (!started) return false;
       await waitForAudioEnd(audio, token);
     }
+    return true;
   }
 
   function resolveSegmentsForIndex(index: number) {
@@ -364,7 +376,8 @@ export function ClaudioLiveShell() {
 
     const leadSegments = resolveSegmentsForIndex(index);
     if (leadSegments.length) {
-      await playSegmentSequence(leadSegments, token);
+      const ok = await playSegmentSequence(leadSegments, token);
+      if (!ok) return;
     }
     if (playbackTokenRef.current !== token) return;
 
@@ -384,14 +397,25 @@ export function ClaudioLiveShell() {
     if (!programId || !tracks.length) return;
     const leadSegments = resolveSegmentsForIndex(currentTrackIndex);
     if (currentTrackIndex === 0 && !leadSegments.length) return;
-    const leadSegmentKey = currentTrackIndex === 0
-      ? leadSegments.map((segment) => `${segment.id}:${segment.ttsUrl || segment.status}`).join("|")
-      : "";
+    const leadSegmentKey = leadSegments.map((segment) => `${segment.id}:${segment.ttsUrl || segment.status}`).join("|");
     const playbackKey = `${programId}:${currentTrackIndex}:${leadSegmentKey}`;
     if (lastPlaybackKeyRef.current === playbackKey) return;
     lastPlaybackKeyRef.current = playbackKey;
     void playTrackFlow(currentTrackIndex);
   }, [programId, currentTrackIndex, tracks, segments]);
+
+  useEffect(() => {
+    if (!programId || !tracks.length) return;
+    const remaining = tracks.length - currentTrackIndex - 1;
+    if (remaining > 1) return;
+    if (refillRequestedForTrackRef.current === currentTrackIndex) return;
+    refillRequestedForTrackRef.current = currentTrackIndex;
+    void fetch("/api/claudio/refill", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ count: 3, djLanguage: "en" }),
+    }).catch(() => null);
+  }, [programId, tracks.length, currentTrackIndex]);
 
   async function advanceToNextTrack() {
     setCurrentTrackIndex((current) => {
