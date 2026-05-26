@@ -141,6 +141,7 @@ export type ClaudioStationState = {
   programId: string | null;
   sessionTitle: string;
   tracks: ClaudioTrack[];
+  segments: ClaudioSegment[];
   generationJobs: ClaudioJob[];
   jobKeys: Set<string>;
   workerRunning: boolean;

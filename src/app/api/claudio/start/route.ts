@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     djLanguage?: "en" | "zh";
   };
 
-  const state = getClaudioStationState();
   const key = `program_start:${Date.now()}`;
   const accepted = enqueueClaudioJob({
     type: "program_start",
@@ -21,10 +20,25 @@ export async function POST(request: NextRequest) {
     djLanguage: body.djLanguage === "zh" ? "zh" : "en",
   });
 
+  const completed = await drainClaudioJobs({ stopAfterKey: key });
+  const state = getClaudioStationState();
+  const failed = state.history.find(
+    (event) => event.type === "job-status" && event.key === key && event.status === "failed",
+  );
+
+  if (failed?.type === "job-status") {
+    return NextResponse.json({
+      ok: false,
+      accepted,
+      key,
+      error: failed.error || "program_start failed",
+    }, { status: 500 });
+  }
+
   void drainClaudioJobs();
 
   return NextResponse.json({
-    ok: true,
+    ok: completed,
     accepted,
     key,
     programId: state.programId,

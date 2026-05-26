@@ -43,8 +43,11 @@ function renderQrPage({
         });
         const data = await response.json();
         if (data.ok) {
-          statusEl.textContent = "Login succeeded. You can close this window.";
-          setTimeout(() => window.close(), 800);
+          statusEl.textContent = "Login succeeded. Refreshing...";
+          if (window.opener) {
+            window.opener.location.reload();
+          }
+          setTimeout(() => window.close(), 600);
           return;
         }
         statusEl.textContent = data.message || "Waiting for authorization...";
@@ -81,9 +84,41 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ============================================================
+  // 登录流程
+  //
+  //  1. 首次访问 /api/netease-login（无 cookie）
+  //     → createQrLogin() 向 sidecar 请求二维码 key 和图片
+  //     → 返回 renderQrPage()（内含轮询 JS，每 2.5s 查 /mode=check）
+  //
+  //  2. 扫码确认后手机端授权
+  //     → 前端轮询 /mode=check 捕获 code=803
+  //     → checkQrLogin() 写 local.config.json（cookie + source）
+  //     → 前端弹窗提示"登录成功，可关闭"
+  //
+  //  3. 已登录用户访问 /api/netease-login（带 cookie）
+  //     → verifyLoginStatus() → 返回已登录 HTML（不重新扫码）
+  //
+  // 4. 前端 PlayerShell 初始化时调 /mode=status
+  //     → getLoginProfile() → sidecar → 网易云 /login/status
+  //     → 返回 { valid, userId, nickname, avatarUrl }
+  //     → setNeteaseViewer() → renderNeteaseAvatar() 显示头像
+  //
+  // 架构
+  //   Next.js (3000) ← NETEASE_API_BASE ← sidecar NeteaseCloudMusicApi (3001)
+  //   cookie 存在 data/netease/local.config.json（source: qr-login）
+  //   搜歌不走 sidecar，直接调 interface.music.163.com
+  // ============================================================
+
   if (mode === "status") {
     try {
       const resolved = resolveCookie();
+      if (!resolved.cookie) {
+        return NextResponse.json(
+          { valid: false, userId: null, nickname: "", avatarUrl: "", reason: "missing-cookie" },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      }
       const profile = await getLoginProfile({
         baseUrl: neteaseBaseUrl(),
         cookie: resolved.cookie,

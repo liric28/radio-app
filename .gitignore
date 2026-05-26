@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/netease-sidecar/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -45,4 +46,10 @@ next-env.d.ts
 /data/chat-jobs.json
 /data/daily-schedule.json
 /data/downloads/
+/data/netease/
+
+# sidecar & runtime
+/netease-sidecar/
+/scripts/
+/cache/
 /package-lock.json

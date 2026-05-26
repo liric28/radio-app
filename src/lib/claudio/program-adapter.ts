@@ -86,6 +86,7 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
     programId,
     sessionTitle: program.segmentTitle,
     tracks,
+    segments,
   });
 
   const payload = {

@@ -18,6 +18,7 @@ export async function GET() {
             programId: state.programId,
             sessionTitle: state.sessionTitle,
             tracks: state.tracks,
+            segments: state.segments,
             history: state.history.slice(-20),
           })}\n\n`,
         ),

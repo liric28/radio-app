@@ -10,6 +10,7 @@ const stationState: ClaudioStationState = {
   programId: null,
   sessionTitle: "",
   tracks: [],
+  segments: [],
   generationJobs: [],
   jobKeys: new Set<string>(),
   workerRunning: false,
@@ -28,6 +29,15 @@ export function subscribeClaudioEvents(subscriber: Subscriber) {
 }
 
 export function broadcastClaudioEvent(event: ClaudioProgramEvent) {
+  if (event.type === "program-start" || event.type === "now-playing") {
+    stationState.segments = event.segments;
+  } else if (event.type === "segment-ready") {
+    const segmentIds = new Set(event.segments.map((segment) => segment.id));
+    stationState.segments = [
+      ...stationState.segments.filter((segment) => !segmentIds.has(segment.id)),
+      ...event.segments,
+    ];
+  }
   stationState.history.push(event);
   if (stationState.history.length > 100) {
     stationState.history.splice(0, stationState.history.length - 100);
@@ -86,8 +96,10 @@ export function setClaudioProgramContext(input: {
   programId?: string | null;
   sessionTitle?: string;
   tracks?: ClaudioStationState["tracks"];
+  segments?: ClaudioStationState["segments"];
 }) {
   if (input.programId !== undefined) stationState.programId = input.programId;
   if (input.sessionTitle !== undefined) stationState.sessionTitle = input.sessionTitle;
   if (input.tracks !== undefined) stationState.tracks = input.tracks;
+  if (input.segments !== undefined) stationState.segments = input.segments;
 }

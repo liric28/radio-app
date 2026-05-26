@@ -30,7 +30,22 @@ export async function POST(request: NextRequest) {
     djLanguage: body.djLanguage === "zh" ? "zh" : "en",
   });
 
+  const completed = await drainClaudioJobs({ stopAfterKey: key });
+  const failed = state.history.find(
+    (event) => event.type === "job-status" && event.key === key && event.status === "failed",
+  );
+
+  if (failed?.type === "job-status") {
+    return NextResponse.json({
+      ok: false,
+      accepted,
+      key,
+      programId: state.programId,
+      error: failed.error || "music_refill failed",
+    }, { status: 500 });
+  }
+
   void drainClaudioJobs();
 
-  return NextResponse.json({ ok: true, accepted, key, programId: state.programId });
+  return NextResponse.json({ ok: completed, accepted, key, programId: state.programId });
 }

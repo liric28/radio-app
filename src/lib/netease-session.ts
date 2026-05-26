@@ -156,12 +156,21 @@ export async function verifyLoginStatus({
 
   try {
     const status = await requestNeteaseJson("/login/status", {}, { baseUrl, cookie });
+    const data = (status as { data?: Record<string, unknown> })?.data;
+    const account = data?.account as { id?: number; userName?: string } | undefined;
     const profile = (status as {
-      data?: { profile?: { userId?: number } };
-      profile?: { userId?: number };
-    })?.data?.profile || (status as { profile?: { userId?: number } })?.profile;
+      data?: { profile?: { userId?: number; nickname?: string; avatarUrl?: string } };
+      profile?: { userId?: number; nickname?: string; avatarUrl?: string };
+    })?.data?.profile || (status as {
+      profile?: { userId?: number; nickname?: string; avatarUrl?: string };
+    })?.profile;
+
     if (profile?.userId) {
       return { valid: true, userId: profile.userId, reason: "ok" };
+    }
+    // 支持匿名账号：account.id 存在即算有效
+    if (account?.id) {
+      return { valid: true, userId: account.id, reason: "ok-anonymous" };
     }
     return { valid: false, userId: null, reason: "profile-missing" };
   } catch (error) {
@@ -182,15 +191,21 @@ export async function getLoginProfile({
 
   try {
     const status = await requestNeteaseJson("/login/status", {}, { baseUrl, cookie });
+    const data = (status as { data?: Record<string, unknown> })?.data;
+    const account = data?.account as {
+      id?: number;
+      userName?: string;
+      avatarUrl?: string;
+      nickname?: string;
+    } | undefined;
     const profile = (status as {
-      data?: {
-        profile?: { userId?: number; nickname?: string; avatarUrl?: string };
-      };
+      data?: { profile?: { userId?: number; nickname?: string; avatarUrl?: string } };
       profile?: { userId?: number; nickname?: string; avatarUrl?: string };
     })?.data?.profile || (status as {
       profile?: { userId?: number; nickname?: string; avatarUrl?: string };
     })?.profile;
 
+    // 真实账号
     if (profile?.userId) {
       return {
         valid: true,
@@ -198,6 +213,16 @@ export async function getLoginProfile({
         nickname: profile.nickname || "",
         avatarUrl: profile.avatarUrl || "",
         reason: "ok",
+      };
+    }
+    // 匿名账号：用 account 数据
+    if (account?.id) {
+      return {
+        valid: true,
+        userId: account.id,
+        nickname: account.nickname || account.userName || "",
+        avatarUrl: account.avatarUrl || "",
+        reason: "ok-anonymous",
       };
     }
 
@@ -260,6 +285,16 @@ export async function checkQrLogin({
   const cookie = (state as { cookie?: string }).cookie || "";
 
   if (code === 803 && cookie) {
+    // Verify cookie before saving — reject anonymous accounts
+    const verify = await requestNeteaseJson("/login/status", {}, { baseUrl, cookie });
+    const isAnon = (verify as { data?: { account?: { anonimousUser?: boolean; anonymousUser?: boolean } } })?.data?.account?.anonimousUser ?? (verify as { data?: { account?: { anonimousUser?: boolean; anonymousUser?: boolean } } })?.data?.account?.anonymousUser;
+    if (isAnon) {
+      return {
+        ok: false,
+        code,
+        message: "Anonymous login — please ensure your Netease app is logged in to liric28 before scanning.",
+      };
+    }
     const saved = writeLocalConfig({ cookie, source: "qr-login" });
     return { ok: true, code, cookieSaved: true, cookieSource: saved.source || "qr-login" };
   }

@@ -805,10 +805,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleFocus);
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data === "netease-login-success") {
+        void refreshNeteaseViewer();
+      }
+    };
+    window.addEventListener("message", handleMessage);
+
     return () => {
       cancelled = true;
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleFocus);
+      window.removeEventListener("message", handleMessage);
     };
   }, []);
 

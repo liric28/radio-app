@@ -15,6 +15,7 @@ type SnapshotEvent = {
   programId: string | null;
   sessionTitle: string;
   tracks: ClaudioTrack[];
+  segments: ClaudioSegment[];
   history: ClaudioProgramEvent[];
 };
 
@@ -121,6 +122,7 @@ export function ClaudioLiveShell() {
       setProgramId(payload.programId);
       setSessionTitle(payload.sessionTitle || "Claudio FM");
       setTracks(payload.tracks || []);
+      setSegments(payload.segments || []);
       return;
     }
 
@@ -133,10 +135,10 @@ export function ClaudioLiveShell() {
       setStatus("On Air");
       setStarting(false);
       resetProgramClock();
-      const openingText = payload.segments.map((segment) => segment.text).filter(Boolean).join(" ");
-      if (openingText) {
-        appendTurn("Claudio", openingText, programTimeLabel());
-      }
+      setTurns([]);
+      setActiveTurnId(null);
+      setCurrentWordIndex(-1);
+      setActiveWordCount(0);
       return;
     }
 
@@ -202,7 +204,12 @@ export function ClaudioLiveShell() {
       setStatus("Disconnected");
     };
 
-    return () => source.close();
+    return () => {
+      playbackTokenRef.current += 1;
+      ttsAudioRef.current?.pause();
+      musicAudioRef.current?.pause();
+      source.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -297,16 +304,22 @@ export function ClaudioLiveShell() {
     };
   }, [status]);
 
-  async function waitForAudioEnd(audio: HTMLAudioElement) {
+  async function waitForAudioEnd(audio: HTMLAudioElement, token: number) {
     await new Promise<void>((resolve) => {
       const handleDone = () => {
         audio.removeEventListener("ended", handleDone);
         audio.removeEventListener("error", handleDone);
+        audio.removeEventListener("pause", handlePauseAfterCancel);
         resolve();
+      };
+      const handlePauseAfterCancel = () => {
+        if (playbackTokenRef.current !== token) handleDone();
       };
       audio.addEventListener("ended", handleDone, { once: true });
       audio.addEventListener("error", handleDone, { once: true });
+      audio.addEventListener("pause", handlePauseAfterCancel);
     });
+    if (playbackTokenRef.current !== token) return;
   }
 
   async function playSegmentSequence(items: ClaudioSegment[], token: number) {
@@ -320,8 +333,10 @@ export function ClaudioLiveShell() {
       if (!item.ttsUrl) continue;
       audio.src = item.ttsUrl;
       setStatus("Speaking");
-      await audio.play().catch(() => null);
-      await waitForAudioEnd(audio);
+      await audio.play().catch(() => {
+        setStatus("Tap Play");
+      });
+      await waitForAudioEnd(audio, token);
     }
   }
 
@@ -367,7 +382,12 @@ export function ClaudioLiveShell() {
 
   useEffect(() => {
     if (!programId || !tracks.length) return;
-    const playbackKey = `${programId}:${currentTrackIndex}`;
+    const leadSegments = resolveSegmentsForIndex(currentTrackIndex);
+    if (currentTrackIndex === 0 && !leadSegments.length) return;
+    const leadSegmentKey = currentTrackIndex === 0
+      ? leadSegments.map((segment) => `${segment.id}:${segment.ttsUrl || segment.status}`).join("|")
+      : "";
+    const playbackKey = `${programId}:${currentTrackIndex}:${leadSegmentKey}`;
     if (lastPlaybackKeyRef.current === playbackKey) return;
     lastPlaybackKeyRef.current = playbackKey;
     void playTrackFlow(currentTrackIndex);
@@ -383,14 +403,25 @@ export function ClaudioLiveShell() {
   async function startStation() {
     setStarting(true);
     setStatus("Starting");
-    await fetch("/api/claudio/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: "Open the station.", source: "live-page", djLanguage: "en" }),
-    }).catch(() => {
+    try {
+      const response = await fetch("/api/claudio/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: "Open the station.", source: "live-page", djLanguage: "en" }),
+      });
+      if (!response.ok) {
+        throw new Error(await response.text().catch(() => response.statusText));
+      }
+      const data = (await response.json().catch(() => ({}))) as { ok?: boolean };
+      if (!data.ok) {
+        throw new Error("Claudio start was not accepted");
+      }
+    } catch (error) {
+      autoStartRequestedRef.current = false;
       setStarting(false);
       setStatus("Start Failed");
-    });
+      appendSystemLine(`program_start failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async function togglePlayback() {
@@ -398,6 +429,10 @@ export function ClaudioLiveShell() {
     const musicAudio = musicAudioRef.current;
     if (ttsAudio?.src && !ttsAudio.paused && !ttsAudio.ended) {
       ttsAudio.pause();
+      return;
+    }
+    if (ttsAudio?.src && ttsAudio.paused && !ttsAudio.ended) {
+      await ttsAudio.play().catch(() => null);
       return;
     }
     if (!musicAudio?.src) {
@@ -452,19 +487,10 @@ export function ClaudioLiveShell() {
               </p>
             </div>
           </div>
-          <a className={styles.externalLink} href="/claudio-live/external" target="_blank" rel="noreferrer">
-            ORIGINAL
-          </a>
           <div className={styles.waveWrap} aria-hidden="true">
             <canvas ref={waveCanvasRef} className={styles.waveCanvas} />
           </div>
         </header>
-
-        <section className={styles.hero}>
-          <p className={styles.eyebrow}>LIVE SESSION</p>
-          <h2 className={styles.sessionTitle}>{sessionTitle || "Claudio FM"}</h2>
-          <p className={styles.programMeta}>{status}</p>
-        </section>
 
         <section className={styles.columns}>
           <div className={styles.panel}>
