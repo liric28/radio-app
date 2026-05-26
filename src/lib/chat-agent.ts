@@ -1,7 +1,7 @@
 /**
  * 聊天 Agent 编排层：消息进来 → 判定意图 → 调对应工具 → 装配给 LLM 的 messages。
  *
- * /api/agent route 的唯一入口，下游只剩 Hermes 出 token 这一步流式发回前端。
+ * /api/agent route 的唯一入口，下游只剩模型出 token 这一步流式发回前端。
  *
  * 三种 mode：
  *   - weather：触发关键词（天气/温度/下雨等，见 weather.isWeatherQuestion）
@@ -13,15 +13,15 @@
  * 输出 RunChatAgentResult：
  *   - state：含 mode/tool/intent/summary/weather，给前端做 SSE 第一帧
  *   - program / schedule：可能被工具改过，前端 setProgram/setSchedule
- *   - hermesMessages：装配好的 LLM 提示词，route 直接转发给 Hermes
+ *   - llmMessages：装配好的 LLM 提示词，route 直接转发给当前模型
  *
  * 注意：所有控制动作（切歌切段等）在 runChatAgent 内部已经完成，
- *      Hermes 只负责"用自然语言确认"，不再决定"要不要切"——避免幻觉。
+ *      模型只负责"用自然语言确认"，不再决定"要不要切"——避免幻觉。
  */
 import { ensureDailySchedule } from "@/lib/daily-schedule";
 import { readMemory } from "@/lib/memory";
 import {
-  buildHermesDjMessages,
+  buildChatModelMessages,
   describeAgentState,
 } from "@/lib/providers/llm";
 import { applyChatIntentWithProgram, resolveChatIntent } from "@/lib/radio-engine";
@@ -42,7 +42,7 @@ type RunChatAgentResult = {
   state: ChatAgentState;
   program: RadioProgram;
   schedule: Awaited<ReturnType<typeof ensureDailySchedule>>;
-  hermesMessages: Array<{ role: string; content: string }>;
+  llmMessages: Array<{ role: string; content: string }>;
 };
 
 /**
@@ -118,7 +118,7 @@ export async function runChatAgent({
     state: nextState,
     program: nextProgram,
     schedule,
-    hermesMessages: buildHermesDjMessages({
+    llmMessages: buildChatModelMessages({
       message,
       program: nextProgram,
       memory,

@@ -1,0 +1,563 @@
+"use client";
+
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { Doto } from "next/font/google";
+import type { ClaudioProgramEvent, ClaudioSegment, ClaudioTrack } from "@/lib/claudio/types";
+import styles from "@/app/claudio-live/page.module.css";
+
+const claudioPixelFont = Doto({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+});
+
+type SnapshotEvent = {
+  type: "snapshot";
+  programId: string | null;
+  sessionTitle: string;
+  tracks: ClaudioTrack[];
+  history: ClaudioProgramEvent[];
+};
+
+type LiveEvent = ClaudioProgramEvent | SnapshotEvent;
+
+type TranscriptToken = {
+  text: string;
+  word: boolean;
+};
+
+type TranscriptTurn = {
+  id: string;
+  speaker: string;
+  text: string;
+  timeLabel: string;
+  tokens: TranscriptToken[];
+};
+
+function transcriptTokens(text: string) {
+  return [...String(text || "").matchAll(/(\s+)|([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}])|([^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+)/gu)]
+    .map((match) => ({ text: match[0], word: !match[1] }));
+}
+
+export function ClaudioLiveShell() {
+  const scrubberBarCount = 60;
+  const scrubberHeights = Array.from({ length: scrubberBarCount }, (_, index) => {
+    const ratio = index / scrubberBarCount;
+    return 4 + 18 * Math.abs(Math.sin(index * 0.41) * Math.cos(index * 0.17 + ratio));
+  });
+  const [programId, setProgramId] = useState<string | null>(null);
+  const [sessionTitle, setSessionTitle] = useState("Claudio FM");
+  const [tracks, setTracks] = useState<ClaudioTrack[]>([]);
+  const [segments, setSegments] = useState<ClaudioSegment[]>([]);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [status, setStatus] = useState("Idle");
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
+  const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+  const [activeWordCount, setActiveWordCount] = useState(0);
+  const [starting, setStarting] = useState(false);
+  const logRef = useRef<HTMLDivElement | null>(null);
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+  const playbackTokenRef = useRef(0);
+  const lastPlaybackKeyRef = useRef("");
+  const programClockStartedAtRef = useRef<number | null>(null);
+  const waveCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const autoStartRequestedRef = useRef(false);
+
+  function fmt(seconds: number) {
+    if (!Number.isFinite(seconds)) return "0:00";
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${String(secs).padStart(2, "0")}`;
+  }
+
+  function resetProgramClock() {
+    programClockStartedAtRef.current = Date.now();
+  }
+
+  function programTimeLabel() {
+    if (!programClockStartedAtRef.current) {
+      resetProgramClock();
+    }
+    return fmt(Math.max(0, ((Date.now() - (programClockStartedAtRef.current || Date.now())) / 1000)));
+  }
+
+  function appendTurn(speaker: string, text: string, timeLabel = "now") {
+    const tokens = transcriptTokens(text);
+    const wordCount = tokens.filter((token) => token.word).length;
+    const nextTurn: TranscriptTurn = {
+      id: `${speaker.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      speaker,
+      text,
+      timeLabel,
+      tokens,
+    };
+    setTurns((current) => [...current, nextTurn].slice(-80));
+    setActiveTurnId(nextTurn.id);
+    setCurrentWordIndex(wordCount > 0 ? 0 : -1);
+    setActiveWordCount(wordCount);
+  }
+
+  function appendSystemLine(text: string) {
+    appendTurn("System", text, "now");
+  }
+
+  function finishKaraoke() {
+    setCurrentWordIndex(activeWordCount > 0 ? activeWordCount : -1);
+  }
+
+  function advanceKaraoke(currentTime: number, duration: number) {
+    if (activeWordCount <= 0 || duration <= 0) return;
+    const ratio = Math.max(0, Math.min(1, currentTime / duration));
+    const nextIndex = Math.min(Math.floor(ratio * activeWordCount), Math.max(activeWordCount - 1, 0));
+    setCurrentWordIndex(nextIndex);
+  }
+
+  const consumeEvent = useEffectEvent((payload: LiveEvent) => {
+    if (payload.type === "snapshot") {
+      setProgramId(payload.programId);
+      setSessionTitle(payload.sessionTitle || "Claudio FM");
+      setTracks(payload.tracks || []);
+      return;
+    }
+
+    if (payload.type === "program-start") {
+      setProgramId(payload.programId);
+      setSessionTitle(payload.sessionTitle || "Claudio FM");
+      setTracks(payload.tracks);
+      setSegments(payload.segments);
+      setCurrentTrackIndex(0);
+      setStatus("On Air");
+      setStarting(false);
+      resetProgramClock();
+      const openingText = payload.segments.map((segment) => segment.text).filter(Boolean).join(" ");
+      if (openingText) {
+        appendTurn("Claudio", openingText, programTimeLabel());
+      }
+      return;
+    }
+
+    if (payload.type === "tracks-ready") {
+      setTracks((current) => [...current, ...payload.tracks]);
+      appendSystemLine(`Refill ready: +${payload.tracks.length} tracks`);
+      return;
+    }
+
+    if (payload.type === "segment-ready") {
+      setSegments((current) => [...current, ...payload.segments]);
+      return;
+    }
+
+    if (payload.type === "now-playing") {
+      setSessionTitle(payload.sessionTitle || "Claudio FM");
+      setTracks(payload.tracks);
+      setSegments(payload.segments);
+      setStatus(payload.status === "speaking" ? "Speaking" : "Queued");
+      return;
+    }
+
+    if (payload.type === "control") {
+      if (payload.action === "next") {
+        void advanceToNextTrack();
+      } else if (payload.action === "pause") {
+        ttsAudioRef.current?.pause();
+        musicAudioRef.current?.pause();
+      } else if (payload.action === "resume") {
+        if (ttsAudioRef.current?.src && ttsAudioRef.current.paused) {
+          void ttsAudioRef.current.play().catch(() => null);
+        } else if (musicAudioRef.current?.src && musicAudioRef.current.paused) {
+          void musicAudioRef.current.play().catch(() => null);
+        }
+      }
+      setStatus(payload.action.toUpperCase());
+      return;
+    }
+
+    if (payload.type === "job-status") {
+      if (payload.jobType === "program_start" && payload.status !== "queued" && payload.status !== "running") {
+        setStarting(false);
+      }
+      if (payload.status === "failed") {
+        appendSystemLine(`${payload.jobType} failed: ${payload.error || "unknown error"}`);
+      }
+    }
+  });
+
+  useEffect(() => {
+    const source = new EventSource("/api/claudio/stream");
+
+    source.onmessage = (event) => {
+      const payload = JSON.parse(event.data) as LiveEvent;
+      consumeEvent(payload);
+    };
+
+    source.addEventListener("ready", () => {
+      setStatus((value) => (value === "Idle" ? "Connected" : value));
+    });
+
+    source.onerror = () => {
+      setStatus("Disconnected");
+    };
+
+    return () => source.close();
+  }, []);
+
+  useEffect(() => {
+    if (autoStartRequestedRef.current) return;
+    if (programId || tracks.length || starting) return;
+    autoStartRequestedRef.current = true;
+    void startStation();
+  }, [programId, tracks.length, starting]);
+
+  useEffect(() => {
+    const node = logRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  }, [turns, currentWordIndex]);
+
+  useEffect(() => {
+    const canvasRefValue = waveCanvasRef.current;
+    if (!canvasRefValue) return;
+
+    const contextRefValue = canvasRefValue.getContext("2d");
+    if (!contextRefValue) return;
+
+    const canvasNode = canvasRefValue;
+    const context = contextRefValue;
+
+    let rafId = 0;
+    let time = 0;
+    const barCount = 56;
+    const barGap = 4;
+    const bars = Array.from({ length: barCount }, (_, index) => ({
+      height: 0,
+      target: 0,
+      noiseSeed: Math.random() * 100 + index * 0.4,
+    }));
+
+    function resizeCanvas() {
+      const rect = canvasNode.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvasNode.width = Math.max(1, Math.round(rect.width * dpr));
+      canvasNode.height = Math.max(1, Math.round(rect.height * dpr));
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function pseudoNoise(x: number, t: number) {
+      return (
+        Math.sin(x * 0.3 + t) +
+        Math.sin(x * 0.7 - t * 1.3) +
+        Math.sin(x * 1.1 + t * 0.7) +
+        Math.sin(x * 0.17 + t * 2.1)
+      ) / 4;
+    }
+
+    function draw() {
+      const width = canvasNode.clientWidth;
+      const height = canvasNode.clientHeight;
+      const isAnimated = status === "Speaking" || status === "Playing" || status === "On Air";
+      context.clearRect(0, 0, width, height);
+
+      const barWidth = (width - barGap * (barCount - 1)) / barCount;
+      bars.forEach((bar, index) => {
+        const noise = pseudoNoise(bar.noiseSeed, time + index * 0.015);
+        const normalized = (noise + 1) / 2;
+        if (isAnimated) {
+          const base = 0.08 + 0.12 * Math.abs(Math.sin(index * 0.19));
+          bar.target = (base + normalized * 0.72) * height;
+        } else {
+          bar.target = (0.03 + normalized * 0.08) * height;
+        }
+        bar.height += (bar.target - bar.height) * 0.14;
+
+        const x = index * (barWidth + barGap);
+        const barHeight = Math.max(2, bar.height);
+        const y = height - barHeight;
+        const alpha = isAnimated ? 0.48 + normalized * 0.34 : 0.16 + normalized * 0.08;
+
+        context.fillStyle = `rgba(67,255,198,${alpha.toFixed(3)})`;
+        context.beginPath();
+        context.roundRect(x, y, Math.max(2, barWidth), barHeight, 3);
+        context.fill();
+      });
+
+      time += isAnimated ? 0.022 : 0.01;
+      rafId = window.requestAnimationFrame(draw);
+    }
+
+    resizeCanvas();
+    draw();
+    window.addEventListener("resize", resizeCanvas);
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [status]);
+
+  async function waitForAudioEnd(audio: HTMLAudioElement) {
+    await new Promise<void>((resolve) => {
+      const handleDone = () => {
+        audio.removeEventListener("ended", handleDone);
+        audio.removeEventListener("error", handleDone);
+        resolve();
+      };
+      audio.addEventListener("ended", handleDone, { once: true });
+      audio.addEventListener("error", handleDone, { once: true });
+    });
+  }
+
+  async function playSegmentSequence(items: ClaudioSegment[], token: number) {
+    const audio = ttsAudioRef.current;
+    if (!audio) return;
+    for (const item of items) {
+      if (playbackTokenRef.current !== token) return;
+      if (item.text) {
+        appendTurn("Claudio", item.text, programTimeLabel());
+      }
+      if (!item.ttsUrl) continue;
+      audio.src = item.ttsUrl;
+      setStatus("Speaking");
+      await audio.play().catch(() => null);
+      await waitForAudioEnd(audio);
+    }
+  }
+
+  function resolveSegmentsForIndex(index: number) {
+    if (index === 0) {
+      return segments.filter((segment) => segment.position === "before_track" && segment.trackIndex === 0);
+    }
+    return segments.filter(
+      (segment) =>
+        segment.position === "between_tracks" &&
+        segment.afterTrackIndex === index - 1 &&
+        segment.beforeTrackIndex === index,
+    );
+  }
+
+  const playTrackFlow = useEffectEvent(async (index: number) => {
+    const track = tracks[index];
+    const music = musicAudioRef.current;
+    if (!track || !music) return;
+
+    const token = Date.now();
+    playbackTokenRef.current = token;
+    ttsAudioRef.current?.pause();
+    music.pause();
+
+    const leadSegments = resolveSegmentsForIndex(index);
+    if (leadSegments.length) {
+      await playSegmentSequence(leadSegments, token);
+    }
+    if (playbackTokenRef.current !== token) return;
+
+    if (!track.streamUrl) {
+      setStatus("Missing Audio");
+      return;
+    }
+
+    music.src = track.streamUrl;
+    setStatus("Playing");
+    await music.play().catch(() => {
+      setStatus("Playback Failed");
+    });
+  });
+
+  useEffect(() => {
+    if (!programId || !tracks.length) return;
+    const playbackKey = `${programId}:${currentTrackIndex}`;
+    if (lastPlaybackKeyRef.current === playbackKey) return;
+    lastPlaybackKeyRef.current = playbackKey;
+    void playTrackFlow(currentTrackIndex);
+  }, [programId, currentTrackIndex, tracks, segments]);
+
+  async function advanceToNextTrack() {
+    setCurrentTrackIndex((current) => {
+      if (current + 1 >= tracks.length) return current;
+      return current + 1;
+    });
+  }
+
+  async function startStation() {
+    setStarting(true);
+    setStatus("Starting");
+    await fetch("/api/claudio/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: "Open the station.", source: "live-page", djLanguage: "en" }),
+    }).catch(() => {
+      setStarting(false);
+      setStatus("Start Failed");
+    });
+  }
+
+  async function togglePlayback() {
+    const ttsAudio = ttsAudioRef.current;
+    const musicAudio = musicAudioRef.current;
+    if (ttsAudio?.src && !ttsAudio.paused && !ttsAudio.ended) {
+      ttsAudio.pause();
+      return;
+    }
+    if (!musicAudio?.src) {
+      await startStation();
+      return;
+    }
+    if (musicAudio.paused) {
+      await musicAudio.play().catch(() => null);
+      return;
+    }
+    musicAudio.pause();
+  }
+
+  return (
+    <main className={styles.page}>
+      <section className={styles.shell}>
+        <audio
+          ref={ttsAudioRef}
+          preload="auto"
+          onTimeUpdate={(event) => {
+            advanceKaraoke(event.currentTarget.currentTime, event.currentTarget.duration || 0);
+          }}
+          onEnded={() => {
+            finishKaraoke();
+          }}
+        />
+        <audio
+          ref={musicAudioRef}
+          preload="auto"
+          onPlay={() => setIsMusicPlaying(true)}
+          onPause={() => setIsMusicPlaying(false)}
+          onLoadedMetadata={(event) => {
+            setDuration(event.currentTarget.duration || 0);
+          }}
+          onTimeUpdate={(event) => {
+            setCurrentTime(event.currentTarget.currentTime || 0);
+            setDuration(event.currentTarget.duration || 0);
+          }}
+          onEnded={() => {
+            setCurrentTime(0);
+            void advanceToNextTrack();
+          }}
+        />
+        <header className={styles.header}>
+          <div className={styles.brand}>
+            <div className={styles.avatar} />
+            <div>
+              <h1 className={`${styles.brandTitle} ${claudioPixelFont.className}`}>Claudio</h1>
+              <p className={styles.brandMeta}>
+                <span className={styles.liveDot} />
+                {status}
+              </p>
+            </div>
+          </div>
+          <a className={styles.externalLink} href="/claudio-live/external" target="_blank" rel="noreferrer">
+            ORIGINAL
+          </a>
+          <div className={styles.waveWrap} aria-hidden="true">
+            <canvas ref={waveCanvasRef} className={styles.waveCanvas} />
+          </div>
+        </header>
+
+        <section className={styles.hero}>
+          <p className={styles.eyebrow}>LIVE SESSION</p>
+          <h2 className={styles.sessionTitle}>{sessionTitle || "Claudio FM"}</h2>
+          <p className={styles.programMeta}>{status}</p>
+        </section>
+
+        <section className={styles.columns}>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <span>Transcript</span>
+              <span>{turns.length} turns</span>
+            </div>
+            <div ref={logRef} className={styles.transcript}>
+              {turns.length ? turns.map((turn) => {
+                let wordCounter = -1;
+                const isActive = turn.id === activeTurnId;
+                return (
+                  <div key={turn.id} className={`${styles.turn} ${isActive ? styles.turnActive : ""}`}>
+                    <div className={styles.turnHead}>
+                      <span className={styles.turnWho}>{turn.speaker}</span>
+                      <span> · {turn.timeLabel}</span>
+                    </div>
+                    <div className={styles.turnBody}>
+                      {turn.tokens.map((token, index) => {
+                        if (!token.word) {
+                          return <span key={`${turn.id}-space-${index}`}>{token.text}</span>;
+                        }
+                        wordCounter += 1;
+                        let className = isActive ? styles.wordFuture : styles.wordSaid;
+                        if (isActive) {
+                          if (currentWordIndex >= activeWordCount && activeWordCount > 0) {
+                            className = styles.wordSaid;
+                          } else if (wordCounter < currentWordIndex) {
+                            className = styles.wordSaid;
+                          } else if (wordCounter === currentWordIndex) {
+                            className = styles.wordCurrent;
+                          }
+                        }
+                        return (
+                          <span key={`${turn.id}-word-${index}`} className={`${styles.word} ${className}`}>
+                            {token.text}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }) : <p className={styles.transcriptEmpty}>Waiting for signal...</p>}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.player}>
+          <div className={styles.playerTime}>{fmt(currentTime)}</div>
+          <button
+            type="button"
+            className={styles.playerBars}
+            aria-label="Seek current track"
+            onClick={(event) => {
+              const audio = musicAudioRef.current;
+              if (!audio?.duration) return;
+              const rect = event.currentTarget.getBoundingClientRect();
+              const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+              audio.currentTime = ratio * audio.duration;
+              setCurrentTime(audio.currentTime);
+            }}
+          >
+            {scrubberHeights.map((height, index) => {
+              const playedCount = duration > 0 ? Math.floor((currentTime / duration) * scrubberBarCount) : 0;
+              const played = index < playedCount;
+              return (
+                <span
+                  key={`scrubber-${index}`}
+                  className={`${styles.playerBar} ${played ? styles.playerBarPlayed : ""}`}
+                  style={{ height: `${height}px` }}
+                />
+              );
+            })}
+          </button>
+          <button
+            type="button"
+            className={styles.playButton}
+            aria-label="Play or pause"
+            onClick={() => {
+              void togglePlayback();
+            }}
+          >
+            {isMusicPlaying ? (
+              <span className={styles.pauseGlyph} aria-hidden="true">
+                <i />
+                <i />
+              </span>
+            ) : (
+              <span className={styles.playGlyph} aria-hidden="true" />
+            )}
+          </button>
+        </section>
+      </section>
+    </main>
+  );
+}

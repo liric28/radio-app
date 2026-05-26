@@ -32,6 +32,7 @@ import type {
   RadioProgram,
   Song,
 } from "@/lib/types";
+import { requestChatCompletion } from "@/lib/providers/chat-llm";
 
 type ComposeIntroInput = {
   scene: string;
@@ -272,7 +273,7 @@ export function buildRuleBasedDjReply({
  * 整段是"提示词工程"：人设硬约束在 system 里，agent 工具结果用 assistant 角色"假装"
  * Claudio 自己已经做完，让模型只负责自然语气回话，不用再"推理"该不该切歌。
  */
-export function buildHermesDjMessages(input: ComposeDjReplyInput) {
+export function buildChatModelMessages(input: ComposeDjReplyInput) {
   const history = (input.history ?? []).slice(-6);
   const nextTrack = input.program.queue[0];
   const agentSummary =
@@ -314,6 +315,8 @@ export function buildHermesDjMessages(input: ComposeDjReplyInput) {
   ];
 }
 
+export const buildHermesDjMessages = buildChatModelMessages;
+
 /**
  * 单首歌的推荐语润色（DJ 口吻，12-25 字，无引号无列表）。
  *
@@ -330,35 +333,22 @@ export async function rewriteTrackReason(
   scene: string,
 ): Promise<string> {
   try {
-    const response = await fetch("http://127.0.0.1:8642/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "hermes",
-        temperature: 0.8,
-        max_tokens: 80,
-        messages: [
-          {
-            role: "system",
-            content:
-              "你是独立音乐电台 DJ。只输出一句推荐语，12-25字，自然口语，像 DJ 随口介绍这首歌。不要列表，不要解释，不要引号。",
-          },
-          {
-            role: "user",
-            content: `场景：${scene}\n氛围：${song.mood}\n种子：${song.reasonSeed}`,
-          },
-        ],
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`Hermes HTTP ${response.status}`);
-    }
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = data.choices?.[0]?.message?.content?.trim();
+    const text = await requestChatCompletion(
+      [
+        {
+          role: "system",
+          content:
+            "你是独立音乐电台 DJ。只输出一句推荐语，12-25字，自然口语，像 DJ 随口介绍这首歌。不要列表，不要解释，不要引号。",
+        },
+        {
+          role: "user",
+          content: `场景：${scene}\n氛围：${song.mood}\n种子：${song.reasonSeed}`,
+        },
+      ],
+      80,
+    );
     if (text) {
-      logReasonRewrite("single.hermes.ok", {
+      logReasonRewrite("single.provider.ok", {
         scene,
         trackId: song.id,
         artist: song.artist,
@@ -366,14 +356,14 @@ export async function rewriteTrackReason(
       });
       return text;
     }
-    logReasonRewrite("single.hermes.empty", {
+    logReasonRewrite("single.provider.empty", {
       scene,
       trackId: song.id,
       artist: song.artist,
       title: song.title,
     });
   } catch (error) {
-    logReasonRewrite("single.hermes.fail", {
+    logReasonRewrite("single.provider.fail", {
       scene,
       trackId: song.id,
       artist: song.artist,
@@ -420,70 +410,57 @@ export async function batchRewriteTrackReasons(
   logReasonRewrite("batch.start", {
     scene,
     count: tracks.length,
-    provider: "hermes",
+    provider: process.env.LLM_PROVIDER || "minimax",
     sample: trackPreview,
   });
 
   if (reasonMap.size === 0) {
     try {
-      const timeout2 = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Hermes batch timeout after 60000ms")), 60000),
+      const timeout2 = new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error("LLM batch timeout after 60000ms")), 60000),
       );
-      const res = await Promise.race([
-        fetch("http://127.0.0.1:8642/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "hermes",
-            temperature: 0.8,
-            messages: [
-              {
-                role: "system",
-                content:
-                  "你是独立音乐电台 DJ 推荐语助手。按序号每行输出一句推荐语，12-25字，自然口语，像 DJ 在介绍歌。禁止列表、解释。",
-              },
-              {
-                role: "user",
-                content: tracks
-                  .map(
-                    (t, i) =>
-                      `${i + 1}. 场景：${scene}，氛围：${t.mood}，种子：${t.reasonSeed}`,
-                  )
-                  .join("\n"),
-              },
-            ],
-            max_tokens: 512,
-          }),
-        }),
+      const text = await Promise.race([
+        requestChatCompletion(
+          [
+            {
+              role: "system",
+              content:
+                "你是独立音乐电台 DJ 推荐语助手。按序号每行输出一句推荐语，12-25字，自然口语，像 DJ 在介绍歌。禁止列表、解释。",
+            },
+            {
+              role: "user",
+              content: tracks
+                .map(
+                  (t, i) =>
+                    `${i + 1}. 场景：${scene}，氛围：${t.mood}，种子：${t.reasonSeed}`,
+                )
+                .join("\n"),
+            },
+          ],
+          512,
+        ),
         timeout2,
-      ]) as Response;
-      if (!res.ok) {
-        throw new Error(`Hermes HTTP ${res.status}`);
-      }
-      const data = (await (res as Response).json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-      };
-      const text = data.choices?.[0]?.message?.content?.trim();
+      ]);
       if (text) {
         const lines = text.split("\n").filter(Boolean);
         tracks.forEach((t, i) => {
           if (lines[i])
             reasonMap.set(t.id, lines[i].replace(/^\d+[\.\)、]\s*/, ""));
         });
-        logReasonRewrite("batch.hermes.ok", {
+        logReasonRewrite("batch.provider.ok", {
           scene,
           count: tracks.length,
           generated: lines.length,
           mapped: reasonMap.size,
         });
       } else {
-        logReasonRewrite("batch.hermes.empty", {
+        logReasonRewrite("batch.provider.empty", {
           scene,
           count: tracks.length,
         });
       }
     } catch (error) {
-      logReasonRewrite("batch.hermes.fail", {
+      logReasonRewrite("batch.provider.fail", {
         scene,
         count: tracks.length,
         error: error instanceof Error ? error.message : String(error),

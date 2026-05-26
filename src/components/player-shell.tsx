@@ -1,11 +1,13 @@
 "use client";
 
 import { type CSSProperties, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Doto } from "next/font/google";
 import { DotmHex1 } from "@/components/ui/dotm-hex-1";
 import { DotmHex10 } from "@/components/ui/dotm-hex-10";
 import { DotmSquare15 } from "@/components/ui/dotm-square-15";
 import { DotmSquare18 } from "@/components/ui/dotm-square-18";
 import { DotmCircular8 } from "@/components/ui/dotm-circular-8";
+import { ClaudioLiveShell } from "@/components/claudio-live-shell";
 import {
   PointerMatrixField,
   type PointerMatrixFieldHandle,
@@ -18,6 +20,11 @@ import type {
   RadioProgram,
   WeatherSnapshot,
 } from "@/lib/types";
+
+const claudioPixelFont = Doto({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+});
 
 type RadioResponse = {
   ok: boolean;
@@ -38,6 +45,13 @@ type PlayerShellProps = {
   initialProgram: RadioProgram;
   initialSchedule: DailySchedule;
   initialWeather: WeatherSnapshot | null;
+};
+
+type NeteaseViewer = {
+  valid: boolean;
+  userId: number | null;
+  nickname: string;
+  avatarUrl: string;
 };
 
 const dotGlyphs: Record<string, string[]> = {
@@ -538,6 +552,17 @@ function DotMatrixText({
   );
 }
 
+function openPopupWindow(url: string, name: string, width: number, height: number) {
+  if (typeof window === "undefined") return;
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
+  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+  window.open(
+    url,
+    name,
+    `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
+  );
+}
+
 /**
  * 按参考图组织成单列电台面板，主视图优先展示时间、控制和 DJ 对话。
  */
@@ -555,9 +580,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   /**
    * 聊天记录持久化（localStorage）。
    *
-   * 背景：Hermes 是无状态的本地推理 API，"对话连续性"完全靠前端每次把 history 数组
+   * 背景：当前聊天模型是无状态推理 API，"对话连续性"完全靠前端每次把 history 数组
    * 一起发过去。chatHistory 原本只在 React useState 里，刷新/报错就丢光，
-   * 下次发消息时 history 是空的 → Hermes "失忆"。
+   * 下次发消息时 history 是空的 → 模型“失忆”。
    *
    * 为什么读 localStorage 必须放在 useEffect 里、不能在 useState 初始化里：
    *   useState 初始化函数在 SSR 时跑（window 不存在 → 返回 intro），CSR 首屏
@@ -650,6 +675,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const [libraryLimit, setLibraryLimit] = useState<string>("300");
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
   const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("circular8");
+  const [neteaseViewer, setNeteaseViewer] = useState<NeteaseViewer | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   /**
    * 自动播放开关。
@@ -698,6 +724,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 两个开关互不干涉，可同时打开/独立关闭。
    */
   const [showDayList, setShowDayList] = useState<boolean>(false);
+  const [showClaudioLiveModal, setShowClaudioLiveModal] = useState<boolean>(false);
   /**
    * 顶部搜索按钮触发的"网络歌曲搜索"弹层。
    * 搜索酷狗免费曲库，下载入库后自动进入当日节目单。
@@ -712,18 +739,78 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   } | null>(null);
   const activeScheduleBlock = schedule.blocks.find((block) => block.period === currentBlockPeriod);
 
+  function renderNeteaseAvatar() {
+    if (!neteaseViewer?.avatarUrl) return null;
+    return (
+      <span
+        className={styles.avatarImage}
+        style={{ backgroundImage: `url("${neteaseViewer.avatarUrl.replace(/"/g, '\\"')}")` }}
+        aria-hidden="true"
+      />
+    );
+  }
+
+  function handleOpenNeteaseLogin() {
+    openPopupWindow("/api/netease-login", "netease-login", 420, 520);
+  }
+
+  function handleOpenClaudioLive() {
+    setShowClaudioLiveModal(true);
+  }
+
   useEffect(() => {
-    if (!showDayList && !showSearchModal) return;
+    if (!showDayList && !showSearchModal && !showClaudioLiveModal) return;
 
     const handleEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setShowDayList(false);
       setShowSearchModal(false);
+      setShowClaudioLiveModal(false);
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [showDayList, showSearchModal]);
+  }, [showDayList, showSearchModal, showClaudioLiveModal]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshNeteaseViewer() {
+      try {
+        const response = await fetch("/api/netease-login?mode=status", {
+          cache: "no-store",
+        });
+        const data = (await response.json()) as Partial<NeteaseViewer>;
+        if (cancelled) return;
+        if (response.ok && data.valid) {
+          setNeteaseViewer({
+            valid: true,
+            userId: typeof data.userId === "number" ? data.userId : null,
+            nickname: typeof data.nickname === "string" ? data.nickname : "",
+            avatarUrl: typeof data.avatarUrl === "string" ? data.avatarUrl : "",
+          });
+          return;
+        }
+        setNeteaseViewer(null);
+      } catch {
+        if (!cancelled) setNeteaseViewer(null);
+      }
+    }
+
+    void refreshNeteaseViewer();
+
+    const handleFocus = () => {
+      void refreshNeteaseViewer();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, []);
 
   /**
    * 发消息后滚到聊天最底——只滚 chatLog 容器自身 scrollTop，不滚 page，输入框保留可见。
@@ -946,7 +1033,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    *
    * 副作用顺序：
    *   1. clear error / set label / 记录 previousProgram
-   *   2. 45s 超时 AbortController 兜底（防 hermes 卡死）
+   *   2. 45s 超时 AbortController 兜底（防模型请求卡死）
    *   3. fetch + 解析；非 2xx 或 payload.ok=false → throw
    *   4. 入栈 history → setProgram → setSchedule(可选) → 追加 hostIntro 到 chat
    *   5. 异常：复位 resume flag + setError；finally 清 timeout
@@ -1313,7 +1400,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    *   4. POST /api/agent（SSE 流），signal 绑定本次 controller
    *   5. 服务端先吐一条 type:"state" 事件（program / schedule / weather 变更）
    *      → 如果 currentTrack.id 变了，设 shouldResumePlaybackRef = true（自动续播新轨）
-   *   6. 然后开始吐 Hermes 的 token（choices[0].delta.content）
+   *   6. 然后开始吐模型的 token（choices[0].delta.content）
    *      → 每个 token 累加到 pendingContent，30ms 内合并 setChatHistory 一次
    *      → 关键优化：避免每个字符都触发整个 PlayerShell 重渲染
    *   7. 流结束（[DONE] 或 reader.done）→ flushPending 收尾，避免最后一段 token 被吞
@@ -1372,7 +1459,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     // 流式 token 批量提交：N 毫秒内的所有 token 合并成一次 setState
     // 避免每个字符触发整个 PlayerShell 重渲染
     //
-    // 调优参考（Hermes 本地模型典型 30-60 tokens/s ≈ 间隔 15-30ms）：
+    // 调优参考（常见流式模型 30-60 tokens/s ≈ 间隔 15-30ms）：
     //   - 10ms：几乎一个 token 一次 setState，批量优化基本无效，但视觉最丝滑
     //   - 30-50ms：平均合并 1-3 个 token，渲染次数减半到 1/3，体感仍实时（推荐区间）
     //   - 100ms+：明显"一段段"，但最省 CPU
@@ -1460,7 +1547,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               continue;
             }
             let content = chunk.choices?.[0]?.delta?.content;
-            // Hermes 可能把 content 包装成对象，尝试提取 text 字段
+            // 某些模型可能把 content 包装成对象，尝试提取 text 字段
             if (typeof content === "object" && content !== null) {
               content = (content as { text?: string }).text ?? String(content);
             }
@@ -1513,12 +1600,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   }
 
   /**
-   * 清空聊天历史 = 给 Hermes 开新会话。
+   * 清空聊天历史 = 给当前模型开新会话。
    *
    * 为什么这俩等价：
-   *   Hermes 本身无状态，所谓"会话"完全靠客户端每次把 history 数组发过去。
+   *   模型本身无状态，所谓"会话"完全靠客户端每次把 history 数组发过去。
    *   清掉 chatHistory → 下次 sendChatMessage 拼 nextHistory 时只剩开场白 + 新消息，
-   *   Hermes 看到的 context 就是新的，前文统统不存在 = 等于新会话。
+   *   模型看到的 context 就是新的，前文统统不存在 = 等于新会话。
    *
    * 副作用顺序：
    *   1. abort 当前进行中的请求（chatAbortRef）→ 防旧响应回来污染新历史
@@ -1654,16 +1741,27 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           theme={theme}
         />
         <div className={styles.panelContent}>
+          {/*
+           * 网易云已登录时，用头像图片替换默认渐变头像。
+           * 没拿到 avatarUrl 时保持原样，避免登录接口异常把 UI 变空。
+           */}
           <header className={styles.topbar}>
           <div className={styles.brand}>
-            <div className={styles.avatar} />
-            <DotMatrixText
-              text="Claudio"
-              className={styles.dotWord}
-              cellClassName={styles.brandDot}
-            />
+            <div className={styles.avatar}>
+              {renderNeteaseAvatar()}
+            </div>
+            <span className={`${styles.brandTitle} ${claudioPixelFont.className}`}>
+              Claudio
+            </span>
           </div>
           <div className={styles.topActions}>
+            <button
+              type="button"
+              className={styles.topGhost}
+              onClick={handleOpenNeteaseLogin}
+            >
+              LOGIN
+            </button>
             <div className={styles.themeToggle}>
               <button
                 type="button"
@@ -1830,24 +1928,28 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         <section className={styles.liveStrip}>
           <div className={styles.liveTitle}>
             <i />
-            <DotMatrixText
-              text="Claudio"
-              className={`${styles.dotWord} ${styles.liveStripWord}`}
-              cellClassName={styles.brandDot}
-            />
+            <span className={`${styles.liveStripTitleText} ${claudioPixelFont.className}`}>
+              Claudio
+            </span>
           </div>
-          <DotMatrixText
-            text="LIVE"
-            className={`${styles.dotWord} ${styles.liveBadge}`}
-            cellClassName={styles.brandDot}
-          />
+          <button
+            type="button"
+            className={styles.liveBadgeButton}
+            onClick={handleOpenClaudioLive}
+          >
+            <span className={`${styles.liveBadgeText} ${claudioPixelFont.className}`}>
+              LIVE
+            </span>
+          </button>
         </section>
 
         <section className={styles.djPanel}>
           <div className={styles.chatLog} ref={chatLogRef}>
             {chatHistory.length === 0 && (
               <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
-                <div className={styles.avatar} />
+                <div className={styles.avatar}>
+                  {renderNeteaseAvatar()}
+                </div>
                 <p className={styles.chatBubbleWithLabel}>
                   <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                   {program.hostIntro}
@@ -1863,7 +1965,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               >
                 {message.role === "assistant" ? (
                   <>
-                    <div className={styles.avatar} />
+                    <div className={styles.avatar}>
+                      {renderNeteaseAvatar()}
+                    </div>
                     <p className={styles.chatBubbleWithLabel}>
                       <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
@@ -1876,7 +1980,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                   </>
                 ) : (
                   <>
-                    <div className={styles.userAvatar} />
+                    <div className={styles.userAvatar}>
+                      {renderNeteaseAvatar()}
+                    </div>
                     <p className={`${styles.chatBubbleWithLabel} ${styles.chatBubbleLiric}`}>
                       <span className={styles.chatBubbleLabelLiric}>LIRIC</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
@@ -1942,7 +2048,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               onPointerLeave={handleSendPointerEnd}
               onPointerCancel={handleSendPointerEnd}
               aria-label={isChatSending ? "中止当前并重新发送" : "发送（长按 1 秒清空对话）"}
-              title={isChatSending ? "正在接收 Hermes 回复，点击中止并发新消息" : "点发送 / 长按 1 秒清空对话"}
+              title={isChatSending ? "正在接收模型回复，点击中止并发新消息" : "点发送 / 长按 1 秒清空对话"}
             >
               {isChatSending ? (
                 <DotmHex10 dotSize={3} color="currentColor" size={16} speed={1.4} />
@@ -2039,6 +2145,31 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 downloadFn={downloadSong}
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {showClaudioLiveModal && (
+        <div
+          className={styles.searchBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Claudio live"
+          onClick={() => setShowClaudioLiveModal(false)}
+        >
+          <div
+            className={`${styles.searchModal} ${styles.claudioLiveModal}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.searchClose}
+              onClick={() => setShowClaudioLiveModal(false)}
+              aria-label="关闭 Claudio live"
+            >
+              ✕
+            </button>
+            <ClaudioLiveShell />
           </div>
         </div>
       )}

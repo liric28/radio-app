@@ -2,28 +2,27 @@
  * 聊天 SSE 代理。客户端 sendChatMessage 发的 POST 都到这里。
  *
  * 三步：
- *   1. runChatAgent：识别意图 → 执行工具（切歌 / 查天气）→ 装配 Hermes messages
+ *   1. runChatAgent：识别意图 → 执行工具（切歌 / 查天气）→ 装配模型 messages
  *      ↳ 这一步可能改 program / schedule（音乐控制类意图）
  *      ↳ 详见 src/lib/chat-agent.ts 头部说明
  *   2. 先吐一帧 SSE：type:"state" 含 program / schedule / weather / intent
  *      ↳ 让前端立刻 setProgram / setSchedule（自动续播链就在这里启动）
- *   3. 然后把 Hermes 的 stream 透传过来（每个 token 一帧），最后吐 [DONE]
+ *   3. 然后把模型的 stream 透传过来（每个 token 一帧），最后吐 [DONE]
  *
  * 透传 buffer 处理：
- *   - Hermes 的 SSE 帧可能跨 TCP chunk 切到一半
+ *   - 模型的 SSE 帧可能跨 TCP chunk 切到一半
  *   - 用 buffer.split("\n\n") 切完整 event，余数留到下次循环
  *
  * Headers 关键点：
  *   - Content-Type: text/event-stream（不能改）
  *   - Cache-Control: no-cache + X-Accel-Buffering: no（关 nginx/CDN 缓冲）
  *
- * 错误：runChatAgent 异常 → 500 JSON；Hermes 非 2xx → 502 JSON。
+ * 错误：runChatAgent 异常 → 500 JSON；模型非 2xx → 502 JSON。
  */
 import { NextRequest, NextResponse } from "next/server";
 import { runChatAgent } from "@/lib/chat-agent";
+import { buildChatLlmRequest } from "@/lib/providers/chat-llm";
 import type { ChatMessage, RadioProgram } from "@/lib/types";
-
-const HERMES_URL = "http://127.0.0.1:8642/v1/chat/completions";
 
 type AgentRequest = {
   message: string;
@@ -49,28 +48,27 @@ export async function POST(request: NextRequest) {
       history,
     });
 
-    const hermesRes = await fetch(HERMES_URL, {
+    const llmRequest = buildChatLlmRequest(agentResult.llmMessages);
+    const llmRes = await fetch(llmRequest.url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "hermes",
-        messages: agentResult.hermesMessages,
-        max_tokens: 512,
-        stream: true,
-      }),
+      headers: llmRequest.headers,
+      body: JSON.stringify(llmRequest.body),
     });
 
-    if (!hermesRes.ok) {
-      const err = await hermesRes.text();
-      return NextResponse.json({ ok: false, message: `Hermes error: ${err}` }, { status: 502 });
+    if (!llmRes.ok) {
+      const err = await llmRes.text();
+      return NextResponse.json(
+        { ok: false, message: `${llmRequest.provider} error: ${err}` },
+        { status: 502 },
+      );
     }
 
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
-    const sourceReader = hermesRes.body?.getReader();
+    const sourceReader = llmRes.body?.getReader();
 
     if (!sourceReader) {
-      return NextResponse.json({ ok: false, message: "Hermes 返回了空响应" }, { status: 502 });
+      return NextResponse.json({ ok: false, message: "模型返回了空响应" }, { status: 502 });
     }
 
     const stream = new ReadableStream({
