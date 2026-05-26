@@ -129,7 +129,11 @@ async function synthesizeVolcengine(text: string, outPath: string, options: TtsO
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
-    throw new Error(`Volcengine TTS error ${response.status}: ${errorText}`);
+    const deniedResource = response.status === 403 && errorText.includes("requested resource not granted");
+    const hint = deniedResource
+      ? ` Check VOLCENGINE_TTS_RESOURCE_ID="${resourceId}". For the V3 TTS API, valid resource IDs are typically seed-tts-1.0, seed-tts-1.0-concurr, or seed-tts-2.0 depending on the voice/model entitlement.`
+      : "";
+    throw new Error(`Volcengine TTS error ${response.status} for resource "${resourceId}": ${errorText}${hint}`);
   }
 
   const audioChunks: Buffer[] = [];

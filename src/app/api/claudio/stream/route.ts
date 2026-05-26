@@ -24,12 +24,19 @@ export async function GET() {
         ),
       );
 
+      let controllerRef: ReadableStreamDefaultController | null = controller;
+
       const unsubscribe = subscribeClaudioEvents((event) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        if (!controllerRef || controllerRef.state === "closed") return;
+        controllerRef.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       });
 
       const keepAlive = setInterval(() => {
-        controller.enqueue(encoder.encode(": keepalive\n\n"));
+        if (!controllerRef || controllerRef.state === "closed") {
+          clearInterval(keepAlive);
+          return;
+        }
+        controllerRef.enqueue(encoder.encode(": keepalive\n\n"));
       }, 15_000);
 
       controller.enqueue(encoder.encode("event: ready\ndata: ok\n\n"));
@@ -37,6 +44,7 @@ export async function GET() {
       return () => {
         clearInterval(keepAlive);
         unsubscribe();
+        controllerRef = null;
       };
     },
     cancel() {
