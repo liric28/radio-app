@@ -50,6 +50,5 @@ next-env.d.ts
 
 # sidecar & runtime
 /netease-sidecar/
-/scripts/
 /cache/
 /package-lock.json

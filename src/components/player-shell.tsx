@@ -674,6 +674,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   );
   const [libraryLimit, setLibraryLimit] = useState<string>("300");
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
+  const [clockDisplayMode, setClockDisplayMode] = useState<"dot" | "pixel">("pixel");
   const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("circular8");
   const [neteaseViewer, setNeteaseViewer] = useState<NeteaseViewer | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -1802,11 +1803,26 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         <section className={styles.clockStage}>
           <div className={styles.dotGrid} />
           <div className={styles.clockWrap}>
-            <DotMatrixText
-              text={currentClock}
-              className={styles.dotClock}
-              cellClassName={styles.clockDot}
-            />
+            <button
+              type="button"
+              className={styles.clockDisplayButton}
+              aria-label={`切换时间显示样式，当前为${clockDisplayMode === "pixel" ? "像素字" : "点阵字"}`}
+              onClick={() => setClockDisplayMode(mode => mode === "pixel" ? "dot" : "pixel")}
+            >
+              {clockDisplayMode === "pixel"
+                ? (
+                    <div className={`${styles.pixelClock} ${claudioPixelFont.className}`} aria-hidden="true">
+                      {currentClock}
+                    </div>
+                  )
+                : (
+                    <DotMatrixText
+                      text={currentClock}
+                      className={styles.dotClock}
+                      cellClassName={styles.clockDot}
+                    />
+                  )}
+            </button>
             <div className={styles.clockMeta} onClick={() => setLoaderVariant(v => v === "hex1" ? "hex10" : v === "hex10" ? "square15" : v === "square15" ? "square18" : v === "square18" ? "circular8" : "hex1")}>
               <strong>{dayLabel}</strong>
               <span>{dateLabel}</span>

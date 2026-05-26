@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const DEFAULT_NETEASE_BASE = "http://127.0.0.1:3000";
+const DEFAULT_NETEASE_BASE = "http://127.0.0.1:3001";
 const DEFAULT_REQUEST_TIMEOUT_MS = 8_000;
 
 export const DATA_DIR = path.join(process.cwd(), "data", "netease");

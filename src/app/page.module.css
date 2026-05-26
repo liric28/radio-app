@@ -510,18 +510,32 @@
   color: rgba(90, 75, 120, 0.55);
 }
 
-/*
- * 时钟点阵字外层容器。
- * 调整时钟字大小的唯一入口：改这里的 --dot-size 和 --dot-gap。
- * 原理与 .dotWord 同——变量必须写在共同祖先上，.dotGlyph 和 .clockDot 才能同步读到。
- * 视觉高度估算：7 * dot-size + 6 * dot-gap。
- */
+.clockDisplayButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
 .dotClock {
   --dot-size: 11px;
   --dot-gap: 5px;
   display: inline-flex;
   align-items: center;
   gap: 12px;
+}
+
+.pixelClock {
+  font-size: clamp(62px, 10vw, 108px);
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: 0.12em;
+  color: #f6f2ff;
+  text-shadow: 0 0 18px rgba(246, 242, 255, 0.12);
 }
 
 .clockMeta {
