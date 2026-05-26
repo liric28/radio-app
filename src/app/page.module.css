@@ -95,8 +95,8 @@
 .panelDark {
   border: 1px solid rgba(164, 146, 236, 0.18);
   background:
-    linear-gradient(180deg, rgba(29, 29, 45, 0.92), rgba(18, 18, 26, 0.97)),
-    #12131b;
+    linear-gradient(180deg, rgba(34, 34, 52, 0.86), rgba(20, 20, 30, 0.92)),
+    #161822;
 }
 
 .topbar,
@@ -442,8 +442,8 @@
 }
 
 .dotGrid::before {
-  background-image: radial-gradient(rgba(173, 167, 210, 0.34) 1.1px, transparent 1.1px);
-  opacity: 0.32;
+  background-image: radial-gradient(rgba(205, 201, 231, 0.54) 1.2px, transparent 1.2px);
+  opacity: 0.52;
 }
 
 .clockWrap {
@@ -643,9 +643,9 @@
   gap: 14px 18px;
   align-items: center;
   padding: 18px 20px 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.012);
+  border-top: 1px solid rgba(255, 255, 255, 0.022);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.022);
 }
 
 .nowCard {
@@ -851,7 +851,7 @@
 }
 
 .liveStrip {
-  background: rgba(255, 255, 255, 0.02);
+  background: #000;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
