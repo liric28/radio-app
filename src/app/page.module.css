@@ -532,6 +532,11 @@
   text-shadow: 0 0 18px rgba(246, 242, 255, 0.12);
 }
 
+.panelLight .pixelClock {
+  color: #000000;
+  text-shadow: none;
+}
+
 .clockMeta {
   display: grid;
   gap: 8px;
@@ -576,6 +581,16 @@
 .panelLight .queueRow span,
 .panelLight .chatAvatarLabel {
   color: rgba(58, 52, 75, 0.5);
+}
+
+.panelLight .controlDeck {
+  background: rgba(255, 255, 255, 0.05);
+  border-top-color: rgba(58, 52, 75, 0.05);
+  border-bottom-color: rgba(58, 52, 75, 0.05);
+}
+
+.panelLight .liveStrip {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .panelLight .chatAvatarLabelLiric {
@@ -705,6 +720,10 @@
 .trackArtist {
   font-size: 13px;
   color: rgba(223, 218, 240, 0.48);
+}
+
+.panelLight .trackArtist {
+  color: #888888;
 }
 
 .transport {
