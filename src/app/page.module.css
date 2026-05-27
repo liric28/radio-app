@@ -889,6 +889,38 @@
   cursor: pointer;
 }
 
+.claudioLiveInline {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    max-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    transform 220ms ease;
+  background:
+    linear-gradient(180deg, rgba(11, 12, 19, 0.98), rgba(7, 8, 14, 1)),
+    #090b12;
+}
+
+.claudioLiveInlineOpen {
+  max-height: 1400px;
+  opacity: 1;
+  transform: translateY(0);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.claudioLiveInline :global(main) {
+  min-height: 0;
+  padding: 0;
+}
+
+.claudioLiveInline :global(section) {
+  border-radius: 0;
+  width: 100%;
+  box-shadow: none;
+}
+
 /*
  * 聊天区。背景透出全 panel 的点阵底纹，不再独立加卡片层。
  * z-index 仅用于让点击 ripple/输入框可正常交互，不再用于抬升挡底纹。

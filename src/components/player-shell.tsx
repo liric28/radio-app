@@ -725,7 +725,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 两个开关互不干涉，可同时打开/独立关闭。
    */
   const [showDayList, setShowDayList] = useState<boolean>(false);
-  const [showClaudioLiveModal, setShowClaudioLiveModal] = useState<boolean>(false);
+  const [showClaudioLivePanel, setShowClaudioLivePanel] = useState<boolean>(false);
   /**
    * 顶部搜索按钮触发的"网络歌曲搜索"弹层。
    * 搜索酷狗免费曲库，下载入库后自动进入当日节目单。
@@ -755,23 +755,22 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     openPopupWindow("/api/netease-login", "netease-login", 420, 520);
   }
 
-  function handleOpenClaudioLive() {
-    setShowClaudioLiveModal(true);
+  function handleToggleClaudioLive() {
+    setShowClaudioLivePanel((value) => !value);
   }
 
   useEffect(() => {
-    if (!showDayList && !showSearchModal && !showClaudioLiveModal) return;
+    if (!showDayList && !showSearchModal) return;
 
     const handleEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setShowDayList(false);
       setShowSearchModal(false);
-      setShowClaudioLiveModal(false);
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [showDayList, showSearchModal, showClaudioLiveModal]);
+  }, [showDayList, showSearchModal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -808,7 +807,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     document.addEventListener("visibilitychange", handleFocus);
 
     const handleMessage = (event: MessageEvent) => {
-      if (event.data === "netease-login-success") {
+      if (event.origin === window.location.origin && event.data === "netease-login-success") {
         void refreshNeteaseViewer();
       }
     };
@@ -1960,7 +1959,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           <button
             type="button"
             className={styles.liveBadgeButton}
-            onClick={handleOpenClaudioLive}
+            onClick={handleToggleClaudioLive}
+            aria-expanded={showClaudioLivePanel}
+            aria-controls="claudio-live-panel"
           >
             <span className={`${styles.liveBadgeText} ${claudioPixelFont.className}`}>
               LIVE
@@ -1968,13 +1969,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           </button>
         </section>
 
+        <section
+          id="claudio-live-panel"
+          className={`${styles.claudioLiveInline} ${showClaudioLivePanel ? styles.claudioLiveInlineOpen : ""}`}
+          aria-hidden={!showClaudioLivePanel}
+        >
+          {showClaudioLivePanel ? <ClaudioLiveShell /> : null}
+        </section>
+
         <section className={styles.djPanel}>
           <div className={styles.chatLog} ref={chatLogRef}>
             {chatHistory.length === 0 && (
               <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
-                <div className={styles.avatar}>
-                  {renderNeteaseAvatar()}
-                </div>
+                <div className={styles.avatar} />
                 <p className={styles.chatBubbleWithLabel}>
                   <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                   {program.hostIntro}
@@ -1990,9 +1997,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               >
                 {message.role === "assistant" ? (
                   <>
-                    <div className={styles.avatar}>
-                      {renderNeteaseAvatar()}
-                    </div>
+                    <div className={styles.avatar} />
                     <p className={styles.chatBubbleWithLabel}>
                       <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
@@ -2170,23 +2175,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 downloadFn={downloadSong}
               />
             </div>
-          </div>
-        </div>
-      )}
-
-      {showClaudioLiveModal && (
-        <div
-          className={styles.searchBackdrop}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Claudio live"
-          onClick={() => setShowClaudioLiveModal(false)}
-        >
-          <div
-            className={`${styles.searchModal} ${styles.claudioLiveModal}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <ClaudioLiveShell />
           </div>
         </div>
       )}

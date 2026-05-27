@@ -168,9 +168,8 @@ export async function verifyLoginStatus({
     if (profile?.userId) {
       return { valid: true, userId: profile.userId, reason: "ok" };
     }
-    // 支持匿名账号：account.id 存在即算有效
     if (account?.id) {
-      return { valid: true, userId: account.id, reason: "ok-anonymous" };
+      return { valid: false, userId: account.id, reason: "ok-anonymous" };
     }
     return { valid: false, userId: null, reason: "profile-missing" };
   } catch (error) {
@@ -215,10 +214,9 @@ export async function getLoginProfile({
         reason: "ok",
       };
     }
-    // 匿名账号：用 account 数据
     if (account?.id) {
       return {
-        valid: true,
+        valid: false,
         userId: account.id,
         nickname: account.nickname || account.userName || "",
         avatarUrl: account.avatarUrl || "",
@@ -266,7 +264,8 @@ export async function createQrLogin({ baseUrl = neteaseBaseUrl() }: { baseUrl?: 
   const key = (keyData as { data?: { unikey?: string } })?.data?.unikey;
   if (!key) throw new Error("Failed to get QR login key from NeteaseCloudMusicApi.");
 
-  const qrData = await requestNeteaseJson("/login/qr/create", { key, qrimg: true }, { baseUrl });
+  // Match the upstream demo flow so the QR URL includes the web chainId branch.
+  const qrData = await requestNeteaseJson("/login/qr/create", { key, platform: "web", qrimg: true }, { baseUrl });
   const qrUrl = (qrData as { data?: { qrurl?: string; qrimg?: string } })?.data?.qrurl || "";
   const qrImg = (qrData as { data?: { qrurl?: string; qrimg?: string } })?.data?.qrimg || "";
   const qrPage = qrImg ? writeQrLoginPage(qrImg, qrUrl) : "";
@@ -285,18 +284,25 @@ export async function checkQrLogin({
   const cookie = (state as { cookie?: string }).cookie || "";
 
   if (code === 803 && cookie) {
-    // Verify cookie before saving — reject anonymous accounts
-    const verify = await requestNeteaseJson("/login/status", {}, { baseUrl, cookie });
-    const isAnon = (verify as { data?: { account?: { anonimousUser?: boolean; anonymousUser?: boolean } } })?.data?.account?.anonimousUser ?? (verify as { data?: { account?: { anonimousUser?: boolean; anonymousUser?: boolean } } })?.data?.account?.anonymousUser;
-    if (isAnon) {
-      return {
-        ok: false,
-        code,
-        message: "Anonymous login — please ensure your Netease app is logged in to liric28 before scanning.",
-      };
-    }
+    const profile = await getLoginProfile({ baseUrl, cookie });
     const saved = writeLocalConfig({ cookie, source: "qr-login" });
-    return { ok: true, code, cookieSaved: true, cookieSource: saved.source || "qr-login" };
+    return {
+      ok: profile.valid && profile.reason === "ok",
+      code,
+      cookieSaved: true,
+      cookieSource: saved.source || "qr-login",
+      valid: profile.valid,
+      userId: profile.userId,
+      nickname: profile.nickname,
+      avatarUrl: profile.avatarUrl,
+      reason: profile.reason,
+      message:
+        profile.reason === "ok"
+          ? "Login succeeded."
+          : profile.reason === "ok-anonymous"
+            ? "QR authorized, but only an anonymous session was returned."
+            : "QR authorized, but profile verification failed.",
+    };
   }
 
   return {

@@ -40,6 +40,10 @@ function transcriptTokens(text: string) {
 }
 
 export function ClaudioLiveShell() {
+  const SEGUE_BUFFER_SECONDS = 1.8;
+  const MIN_SEGUE_LEAD_SECONDS = 4;
+  const MAX_SEGUE_LEAD_SECONDS = 18;
+  const DUCKED_VOLUME_RATIO = 0.16;
   const scrubberBarCount = 60;
   const scrubberHeights = Array.from({ length: scrubberBarCount }, (_, index) => {
     const ratio = index / scrubberBarCount;
@@ -51,9 +55,11 @@ export function ClaudioLiveShell() {
   const [segments, setSegments] = useState<ClaudioSegment[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [status, setStatus] = useState("Idle");
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [activeMediaTime, setActiveMediaTime] = useState(0);
+  const [activeMediaDuration, setActiveMediaDuration] = useState(0);
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
   const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
@@ -68,6 +74,10 @@ export function ClaudioLiveShell() {
   const waveCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const autoStartRequestedRef = useRef(false);
   const refillRequestedForTrackRef = useRef(-1);
+  const outroTalkStartedForTrackRef = useRef(-1);
+  const pendingSegueNextTrackRef = useRef<number | null>(null);
+  const skipLeadSegmentsForTrackRef = useRef<number | null>(null);
+  const volumeFadeFrameRef = useRef<number | null>(null);
 
   function fmt(seconds: number) {
     if (!Number.isFinite(seconds)) return "0:00";
@@ -116,6 +126,73 @@ export function ClaudioLiveShell() {
     const ratio = Math.max(0, Math.min(1, currentTime / duration));
     const nextIndex = Math.min(Math.floor(ratio * activeWordCount), Math.max(activeWordCount - 1, 0));
     setCurrentWordIndex(nextIndex);
+  }
+
+  function syncAudioPlayingState() {
+    const ttsPlaying = !!ttsAudioRef.current?.src && !ttsAudioRef.current.paused && !ttsAudioRef.current.ended;
+    const musicPlaying = !!musicAudioRef.current?.src && !musicAudioRef.current.paused && !musicAudioRef.current.ended;
+    setIsAudioPlaying(ttsPlaying || musicPlaying);
+  }
+
+  function syncActiveMediaProgress(source: "tts" | "music", time: number, total: number) {
+    const ttsPlaying = !!ttsAudioRef.current?.src && !ttsAudioRef.current.paused && !ttsAudioRef.current.ended;
+    const musicPlaying = !!musicAudioRef.current?.src && !musicAudioRef.current.paused && !musicAudioRef.current.ended;
+    if (source === "tts" || !ttsPlaying || musicPlaying) {
+      setActiveMediaTime(time || 0);
+      setActiveMediaDuration(total || 0);
+    }
+  }
+
+  function duckedMusicVolume() {
+    return DUCKED_VOLUME_RATIO;
+  }
+
+  function fadeMusicVolume(target: number, durationMs = 260) {
+    const music = musicAudioRef.current;
+    if (!music) return;
+    if (volumeFadeFrameRef.current !== null) {
+      window.cancelAnimationFrame(volumeFadeFrameRef.current);
+      volumeFadeFrameRef.current = null;
+    }
+    const startVolume = music.volume;
+    const startedAt = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / durationMs);
+      music.volume = startVolume + (target - startVolume) * progress;
+      if (progress < 1) {
+        volumeFadeFrameRef.current = window.requestAnimationFrame(tick);
+      } else {
+        volumeFadeFrameRef.current = null;
+      }
+    };
+
+    volumeFadeFrameRef.current = window.requestAnimationFrame(tick);
+  }
+
+  function duckMusic() {
+    const music = musicAudioRef.current;
+    if (!music?.src || music.paused) return;
+    fadeMusicVolume(duckedMusicVolume());
+  }
+
+  function restoreMusicVolume() {
+    const music = musicAudioRef.current;
+    if (!music) return;
+    fadeMusicVolume(1);
+  }
+
+  function estimateSegmentSpeechSeconds(items: ClaudioSegment[]) {
+    const text = items.map((item) => item.text || "").join(" ").trim();
+    if (!text) return MIN_SEGUE_LEAD_SECONDS;
+    const cjkChars = (text.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu) || []).length;
+    const latinWords = text
+      .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, " ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length;
+    const estimated = cjkChars * 0.24 + latinWords * 0.34 + 0.8;
+    return Math.max(MIN_SEGUE_LEAD_SECONDS, Math.min(MAX_SEGUE_LEAD_SECONDS, estimated + SEGUE_BUFFER_SECONDS));
   }
 
   const consumeEvent = useEffectEvent((payload: LiveEvent) => {
@@ -207,6 +284,9 @@ export function ClaudioLiveShell() {
     };
 
     return () => {
+      if (volumeFadeFrameRef.current !== null) {
+        window.cancelAnimationFrame(volumeFadeFrameRef.current);
+      }
       playbackTokenRef.current += 1;
       ttsAudioRef.current?.pause();
       musicAudioRef.current?.pause();
@@ -374,7 +454,10 @@ export function ClaudioLiveShell() {
     ttsAudioRef.current?.pause();
     music.pause();
 
-    const leadSegments = resolveSegmentsForIndex(index);
+    const leadSegments = skipLeadSegmentsForTrackRef.current === index ? [] : resolveSegmentsForIndex(index);
+    if (skipLeadSegmentsForTrackRef.current === index) {
+      skipLeadSegmentsForTrackRef.current = null;
+    }
     if (leadSegments.length) {
       const ok = await playSegmentSequence(leadSegments, token);
       if (!ok) return;
@@ -387,10 +470,37 @@ export function ClaudioLiveShell() {
     }
 
     music.src = track.streamUrl;
+    music.volume = 1;
     setStatus("Playing");
     await music.play().catch(() => {
       setStatus("Playback Failed");
     });
+  });
+
+  const startOutroSegue = useEffectEvent(async (nextIndex: number) => {
+    const music = musicAudioRef.current;
+    if (!music || nextIndex >= tracks.length) return;
+    const leadSegments = resolveSegmentsForIndex(nextIndex).filter((segment) => segment.ttsUrl && segment.status === "ready");
+    if (!leadSegments.length) return;
+    if (!ttsAudioRef.current?.paused && !ttsAudioRef.current?.ended) return;
+
+    const token = Date.now();
+    playbackTokenRef.current = token;
+    outroTalkStartedForTrackRef.current = currentTrackIndex;
+    pendingSegueNextTrackRef.current = nextIndex;
+    duckMusic();
+
+    const ok = await playSegmentSequence(leadSegments, token);
+    if (!ok || pendingSegueNextTrackRef.current !== nextIndex) {
+      restoreMusicVolume();
+      return;
+    }
+
+    music.pause();
+    music.currentTime = 0;
+    pendingSegueNextTrackRef.current = null;
+    skipLeadSegmentsForTrackRef.current = nextIndex;
+    setCurrentTrackIndex(nextIndex);
   });
 
   useEffect(() => {
@@ -418,6 +528,9 @@ export function ClaudioLiveShell() {
   }, [programId, tracks.length, currentTrackIndex]);
 
   async function advanceToNextTrack() {
+    pendingSegueNextTrackRef.current = null;
+    outroTalkStartedForTrackRef.current = -1;
+    restoreMusicVolume();
     setCurrentTrackIndex((current) => {
       if (current + 1 >= tracks.length) return current;
       return current + 1;
@@ -476,28 +589,78 @@ export function ClaudioLiveShell() {
         <audio
           ref={ttsAudioRef}
           preload="auto"
+          onPlay={() => {
+            setStatus("Speaking");
+            duckMusic();
+            syncAudioPlayingState();
+          }}
+          onPause={() => {
+            if (pendingSegueNextTrackRef.current === null) {
+              restoreMusicVolume();
+            }
+            syncAudioPlayingState();
+          }}
           onTimeUpdate={(event) => {
-            advanceKaraoke(event.currentTarget.currentTime, event.currentTarget.duration || 0);
+            const nextTime = event.currentTarget.currentTime || 0;
+            const nextDuration = event.currentTarget.duration || 0;
+            advanceKaraoke(nextTime, nextDuration);
+            syncActiveMediaProgress("tts", nextTime, nextDuration);
           }}
           onEnded={() => {
             finishKaraoke();
+            if (musicAudioRef.current?.src) {
+              setStatus("Playing");
+            }
+            if (pendingSegueNextTrackRef.current === null) {
+              restoreMusicVolume();
+            }
+            setActiveMediaTime(0);
+            setActiveMediaDuration(0);
+            syncAudioPlayingState();
           }}
         />
         <audio
           ref={musicAudioRef}
           preload="auto"
-          onPlay={() => setIsMusicPlaying(true)}
-          onPause={() => setIsMusicPlaying(false)}
+          onPlay={() => {
+            setStatus("Playing");
+            restoreMusicVolume();
+            syncAudioPlayingState();
+          }}
+          onPause={() => {
+            syncAudioPlayingState();
+          }}
           onLoadedMetadata={(event) => {
             setDuration(event.currentTarget.duration || 0);
           }}
           onTimeUpdate={(event) => {
-            setCurrentTime(event.currentTarget.currentTime || 0);
-            setDuration(event.currentTarget.duration || 0);
+            const nextTime = event.currentTarget.currentTime || 0;
+            const nextDuration = event.currentTarget.duration || 0;
+            setCurrentTime(nextTime);
+            setDuration(nextDuration);
+            syncActiveMediaProgress("music", nextTime, nextDuration);
+            const remaining = nextDuration - nextTime;
+            const nextIndex = currentTrackIndex + 1;
+            const nextLeadSegments = nextIndex < tracks.length ? resolveSegmentsForIndex(nextIndex) : [];
+            const segueLeadSeconds = estimateSegmentSpeechSeconds(nextLeadSegments);
+            if (
+              nextDuration > 0 &&
+              remaining <= segueLeadSeconds &&
+              nextIndex < tracks.length &&
+              outroTalkStartedForTrackRef.current !== currentTrackIndex &&
+              pendingSegueNextTrackRef.current === null
+            ) {
+              void startOutroSegue(nextIndex);
+            }
           }}
           onEnded={() => {
             setCurrentTime(0);
-            void advanceToNextTrack();
+            setActiveMediaTime(0);
+            setActiveMediaDuration(0);
+            syncAudioPlayingState();
+            if (pendingSegueNextTrackRef.current === null) {
+              void advanceToNextTrack();
+            }
           }}
         />
         <header className={styles.header}>
@@ -563,7 +726,7 @@ export function ClaudioLiveShell() {
         </section>
 
         <section className={styles.player}>
-          <div className={styles.playerTime}>{fmt(currentTime)}</div>
+          <div className={styles.playerTime}>{fmt(activeMediaTime)}</div>
           <button
             type="button"
             className={styles.playerBars}
@@ -578,7 +741,8 @@ export function ClaudioLiveShell() {
             }}
           >
             {scrubberHeights.map((height, index) => {
-              const playedCount = duration > 0 ? Math.floor((currentTime / duration) * scrubberBarCount) : 0;
+              const progressRatio = activeMediaDuration > 0 ? activeMediaTime / activeMediaDuration : 0;
+              const playedCount = activeMediaDuration > 0 ? Math.floor(progressRatio * scrubberBarCount) : 0;
               const played = index < playedCount;
               return (
                 <span
@@ -597,7 +761,7 @@ export function ClaudioLiveShell() {
               void togglePlayback();
             }}
           >
-            {isMusicPlaying ? (
+            {isAudioPlaying ? (
               <span className={styles.pauseGlyph} aria-hidden="true">
                 <i />
                 <i />

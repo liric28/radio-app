@@ -280,16 +280,17 @@
   align-items: center;
   gap: 14px;
   margin-top: 0;
-  padding: 18px 18px 26px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  padding: 14px 18px 18px;
+  border-top: 1px solid rgba(17, 17, 17, 0.06);
+  background: rgb(255, 255, 255);
 }
 
 .playerTime {
   min-width: 34px;
   font-size: 13px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgb(17, 17, 17);
 }
 
 .playerBars {
@@ -309,13 +310,13 @@
 .playerBar {
   flex: 1 1 auto;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgb(207, 207, 209);
   transition: background 0.12s ease;
   pointer-events: none;
 }
 
 .playerBarPlayed {
-  background: #ffffff;
+  background: rgb(17, 17, 17);
 }
 
 .playButton {
