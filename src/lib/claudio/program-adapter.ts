@@ -3,6 +3,7 @@ import {
   buildRadioProgram,
 } from "@/lib/radio-engine";
 import { buildBridgePrompt, buildColdOpenForTracksPrompt } from "@/lib/claudio/context";
+import { buildOnlineClaudioTracks } from "@/lib/claudio/live-music";
 import { generateClaudioJson } from "@/lib/claudio/llm";
 import {
   applyLegacyTrackIntrosFromSegments,
@@ -27,6 +28,7 @@ import type { RadioProgram } from "@/lib/types";
 
 const STATION_NAME = "Claudio FM";
 const PROGRAM_NAME = "Live";
+const LIVE_MUSIC_MODE = process.env.CLAUDIO_LIVE_MUSIC_MODE || "online";
 
 function toClaudioTrack(program: RadioProgram): ClaudioTrack[] {
   return [program.currentTrack, ...program.queue].map((track) => ({
@@ -61,11 +63,20 @@ async function synthesizeSegments(segments: ClaudioSegment[]) {
 }
 
 export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
-  const program = await buildRadioProgram();
-  const tracks = toClaudioTrack(program);
+  const onlineMode = LIVE_MUSIC_MODE === "online";
+  const program = onlineMode ? null : await buildRadioProgram();
+  const online = onlineMode
+    ? await buildOnlineClaudioTracks({
+        input: job.input,
+      })
+    : null;
+  const tracks = onlineMode ? online?.tracks || [] : toClaudioTrack(program!);
+  if (!tracks.length) {
+    throw new Error("Claudio live 没有搜到可播放的在线歌曲");
+  }
   const programId = `claudio_${Date.now()}`;
   const llmPrompt = await buildColdOpenForTracksPrompt({
-    programTitle: program.segmentTitle,
+    programTitle: onlineMode ? online?.sessionTitle || "Live" : program!.segmentTitle,
     tracks,
     userInput: job.input,
     djLanguage: job.djLanguage,
@@ -77,14 +88,14 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
       ...(Array.isArray(llmResult.segments) ? llmResult.segments : []),
     ],
     tracks,
-    llmResult.say || program.hostIntro,
+    llmResult.say || program?.hostIntro || "",
   ),
   );
 
   applyLegacyTrackIntrosFromSegments(tracks, segments);
   setClaudioProgramContext({
     programId,
-    sessionTitle: program.segmentTitle,
+    sessionTitle: onlineMode ? online?.sessionTitle || "Live" : program!.segmentTitle,
     tracks,
     segments,
   });
@@ -94,11 +105,11 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
     programId,
     tracks,
     segments,
-    sessionTitle: program.segmentTitle,
+    sessionTitle: onlineMode ? online?.sessionTitle || "Live" : program!.segmentTitle,
     stationName: STATION_NAME,
     programName: PROGRAM_NAME,
     failedTracks: [],
-    reason: llmResult.reason || job.input,
+    reason: llmResult.reason || (onlineMode ? online?.reason : job.input),
   };
 
   broadcastClaudioEvent(payload);
@@ -107,10 +118,12 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
     ttsUrl: null,
     tracks,
     segments,
-    sessionTitle: program.segmentTitle,
-    transcript: segments.map((segment) => segment.text).filter(Boolean).join("\n\n") || programTranscript(program),
-    djNote: llmResult.say || program.hostIntro,
-    reason: llmResult.reason || job.input,
+    sessionTitle: onlineMode ? online?.sessionTitle || "Live" : program!.segmentTitle,
+    transcript:
+      segments.map((segment) => segment.text).filter(Boolean).join("\n\n") ||
+      (program ? programTranscript(program) : ""),
+    djNote: llmResult.say || program?.hostIntro || "",
+    reason: llmResult.reason || (onlineMode ? online?.reason : job.input),
     mode: "music",
     status: "queued",
     stationName: STATION_NAME,
@@ -121,7 +134,7 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
 
   enqueueBridgeJobs({
     programId,
-    sessionTitle: program.segmentTitle,
+    sessionTitle: onlineMode ? online?.sessionTitle || "Live" : program!.segmentTitle,
     tracks,
     startIndex: 0,
     djLanguage: job.djLanguage,
@@ -132,8 +145,17 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
 
 export async function runClaudioMusicRefillJob(job: ClaudioMusicRefillJob) {
   const state = getClaudioStationState();
-  const program = await applyFeedbackAndBuildProgram("fresh");
-  const nextTracks = toClaudioTrack(program).slice(1, 1 + Math.max(1, job.count));
+  const onlineMode = LIVE_MUSIC_MODE === "online";
+  const program = onlineMode ? null : await applyFeedbackAndBuildProgram("fresh");
+  const nextTracks = onlineMode
+    ? (
+        await buildOnlineClaudioTracks({
+          input: `${job.sessionTitle} ${job.currentTrack?.artist || ""} fresh`,
+          count: Math.max(1, job.count),
+          exclude: state.tracks,
+        })
+      ).tracks
+    : toClaudioTrack(program!).slice(1, 1 + Math.max(1, job.count));
   const startIndex = state.tracks.length;
 
   if (!nextTracks.length) {
@@ -150,7 +172,7 @@ export async function runClaudioMusicRefillJob(job: ClaudioMusicRefillJob) {
   const mergedTracks = [...state.tracks, ...nextTracks];
   setClaudioProgramContext({
     programId: state.programId || job.programId,
-    sessionTitle: state.sessionTitle || program.segmentTitle,
+    sessionTitle: state.sessionTitle || program?.segmentTitle || job.sessionTitle,
     tracks: mergedTracks,
   });
 
@@ -160,15 +182,15 @@ export async function runClaudioMusicRefillJob(job: ClaudioMusicRefillJob) {
     tracks: nextTracks,
     startIndex,
     failedTracks: [],
-    reason: "fresh-refill",
+    reason: onlineMode ? "online-refill" : "fresh-refill",
   };
   broadcastClaudioEvent(payload);
 
   const previousTrack = state.tracks[state.tracks.length - 1] || null;
   const previousIndex = Math.max(0, startIndex - 1);
-  enqueueBridgeJobs({
-    programId: state.programId || job.programId,
-    sessionTitle: state.sessionTitle || program.segmentTitle,
+    enqueueBridgeJobs({
+      programId: state.programId || job.programId,
+    sessionTitle: state.sessionTitle || program?.segmentTitle || job.sessionTitle,
     tracks: nextTracks,
     startIndex,
     previousTrack,
