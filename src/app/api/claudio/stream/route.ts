@@ -11,6 +11,8 @@ export async function GET() {
 
   const stream = new ReadableStream({
     start(controller) {
+      // 这里不用 controller.state，改用本地 closed 标记追踪生命周期，
+      // 兼容 TS DOM 类型，也能避免关闭后继续 enqueue。
       let closed = false;
 
       controller.enqueue(
@@ -33,6 +35,7 @@ export async function GET() {
         controllerRef.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       });
 
+      // 某些代理会在长时间无数据时断 SSE，这里固定打 keepalive 保活连接。
       const keepAlive = setInterval(() => {
         if (closed || !controllerRef) {
           clearInterval(keepAlive);

@@ -28,6 +28,9 @@ import type { RadioProgram } from "@/lib/types";
 
 const STATION_NAME = "Claudio FM";
 const PROGRAM_NAME = "Live";
+// live 现在支持两条源：
+// - online：独立在线搜歌 live，不走本地四时段 program
+// - local：回退到原本的 buildRadioProgram，本地歌单逻辑保持不变
 const LIVE_MUSIC_MODE = process.env.CLAUDIO_LIVE_MUSIC_MODE || "online";
 
 function toClaudioTrack(program: RadioProgram): ClaudioTrack[] {
@@ -45,6 +48,8 @@ function programTranscript(program: RadioProgram) {
 }
 
 async function synthesizeSegments(segments: ClaudioSegment[]) {
+  // 文案段统一在这里做 TTS；失败不阻断节目，只把该段标成 tts_failed，
+  // 前端仍能继续播歌，避免“某一句播报挂了整台停住”。
   for (const segment of segments) {
     if (segment.type === "silence" || !segment.text) {
       segment.status = "silent";
@@ -64,6 +69,9 @@ async function synthesizeSegments(segments: ClaudioSegment[]) {
 
 export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
   const onlineMode = LIVE_MUSIC_MODE === "online";
+  // 起台分两路：
+  // 1. online：根据风格 seed 在线搜出“已确认可播”的 tracks
+  // 2. local：沿用原来的本地 RadioProgram → ClaudioTrack 转换
   const program = onlineMode ? null : await buildRadioProgram();
   const online = onlineMode
     ? await buildOnlineClaudioTracks({
@@ -75,6 +83,8 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
     throw new Error("Claudio live 没有搜到可播放的在线歌曲");
   }
   const programId = `claudio_${Date.now()}`;
+  // LLM 在 live 里只负责“围绕已确认 tracks 写开场播报”，
+  // 不再决定选哪首歌，避免文案和实际可播列表脱节。
   const llmPrompt = await buildColdOpenForTracksPrompt({
     programTitle: onlineMode ? online?.sessionTitle || "Live" : program!.segmentTitle,
     tracks,
@@ -146,6 +156,9 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
 export async function runClaudioMusicRefillJob(job: ClaudioMusicRefillJob) {
   const state = getClaudioStationState();
   const onlineMode = LIVE_MUSIC_MODE === "online";
+  // refill 也保持和起台同一条源：
+  // - online：继续在线搜新歌，并排除当前队列里已有的歌
+  // - local：沿用 fresh 反馈重排本地 program
   const program = onlineMode ? null : await applyFeedbackAndBuildProgram("fresh");
   const nextTracks = onlineMode
     ? (
@@ -188,8 +201,8 @@ export async function runClaudioMusicRefillJob(job: ClaudioMusicRefillJob) {
 
   const previousTrack = state.tracks[state.tracks.length - 1] || null;
   const previousIndex = Math.max(0, startIndex - 1);
-    enqueueBridgeJobs({
-      programId: state.programId || job.programId,
+  enqueueBridgeJobs({
+    programId: state.programId || job.programId,
     sessionTitle: state.sessionTitle || program?.segmentTitle || job.sessionTitle,
     tracks: nextTracks,
     startIndex,
@@ -218,6 +231,8 @@ function enqueueBridgeJobs({
   previousIndex?: number | null;
   djLanguage?: "en" | "zh";
 }) {
+  // 桥段生成和播歌拆成独立 job：
+  // 节目先把 tracks 发出去，桥段随后异步补，避免 live 等所有串词生成完才开始播。
   if (previousTrack && tracks.length) {
     enqueueClaudioJob({
       type: "bridge_generation",

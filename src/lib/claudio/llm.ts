@@ -25,6 +25,9 @@ type GenerateJsonOptions = {
 
 export async function generateClaudioJson(prompt: string, options: GenerateJsonOptions = {}) {
   const provider = options.provider || DEFAULT_PROVIDER;
+  // Claudio 的结构化输出统一从这里走：
+  // 上游只给 prompt，下游根据 provider 选 DeepSeek / MiniMax，
+  // 最终都收口成 parseResponse 的同一份 JSON 结构。
   if (provider === "deepseek") return callDeepSeek(prompt, options);
   if (provider === "minimax") return callMiniMax(prompt, options);
   throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
@@ -57,6 +60,7 @@ async function callDeepSeek(prompt: string, options: GenerateJsonOptions) {
     options.timeoutMs || DEFAULT_TIMEOUT_MS,
     `DeepSeek request timed out after ${Math.round((options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000)}s`,
   );
+  // MiniMax 兼容接口可能带 <think>，这里先清掉，避免污染 JSON 提取。
   const raw = cleanMiniMaxContent(
     (completion as { choices?: Array<{ message?: { content?: string | null } }> }).choices?.[0]?.message?.content,
   );
@@ -103,6 +107,8 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 }
 
 export function parseResponse(raw: string): ClaudioLlmResponse {
+  // LLM 偶尔会在 JSON 外面夹杂解释文字，所以这里不是直接 JSON.parse(raw)，
+  // 而是先截取最外层对象；截不到就退回纯文本 say。
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     try {

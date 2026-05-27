@@ -44,6 +44,8 @@ function findLocalMatch(hit: MusicSearchHit, songs: Song[]) {
   const targetTitle = normalizeName(hit.title);
   const targetArtist = normalizeName(hit.artist);
 
+  // live 搜到的歌如果本地已有同名同艺人的文件，就优先复用本地；
+  // 这里故意保持严格匹配，避免把“相似歌名”的别版本误当成命中。
   return songs.find((song) => {
     if (!song.sourcePath) return false;
     const songTitle = normalizeName(song.title);
@@ -108,6 +110,9 @@ async function buildSeedQueries(input: string) {
     [scene, ...(currentRoutine?.preferredMoods || [])],
     5,
   );
+  // 把电台现有风格配置压成一组短 seed：
+  // 画像 / 时段 / 播单摘要 / 最近反馈 / 当前 block / 最近听过的歌名。
+  // 这些只负责“扩大搜歌范围”，真正入队还要经过本地优先和可播校验。
   const seeds = [
     compactText(input),
     ...taste.anchorArtists.slice(0, 4),
@@ -131,6 +136,7 @@ async function collectHits(
   wanted: number,
 ) {
   const hits: MusicSearchHit[] = [];
+  // 先按多组 seed 拉宽候选池，后面再筛掉重复、不可播和本地未命中的远端坏链。
   for (const query of queries) {
     if (hits.length >= wanted * 3) break;
     const result = await searchSongsBySource(query, source, 1, SEARCH_PAGE_SIZE).catch(() => []);
@@ -146,6 +152,8 @@ async function collectHits(
 }
 
 async function verifyPlaybackUrl(url: string) {
+  // 有些来源的直链不稳定，先 HEAD，失败再用最小 Range GET 探测。
+  // 只有确认这条 URL 真能出音频数据，live 才会把它加入队列。
   const head = await fetch(url, {
     method: "HEAD",
     redirect: "follow",
@@ -186,6 +194,11 @@ export async function buildOnlineClaudioTracks({
   const hits = await collectHits(queries, searchSource, excludeKeys, count);
   const tracks: ClaudioTrack[] = [];
 
+  // live 组歌顺序：
+  // 1. 在线搜候选
+  // 2. 本地库里找同歌，命中则优先播本地
+  // 3. 本地没有才尝试远端直链
+  // 4. 远端直链必须验活通过，否则直接丢弃
   for (const hit of hits) {
     if (tracks.length >= count) break;
     const localSong = findLocalMatch(hit, songs);

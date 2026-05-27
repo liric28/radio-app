@@ -11,6 +11,8 @@ const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2.7";
 
 export function buildChatLlmRequest(messages: ChatMessagePayload[]) {
   const provider = DEFAULT_PROVIDER;
+  // 聊天层只关心“当前 provider 要打哪个 URL、带什么 header/body”；
+  // 这样 /api/agent route 可以只做透传，不知道具体供应商细节。
   if (provider === "deepseek") {
     if (!process.env.DEEPSEEK_API_KEY) {
       throw new Error("DEEPSEEK_API_KEY not set");
@@ -55,6 +57,8 @@ export function buildChatLlmRequest(messages: ChatMessagePayload[]) {
 }
 
 export async function requestChatCompletion(messages: ChatMessagePayload[], maxTokens = 512) {
+  // 非流式工具调用（推荐语、测试脚本）走这个 helper；
+  // SSE 聊天则直接用 buildChatLlmRequest 的 stream=true body。
   const request = buildChatLlmRequest(messages);
   const response = await fetch(request.url, {
     method: "POST",
@@ -74,6 +78,7 @@ export async function requestChatCompletion(messages: ChatMessagePayload[], maxT
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
   };
+  // MiniMax 可能返回 reasoning/thinking 标签，统一在这里剥掉，避免污染 UI 文本。
   return cleanMiniMaxContent(data.choices?.[0]?.message?.content);
 }
 
