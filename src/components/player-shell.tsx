@@ -54,6 +54,53 @@ type NeteaseViewer = {
   avatarUrl: string;
 };
 
+function createThinkTagStripper() {
+  const OPEN = "<think>";
+  const CLOSE = "</think>";
+  let pending = "";
+  let insideThink = false;
+
+  return {
+    push(chunk: string) {
+      pending += chunk;
+      let output = "";
+
+      while (pending) {
+        if (insideThink) {
+          const closeIndex = pending.indexOf(CLOSE);
+          if (closeIndex === -1) {
+            pending = pending.slice(Math.max(0, pending.length - (CLOSE.length - 1)));
+            return output;
+          }
+          pending = pending.slice(closeIndex + CLOSE.length);
+          insideThink = false;
+          continue;
+        }
+
+        const openIndex = pending.indexOf(OPEN);
+        if (openIndex === -1) {
+          const safeLength = Math.max(0, pending.length - (OPEN.length - 1));
+          output += pending.slice(0, safeLength);
+          pending = pending.slice(safeLength);
+          return output;
+        }
+
+        output += pending.slice(0, openIndex);
+        pending = pending.slice(openIndex + OPEN.length);
+        insideThink = true;
+      }
+
+      return output;
+    },
+    flush() {
+      if (insideThink) return "";
+      const output = pending;
+      pending = "";
+      return output;
+    },
+  };
+}
+
 const dotGlyphs: Record<string, string[]> = {
   A: [
     "001100",
@@ -604,9 +651,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 门闸 chatHydratedRef 用 ref 而不是 state：
    *   状态变化会触发额外 render；这里只是 effect 之间的 sentinel，没必要驱动 UI。
    */
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
-    { id: "assistant-intro", role: "assistant", content: initialProgram.hostIntro },
-  ]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   /**
    * 挂载后读 localStorage 恢复历史。
@@ -1475,6 +1520,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     // 当前值偏视觉流畅，若有性能问题可调大。
     let pendingContent = "";
     let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    const thinkStripper = createThinkTagStripper();
     const flushPending = () => {
       if (!pendingContent) return;
       const buf = pendingContent;
@@ -1561,9 +1607,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               content = (content as { text?: string }).text ?? String(content);
             }
             if (typeof content === "string" && content) {
-              receivedContent = true;
-              pendingContent += content;
-              scheduleFlush();
+              const cleaned = thinkStripper.push(content);
+              if (cleaned) {
+                receivedContent = true;
+                pendingContent += cleaned;
+                scheduleFlush();
+              }
             }
           } catch {
             // ignore parse errors
@@ -1581,6 +1630,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         clearTimeout(flushTimer);
         flushTimer = null;
       }
+      pendingContent += thinkStripper.flush();
       flushPending();
 
       if (!receivedContent) {
@@ -1628,12 +1678,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    */
   function clearChatHistory() {
     chatAbortRef.current?.abort();
-    const intro: ChatMessage = {
-      id: `assistant-intro-${Date.now()}`,
-      role: "assistant",
-      content: program.hostIntro,
-    };
-    setChatHistory([intro]);
+    setChatHistory([]);
     setActiveLabel("CLEARED");
   }
 
