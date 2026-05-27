@@ -11,6 +11,8 @@ export async function GET() {
 
   const stream = new ReadableStream({
     start(controller) {
+      let closed = false;
+
       controller.enqueue(
         encoder.encode(
           `data: ${JSON.stringify({
@@ -27,12 +29,12 @@ export async function GET() {
       let controllerRef: ReadableStreamDefaultController | null = controller;
 
       const unsubscribe = subscribeClaudioEvents((event) => {
-        if (!controllerRef || controllerRef.state === "closed") return;
+        if (closed || !controllerRef) return;
         controllerRef.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       });
 
       const keepAlive = setInterval(() => {
-        if (!controllerRef || controllerRef.state === "closed") {
+        if (closed || !controllerRef) {
           clearInterval(keepAlive);
           return;
         }
@@ -42,6 +44,7 @@ export async function GET() {
       controller.enqueue(encoder.encode("event: ready\ndata: ok\n\n"));
 
       return () => {
+        closed = true;
         clearInterval(keepAlive);
         unsubscribe();
         controllerRef = null;

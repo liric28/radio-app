@@ -6,8 +6,8 @@ type ChatMessagePayload = {
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "minimax";
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
-const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL || "https://api.minimax.chat";
-const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "abab6.5s-chat";
+const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com/v1";
+const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2.7";
 
 export function buildChatLlmRequest(messages: ChatMessagePayload[]) {
   const provider = DEFAULT_PROVIDER;
@@ -74,5 +74,9 @@ export async function requestChatCompletion(messages: ChatMessagePayload[], maxT
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
   };
-  return data.choices?.[0]?.message?.content?.trim() || "";
+  return cleanMiniMaxContent(data.choices?.[0]?.message?.content);
+}
+
+function cleanMiniMaxContent(content?: string) {
+  return (content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }

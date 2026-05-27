@@ -1,5 +1,6 @@
 {
   "recentTrackIds": [
+    "local-unknown-artist-我走后dj-85",
     "local-unknown-artist-光辉岁月-77",
     "local-unknown-artist-爱的故事上集-79",
     "local-周杰伦-七里香-111",
@@ -10,11 +11,10 @@
     "local-周杰伦-夜曲-114",
     "local-周杰伦-晴天-115",
     "local-unknown-artist-爱的故事上集-79",
-    "local-unknown-artist-千千万万-78",
-    "local-unknown-artist-光辉岁月-77"
+    "local-unknown-artist-千千万万-78"
   ],
   "recentProgramTitles": [
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
     "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
     "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
     "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
@@ -26,5 +26,5 @@
     "familiar": 6,
     "fresh": 15
   },
-  "lastAction": "manual-pick"
+  "lastAction": "schedule-next"
 }

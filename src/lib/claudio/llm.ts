@@ -14,8 +14,8 @@ const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
 const DEEPSEEK_REASONING_EFFORT = process.env.DEEPSEEK_REASONING_EFFORT || "";
 const DEEPSEEK_THINKING = process.env.DEEPSEEK_THINKING || "";
-const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL || "https://api.minimax.chat";
-const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "abab6.5s-chat";
+const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com/v1";
+const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2.7";
 
 type GenerateJsonOptions = {
   provider?: string;
@@ -57,7 +57,9 @@ async function callDeepSeek(prompt: string, options: GenerateJsonOptions) {
     options.timeoutMs || DEFAULT_TIMEOUT_MS,
     `DeepSeek request timed out after ${Math.round((options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000)}s`,
   );
-  const raw = (completion as { choices?: Array<{ message?: { content?: string | null } }> }).choices?.[0]?.message?.content?.trim() || "";
+  const raw = cleanMiniMaxContent(
+    (completion as { choices?: Array<{ message?: { content?: string | null } }> }).choices?.[0]?.message?.content,
+  );
   return parseResponse(raw);
 }
 
@@ -84,7 +86,9 @@ async function callMiniMax(prompt: string, options: GenerateJsonOptions) {
     options.timeoutMs || DEFAULT_TIMEOUT_MS,
     `MiniMax request timed out after ${Math.round((options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000)}s`,
   );
-  const raw = (completion as { choices?: Array<{ message?: { content?: string | null } }> }).choices?.[0]?.message?.content?.trim() || "";
+  const raw = cleanMiniMaxContent(
+    (completion as { choices?: Array<{ message?: { content?: string | null } }> }).choices?.[0]?.message?.content,
+  );
   return parseResponse(raw);
 }
 
@@ -117,4 +121,8 @@ export function parseResponse(raw: string): ClaudioLlmResponse {
     }
   }
   return { title: "", say: raw || "Okay.", play: [], segments: [], intros: [], reason: "", mode: "" };
+}
+
+function cleanMiniMaxContent(content?: string | null) {
+  return (content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
