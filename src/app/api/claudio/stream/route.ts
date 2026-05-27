@@ -29,10 +29,20 @@ export async function GET() {
       );
 
       let controllerRef: ReadableStreamDefaultController | null = controller;
+      const safeEnqueue = (payload: string) => {
+        if (closed || !controllerRef) return;
+        try {
+          controllerRef.enqueue(encoder.encode(payload));
+        } catch {
+          // 客户端断开和 controller.close() 之间有竞态；这里静默吞掉，
+          // 不能因为一个过期 SSE 连接影响后续 broadcast / start job。
+          closed = true;
+          controllerRef = null;
+        }
+      };
 
       const unsubscribe = subscribeClaudioEvents((event) => {
-        if (closed || !controllerRef) return;
-        controllerRef.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        safeEnqueue(`data: ${JSON.stringify(event)}\n\n`);
       });
 
       // 某些代理会在长时间无数据时断 SSE，这里固定打 keepalive 保活连接。
@@ -41,10 +51,10 @@ export async function GET() {
           clearInterval(keepAlive);
           return;
         }
-        controllerRef.enqueue(encoder.encode(": keepalive\n\n"));
+        safeEnqueue(": keepalive\n\n");
       }, 15_000);
 
-      controller.enqueue(encoder.encode("event: ready\ndata: ok\n\n"));
+      safeEnqueue("event: ready\ndata: ok\n\n");
 
       return () => {
         closed = true;
