@@ -27,15 +27,15 @@
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.04) inset,
       0 0 50px 8px rgba(108, 86, 200, 0.14) inset,
-      10px 0 110px -20px rgba(120, 80, 220, 0.18) inset,
-      -10px 0 110px -20px rgba(80, 60, 180, 0.15) inset;
+      5px 0 60px -20px rgba(120, 80, 220, 0.18) inset,
+      -5px 0 60px -20px rgba(80, 60, 180, 0.15) inset;
   }
   50% {
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.06) inset,
       0 0 80px 14px rgba(140, 100, 230, 0.24) inset,
-      15px 0 140px -10px rgba(150, 100, 240, 0.28) inset,
-      -15px 0 140px -10px rgba(100, 70, 210, 0.24) inset;
+      8px 0 80px -10px rgba(150, 100, 240, 0.28) inset,
+      -8px 0 80px -10px rgba(100, 70, 210, 0.24) inset;
   }
 }
 
@@ -637,13 +637,14 @@
   }
 }
 
+/* 播放器背景色 */
 .controlDeck {
   display: grid;
   grid-template-columns: 1.1fr minmax(0, 1.9fr);
   gap: 14px 18px;
   align-items: center;
   padding: 18px 20px 14px;
-  background: rgba(255, 255, 255, 0.012);
+  background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(255, 255, 255, 0.022);
   border-bottom: 1px solid rgba(255, 255, 255, 0.022);
 }
@@ -846,12 +847,15 @@
   font-weight: 600;
 }
 
+/* today 背景色 */
 .queueHeader {
+  background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* 直播条背景色 */
 .liveStrip {
-  background: #000;
+  background: rgba(0, 0, 0, 0.75);
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -1177,11 +1181,13 @@
   font-size: 14px;
 }
 
+/* Claudio 气泡背景色 */
 .chatLineAssistant .chatBubbleWithLabel {
   background: rgba(255, 255, 255, 0.05);
   color: #f3f0ff;
 }
 
+/* 用户气泡背景色 */
 .chatLineUser .chatBubbleWithLabel {
   background: rgba(84, 216, 140, 0.12);
   color: #c9ffd8;

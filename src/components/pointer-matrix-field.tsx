@@ -34,9 +34,9 @@ type MatrixState = {
 const GRID_GAP = 18;
 // 矩阵圆点半径
 const BASE_RADIUS = 1.6;
-const PUSH_RADIUS = 168;
+const PUSH_RADIUS = 200;
 const MAX_PUSH = 9;
-const MAX_SCALE = 1.35;
+const MAX_SCALE = 1.1;
 
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
@@ -128,10 +128,12 @@ export const PointerMatrixField = forwardRef<
     const width = state.width;
     const height = state.height;
     const dpr = state.dpr;
+    // 矩阵圆点颜色和透明度
     const baseColor =
       themeRef.current === "light"
         ? { r: 80, g: 70, b: 130, a: 0.18 }
         : { r: 165, g: 155, b: 204, a: 0.22};
+    // 鼠标跟随悬停时的颜色和透明度
     const accentColor =
       themeRef.current === "light"
         ? { r: 62, g: 201, b: 132, a: 0.92 }
@@ -160,7 +162,8 @@ export const PointerMatrixField = forwardRef<
         if (strength > 0.04) {
           context.beginPath();
           context.fillStyle = `rgba(${accentColor.r}, ${accentColor.g}, ${accentColor.b}, ${strength * 0.16})`;
-          context.arc(dotX, dotY, radius + strength * 5.5, 0, Math.PI * 2);
+          // 矩阵光晕(边框)
+          // context.arc(dotX, dotY, radius + strength * 5.5, 0, Math.PI * 2);
           context.fill();
         }
 
