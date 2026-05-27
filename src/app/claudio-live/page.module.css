@@ -8,6 +8,7 @@
 }
 
 .shell {
+  position: relative;
   width: min(1080px, 100%);
   margin: 0 auto;
   border-radius: 28px;
@@ -19,6 +20,17 @@
     0 30px 70px rgba(0, 0, 0, 0.38),
     inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   overflow: hidden;
+}
+
+.shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(81, 128, 255, 0.16), transparent 24%),
+    radial-gradient(circle at 78% 22%, rgba(67, 255, 198, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(25, 27, 41, 0.96), rgba(12, 13, 20, 0.98));
+  pointer-events: none;
 }
 
 .header {
@@ -99,11 +111,13 @@
   position: absolute;
   left: 0;
   right: 0;
+  top: 0;
   bottom: 0;
-  height: 176px;
+  height: auto;
   z-index: 1;
   pointer-events: none;
-  mask-image: linear-gradient(transparent 0%, rgb(0, 0, 0) 28%, rgb(0, 0, 0) 100%);
+  opacity: 0.92;
+  mask-image: linear-gradient(transparent 0%, rgba(0, 0, 0, 0.85) 18%, rgb(0, 0, 0) 40%, rgb(0, 0, 0) 100%);
 }
 
 .waveCanvas {
@@ -196,11 +210,10 @@
   max-height: 420px;
   margin: 0;
   border-radius: 42px 42px 0 0;
-  background: #f7f6f3;
-  color: #111111;
+  background: transparent;
+  color: #f4f4fb;
   box-shadow:
-    0 -1px 0 rgba(255, 255, 255, 0.12) inset,
-    0 -18px 40px rgba(0, 0, 0, 0.08);
+    0 -1px 0 rgba(255, 255, 255, 0.05) inset;
 }
 
 .panelHeader {
@@ -210,7 +223,7 @@
   padding: 26px 28px 12px;
   font-size: 12px;
   letter-spacing: 0.14em;
-  color: rgba(17, 17, 17, 0.42);
+  color: rgba(244, 244, 251, 0.46);
 }
 
 .transcript {
@@ -224,7 +237,7 @@
 .transcriptEmpty {
   margin: 0;
   line-height: 1.6;
-  color: rgba(17, 17, 17, 0.46);
+  color: rgba(244, 244, 251, 0.5);
 }
 
 .turn {
@@ -240,17 +253,17 @@
   margin-bottom: 6px;
   font-size: 11px;
   letter-spacing: 0.04em;
-  color: rgba(17, 17, 17, 0.4);
+  color: rgba(244, 244, 251, 0.42);
 }
 
 .turnWho {
-  color: rgba(17, 17, 17, 0.58);
+  color: rgba(244, 244, 251, 0.7);
 }
 
 .turnBody {
   font-size: 15px;
   line-height: 1.7;
-  color: rgba(17, 17, 17, 0.92);
+  color: rgba(244, 244, 251, 0.92);
   text-wrap: pretty;
 }
 
@@ -259,7 +272,7 @@
 }
 
 .wordSaid {
-  color: rgba(17, 17, 17, 0.92);
+  color: rgba(244, 244, 251, 0.92);
 }
 
 .wordCurrent {
@@ -272,7 +285,7 @@
 }
 
 .wordFuture {
-  color: rgba(17, 17, 17, 0.32);
+  color: rgba(244, 244, 251, 0.34);
 }
 
 .player {
@@ -281,8 +294,8 @@
   gap: 14px;
   margin-top: 0;
   padding: 14px 18px 18px;
-  border-top: 1px solid rgba(17, 17, 17, 0.06);
-  background: rgb(255, 255, 255);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
 }
 
 .playerTime {
@@ -290,7 +303,7 @@
   font-size: 13px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: rgb(17, 17, 17);
+  color: rgba(244, 244, 251, 0.88);
 }
 
 .playerBars {
@@ -310,13 +323,13 @@
 .playerBar {
   flex: 1 1 auto;
   border-radius: 999px;
-  background: rgb(207, 207, 209);
+  background: rgba(255, 255, 255, 0.18);
   transition: background 0.12s ease;
   pointer-events: none;
 }
 
 .playerBarPlayed {
-  background: rgb(17, 17, 17);
+  background: #43ffc6;
 }
 
 .playButton {
@@ -325,8 +338,8 @@
   flex: 0 0 auto;
   border: none;
   border-radius: 999px;
-  background: #ffffff;
-  color: #111111;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f4fb;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -335,6 +348,7 @@
 
 .playButton:hover {
   transform: scale(1.04);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .playGlyph {
@@ -372,7 +386,9 @@
   }
 
   .waveWrap {
-    height: 142px;
+    top: 0;
+    bottom: 0;
+    height: auto;
   }
 
   .panel {
