@@ -1845,7 +1845,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         </header>
 
         <section className={styles.clockStage}>
-          <div className={styles.dotGrid} />
           <div className={styles.clockWrap}>
             <button
               type="button"

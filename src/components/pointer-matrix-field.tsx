@@ -30,8 +30,10 @@ type MatrixState = {
   rafId: number | null;
 };
 
+// 矩阵圆点间距
 const GRID_GAP = 18;
-const BASE_RADIUS = 0.82;
+// 矩阵圆点半径
+const BASE_RADIUS = 1.6;
 const PUSH_RADIUS = 168;
 const MAX_PUSH = 9;
 const MAX_SCALE = 1.35;
@@ -129,7 +131,7 @@ export const PointerMatrixField = forwardRef<
     const baseColor =
       themeRef.current === "light"
         ? { r: 80, g: 70, b: 130, a: 0.18 }
-        : { r: 165, g: 155, b: 204, a: 0.18 };
+        : { r: 165, g: 155, b: 204, a: 0.22};
     const accentColor =
       themeRef.current === "light"
         ? { r: 62, g: 201, b: 132, a: 0.92 }
