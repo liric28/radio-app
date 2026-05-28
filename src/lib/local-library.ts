@@ -16,7 +16,7 @@ const supportedExtensions = new Set([
   ".alac",
 ]);
 
-export const defaultLibraryPath = "/Users/lipan/Music/Music/Media/Music";
+export const defaultLibraryPath = process.env.MUSIC_LIBRARY_PATH || "";
 
 type ProbeTags = {
   title?: string;

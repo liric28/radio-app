@@ -1,30 +1,22 @@
 {
   "recentTrackIds": [
+    "local-beyond-amani-5",
+    "local-beyond-amani-5",
+    "local-albums-风中的遗憾dj-169",
     "local-unknown-artist-我走后dj-85",
     "local-unknown-artist-光辉岁月-77",
-    "local-unknown-artist-爱的故事上集-79",
-    "local-周杰伦-七里香-111",
-    "local-周杰伦-七里香-111",
-    "local-周杰伦-mojito-110",
-    "local-周杰伦-外婆-112",
-    "local-周杰伦-听妈妈的话-113",
-    "local-周杰伦-夜曲-114",
-    "local-周杰伦-晴天-115",
-    "local-unknown-artist-爱的故事上集-79",
-    "local-unknown-artist-千千万万-78"
+    "local-unknown-artist-爱的故事上集-79"
   ],
   "recentProgramTitles": [
     "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律"
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律"
   ],
   "feedbackBias": {
     "calmer": 3,
-    "familiar": 6,
+    "familiar": 8,
     "fresh": 15
   },
-  "lastAction": "schedule-next"
+  "lastAction": "familiar"
 }

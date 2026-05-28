@@ -714,9 +714,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [volume, setVolume] = useState<number>(0.82);
-  const [libraryPath, setLibraryPath] = useState<string>(
-    "/Users/lipan/Music/Music/Media/Music",
-  );
+  const [libraryPath, setLibraryPath] = useState<string>("");
   const [libraryLimit, setLibraryLimit] = useState<string>("300");
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
   const [clockDisplayMode, setClockDisplayMode] = useState<"dot" | "pixel">("pixel");
@@ -2167,7 +2165,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
         <footer className={styles.footerBar}>
           <span>CLAUDIO FM</span>
-          <span>CONNECTED.</span>
+          <span>CONNECTED</span>
         </footer>
 
         {error ? <p className={styles.error}>{error}</p> : null}
