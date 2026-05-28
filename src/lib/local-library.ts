@@ -167,8 +167,11 @@ export async function scanLocalLibrary(
   const songs: Song[] = [];
 
   for (const [index, filePath] of targetFiles.entries()) {
-    // buildSongFromFile 内部已 try/catch ffprobe，无需在这里再包一层
-    songs.push(await buildSongFromFile(filePath, index));
+    const relativePath = path.relative(rootDir, filePath);
+    const song = await buildSongFromFile(filePath, index);
+    song.sourcePath = relativePath;
+    song.libraryRoot = rootDir;
+    songs.push(song);
   }
 
   return songs;

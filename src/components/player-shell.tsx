@@ -911,7 +911,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       return "";
     }
 
-    return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath)}`;
+    return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath || "")}&libraryRoot=${encodeURIComponent(program.currentTrack.libraryRoot || "")}`;
   }, [program.currentTrack.sourcePath, searchPreview?.url]);
 
   const visibleTrack = searchPreview

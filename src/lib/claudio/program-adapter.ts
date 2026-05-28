@@ -38,7 +38,7 @@ function toClaudioTrack(program: RadioProgram): ClaudioTrack[] {
     query: `${track.title}${track.artist ? ` - ${track.artist}` : ""}`,
     title: track.title,
     artist: track.artist,
-    streamUrl: track.sourcePath ? `/api/audio?path=${encodeURIComponent(track.sourcePath)}` : "",
+    streamUrl: track.sourcePath ? `/api/audio?path=${encodeURIComponent(track.sourcePath)}&libraryRoot=${encodeURIComponent(track.libraryRoot || "")}` : "",
     sourceSong: track,
   }));
 }

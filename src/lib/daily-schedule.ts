@@ -98,6 +98,7 @@ function hydrateScheduledTrack(
       tags: track.tags ?? [],
       reasonSeed: track.reasonSeed ?? "",
       sourcePath: track.sourcePath,
+      libraryRoot: (track as Song).libraryRoot,
     }),
     ...track,
     title,

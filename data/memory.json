@@ -1,5 +1,7 @@
 {
   "recentTrackIds": [
+    "local-周杰伦-七里香-93",
+    "local-周杰伦-mojito-92",
     "local-beyond-amani-5",
     "local-beyond-amani-5",
     "local-albums-风中的遗憾dj-169",
@@ -8,6 +10,8 @@
     "local-unknown-artist-爱的故事上集-79"
   ],
   "recentProgramTitles": [
+    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
     "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
     "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
     "白天工作流 · 从旧歌单里捞出最像你的缓慢主旋律",
@@ -18,5 +22,5 @@
     "familiar": 8,
     "fresh": 15
   },
-  "lastAction": "familiar"
+  "lastAction": "schedule-next"
 }

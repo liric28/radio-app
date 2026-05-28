@@ -32,13 +32,18 @@ const mimeTypes: Record<string, string> = {
  * 缓存：immutable + max-age=1y。音频文件路径变了就是不同 URL，可以放心缓存。
  */
 export async function GET(request: NextRequest) {
-  const filePath = request.nextUrl.searchParams.get("path");
+  const filePath = request.nextUrl.searchParams.get("path") || "";
+  const libraryRoot = request.nextUrl.searchParams.get("libraryRoot") || "";
 
   if (!filePath) {
     return NextResponse.json({ ok: false, message: "缺少音频路径" }, { status: 400 });
   }
 
-  const normalizedPath = path.resolve(filePath);
+  // 本地歌曲：libraryRoot + sourcePath 拼接；网络歌曲：直接用 filePath（已是绝对路径）
+  const normalizedPath = libraryRoot
+    ? path.resolve(libraryRoot, filePath)
+    : path.resolve(filePath);
+
   const allowedRoots = await readAllowedAudioRoots();
   const isAllowed = allowedRoots.some((root) => normalizedPath.startsWith(root));
 
@@ -85,7 +90,7 @@ export async function GET(request: NextRequest) {
       async start(controller) {
         const handle = await fs.open(normalizedPath, "r");
         try {
-                  const CHUNK_SIZE = 512 * 1024;
+          const CHUNK_SIZE = 512 * 1024;
           const buffer = Buffer.alloc(CHUNK_SIZE);
           let bytesRead: number;
           while ((bytesRead = (await handle.read(buffer)).bytesRead) > 0) {

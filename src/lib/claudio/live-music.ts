@@ -205,7 +205,7 @@ export async function buildOnlineClaudioTracks({
     let streamUrl = "";
 
     if (localSong?.sourcePath) {
-      streamUrl = `/api/audio?path=${encodeURIComponent(localSong.sourcePath)}`;
+      streamUrl = `/api/audio?path=${encodeURIComponent(localSong.sourcePath)}&libraryRoot=${encodeURIComponent(localSong.libraryRoot || "")}`;
     } else {
       const remoteUrl = await resolvePlaybackUrlForHit(hit).catch(() => null);
       if (!remoteUrl) continue;

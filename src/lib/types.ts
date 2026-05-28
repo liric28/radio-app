@@ -42,6 +42,11 @@ export type Song = {
    * - "qq" / "netease"：通过搜索结果下载到 data/downloads/ 的网络曲目
    */
   source?: "local" | "kugou" | "qq" | "netease";
+  /**
+   * 本地音乐库根目录，导入时记录。播放时用 libraryRoot + sourcePath 拼接完整路径。
+   * 网络来源（kugou/qq/netease）此字段为空。
+   */
+  libraryRoot?: string;
 };
 
 export type SongImportItem = {
