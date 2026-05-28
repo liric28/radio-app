@@ -3,6 +3,7 @@ import {
   checkQrLogin,
   createQrLogin,
   getLoginProfile,
+  logout,
   neteaseBaseUrl,
   redactSensitiveText,
   resolveCookie,
@@ -63,6 +64,34 @@ function renderQrPage({
 </html>`;
 }
 
+// ============================================================
+// 登录流程
+//
+//  1. 首次访问 /api/netease-login（无 cookie）
+//     → createQrLogin() 向 sidecar 请求二维码 key 和图片
+//     → 返回 renderQrPage()（内含轮询 JS，每 2.5s 查 /mode=check）
+//
+//  2. 扫码确认后手机端授权
+//     → 前端轮询 /mode=check 捕获 code=803
+//     → checkQrLogin() 写 local.config.json（cookie + source）
+//     → 前端弹窗提示"登录成功，可关闭"
+//
+//  3. 已登录用户访问 /api/netease-login（带 cookie）
+//     → verifyLoginStatus() → 返回已登录 HTML（不重新扫码）
+//
+// 4. 前端 PlayerShell 初始化时调 /mode=status
+//     → getLoginProfile() → sidecar → 网易云 /login/status
+//     → 返回 { valid, userId, nickname, avatarUrl }
+//     → setNeteaseViewer() → renderNeteaseAvatar() 显示头像
+//
+// 5. /mode=logout → logout() → 调 sidecar /logout + 删除 local.config.json
+//
+// 架构
+//   Next.js (3000) ← NETEASE_API_BASE ← sidecar NeteaseCloudMusicApi (3001)
+//   cookie 存在 data/netease/local.config.json（source: qr-login）
+//   搜歌不走 sidecar，直接调 interface.music.163.com
+// ============================================================
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("mode");
@@ -83,32 +112,6 @@ export async function GET(request: NextRequest) {
       );
     }
   }
-
-  // ============================================================
-  // 登录流程
-  //
-  //  1. 首次访问 /api/netease-login（无 cookie）
-  //     → createQrLogin() 向 sidecar 请求二维码 key 和图片
-  //     → 返回 renderQrPage()（内含轮询 JS，每 2.5s 查 /mode=check）
-  //
-  //  2. 扫码确认后手机端授权
-  //     → 前端轮询 /mode=check 捕获 code=803
-  //     → checkQrLogin() 写 local.config.json（cookie + source）
-  //     → 前端弹窗提示"登录成功，可关闭"
-  //
-  //  3. 已登录用户访问 /api/netease-login（带 cookie）
-  //     → verifyLoginStatus() → 返回已登录 HTML（不重新扫码）
-  //
-  // 4. 前端 PlayerShell 初始化时调 /mode=status
-  //     → getLoginProfile() → sidecar → 网易云 /login/status
-  //     → 返回 { valid, userId, nickname, avatarUrl }
-  //     → setNeteaseViewer() → renderNeteaseAvatar() 显示头像
-  //
-  // 架构
-  //   Next.js (3000) ← NETEASE_API_BASE ← sidecar NeteaseCloudMusicApi (3001)
-  //   cookie 存在 data/netease/local.config.json（source: qr-login）
-  //   搜歌不走 sidecar，直接调 interface.music.163.com
-  // ============================================================
 
   if (mode === "status") {
     try {
@@ -134,6 +137,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  if (mode === "logout") {
+    await logout({ baseUrl: neteaseBaseUrl() });
+    return new NextResponse(
+      `<!doctype html><html><head><meta charset="utf-8"><title>Logged out</title></head><body style="font-family: system-ui, sans-serif; margin: 40px;"><h1>Logged out</h1><p>You can close this window.</p><script>if (window.opener) window.opener.location.reload(); setTimeout(() => window.close(), 1000);</script></body></html>`,
+      { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
+    );
+  }
+
   try {
     const resolved = resolveCookie();
     if (resolved.cookie) {
@@ -147,7 +158,7 @@ export async function GET(request: NextRequest) {
           cookie: resolved.cookie,
         });
         return new NextResponse(
-          `<!doctype html><html><head><meta charset="utf-8"><title>Netease Music Login</title></head><body style="font-family: system-ui, sans-serif; margin: 40px;"><h1>Netease Music Login</h1><p>Already logged in as ${profile.nickname || `user ${status.userId}`}.</p></body></html>`,
+          `<!doctype html><html><head><meta charset="utf-8"><title>Netease Music Login</title></head><body style="font-family: system-ui, sans-serif; margin: 40px;"><h1>Netease Music Login</h1><p>Already logged in as ${profile.nickname || `user ${status.userId}`}.</p><p><a href="/api/netease-login?mode=logout">Logout</a></p></body></html>`,
           { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
         );
       }

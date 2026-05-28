@@ -1812,9 +1812,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             <button
               type="button"
               className={styles.topGhost}
-              onClick={handleOpenNeteaseLogin}
+              onClick={() => {
+                if (neteaseViewer?.valid) {
+                  fetch("/api/netease-login?mode=logout", { cache: "no-store" })
+                    .then(() => {
+                      setNeteaseViewer(null);
+                      if (window.opener) window.opener.location.reload();
+                    });
+                } else {
+                  openPopupWindow("/api/netease-login", "netease-login", 420, 520);
+                }
+              }}
             >
-              LOGIN
+              {neteaseViewer?.valid ? "LOGOUT" : "LOGIN"}
             </button>
             <div className={styles.themeToggle}>
               <button
@@ -2057,7 +2067,13 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               >
                 {message.role === "assistant" ? (
                   <>
-                    <div className={styles.avatar} />
+                    <div className={styles.avatar}>
+                      <img
+                        src="/claudio.jpg"
+                        alt="Claudio"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                      />
+                    </div>
                     <p className={styles.chatBubbleWithLabel}>
                       <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
