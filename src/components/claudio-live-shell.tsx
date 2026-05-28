@@ -532,7 +532,11 @@ export function ClaudioLiveShell() {
     outroTalkStartedForTrackRef.current = -1;
     restoreMusicVolume();
     setCurrentTrackIndex((current) => {
-      if (current + 1 >= tracks.length) return current;
+      if (current + 1 >= tracks.length) {
+        // No more tracks — trigger a fresh station to keep the music going
+        void startStation();
+        return current;
+      }
       return current + 1;
     });
   }
