@@ -531,12 +531,13 @@ export function ClaudioLiveShell() {
     pendingSegueNextTrackRef.current = null;
     outroTalkStartedForTrackRef.current = -1;
     restoreMusicVolume();
+    const atLastTrack = currentTrackIndex + 1 >= tracks.length;
+    if (atLastTrack) {
+      // 当前段的 queue 已经播完，立即开新台承接，避免卡在空白状态
+      void startStation();
+    }
     setCurrentTrackIndex((current) => {
-      if (current + 1 >= tracks.length) {
-        // No more tracks — trigger a fresh station to keep the music going
-        void startStation();
-        return current;
-      }
+      if (current + 1 >= tracks.length) return current;
       return current + 1;
     });
   }
@@ -688,6 +689,7 @@ export function ClaudioLiveShell() {
             <div className={styles.panelHeader}>
               <span>Transcript</span>
               <span>{turns.length} turns</span>
+              <span>{tracks.length} tracks</span>
             </div>
             <div ref={logRef} className={styles.transcript}>
               {turns.length ? turns.map((turn) => {
