@@ -4,10 +4,17 @@ import { dataDir } from "@/lib/paths";
 
 const audioRootsPath = path.join(dataDir, "audio-roots.json");
 
-const defaultAudioRoots = ["/Users/lipan/Music/Music/Media/Music"];
+// .env AUDIO_ROOTS 优先，支持逗号分隔多个路径
+function getDefaultAudioRoots(): string[] {
+  const envRoots = process.env.AUDIO_ROOTS;
+  if (envRoots) {
+    return envRoots.split(",").map((r) => r.trim()).filter(Boolean);
+  }
+  return ["/Users/lipan/Music/Music/Media/Music"];
+}
 
 function normalizeRoot(rootPath: string) {
-  return path.resolve(rootPath);
+  return path.isAbsolute(rootPath) ? rootPath : path.resolve(rootPath);
 }
 
 export async function readAllowedAudioRoots() {
@@ -16,13 +23,14 @@ export async function readAllowedAudioRoots() {
     const roots = JSON.parse(content) as string[];
 
     if (!Array.isArray(roots) || roots.length === 0) {
-      return defaultAudioRoots;
+      return getDefaultAudioRoots().map(normalizeRoot);
     }
 
     return roots.map(normalizeRoot);
   } catch {
-    await writeAllowedAudioRoots(defaultAudioRoots);
-    return defaultAudioRoots;
+    const defaults = getDefaultAudioRoots().map(normalizeRoot);
+    await writeAllowedAudioRoots(defaults);
+    return defaults;
   }
 }
 

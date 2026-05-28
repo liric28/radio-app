@@ -714,7 +714,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [volume, setVolume] = useState<number>(0.82);
-  const [libraryPath, setLibraryPath] = useState<string>("");
+  const [libraryPath, setLibraryPath] = useState<string>(
+    process.env.NEXT_PUBLIC_DEFAULT_AUDIO_ROOT ?? "",
+  );
   const [libraryLimit, setLibraryLimit] = useState<string>("300");
   const [activeLabel, setActiveLabel] = useState<string>("ON AIR");
   const [clockDisplayMode, setClockDisplayMode] = useState<"dot" | "pixel">("pixel");
