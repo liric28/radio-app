@@ -46,6 +46,7 @@ next-env.d.ts
 /data/chat-jobs.json
 /data/daily-schedule.json
 /data/downloads/
+/data/netease/
 
 # sidecar & runtime
 /netease-sidecar/

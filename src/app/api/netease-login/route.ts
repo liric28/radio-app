@@ -52,7 +52,7 @@ function renderQrPage({
           return;
         }
         statusEl.textContent = data.message || "Waiting for authorization...";
-        if (data.code === 800) return;
+        if (data.code === 800 || data.terminal) return;
       } catch (error) {
         statusEl.textContent = (error && error.message) || "Login check failed.";
       }

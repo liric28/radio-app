@@ -102,6 +102,49 @@ export function resolveCookie() {
   return { cookie: "", source: "anonymous", path: null };
 }
 
+type NeteaseStatusPayload = {
+  data?: {
+    account?: {
+      id?: number;
+      userName?: string;
+      avatarUrl?: string;
+      nickname?: string;
+      anonimousUser?: boolean | string | number;
+      anonymousUser?: boolean | string | number;
+    };
+    profile?: {
+      userId?: number;
+      nickname?: string;
+      avatarUrl?: string;
+    };
+  };
+  profile?: {
+    userId?: number;
+    nickname?: string;
+    avatarUrl?: string;
+  };
+};
+
+function toTruthyFlag(value: unknown) {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1";
+  }
+  return false;
+}
+
+function parseLoginStatus(status: unknown) {
+  const payload = status as NeteaseStatusPayload;
+  const account = payload?.data?.account;
+  const profile = payload?.data?.profile || payload?.profile;
+  const isAnonymous = toTruthyFlag(account?.anonimousUser) || toTruthyFlag(account?.anonymousUser);
+  const hasProfile = Boolean(profile?.userId);
+  const hasNamedAccount = Boolean(account?.id && (account?.nickname || account?.userName));
+
+  return { account, profile, isAnonymous, hasProfile, hasNamedAccount };
+}
+
 export async function requestNeteaseJson(
   pathname: string,
   params: Record<string, string | number | boolean | undefined | null> = {},
@@ -170,19 +213,15 @@ export async function verifyLoginStatus({
 
   try {
     const status = await requestNeteaseJson("/login/status", {}, { baseUrl, cookie });
-    const data = (status as { data?: Record<string, unknown> })?.data;
-    const account = data?.account as { id?: number; userName?: string } | undefined;
-    const profile = (status as {
-      data?: { profile?: { userId?: number; nickname?: string; avatarUrl?: string } };
-      profile?: { userId?: number; nickname?: string; avatarUrl?: string };
-    })?.data?.profile || (status as {
-      profile?: { userId?: number; nickname?: string; avatarUrl?: string };
-    })?.profile;
+    const { account, profile, isAnonymous, hasProfile, hasNamedAccount } = parseLoginStatus(status);
 
-    if (profile?.userId) {
+    if (hasProfile && profile?.userId) {
       return { valid: true, userId: profile.userId, reason: "ok" };
     }
-    if (account?.id) {
+    if (account?.id && hasNamedAccount) {
+      return { valid: true, userId: account.id, reason: "ok-account-only" };
+    }
+    if (account?.id && isAnonymous) {
       return { valid: true, userId: account.id, reason: "ok-anonymous" };
     }
     return { valid: false, userId: null, reason: "profile-missing" };
@@ -204,21 +243,9 @@ export async function getLoginProfile({
 
   try {
     const status = await requestNeteaseJson("/login/status", {}, { baseUrl, cookie });
-    const data = (status as { data?: Record<string, unknown> })?.data;
-    const account = data?.account as {
-      id?: number;
-      userName?: string;
-      avatarUrl?: string;
-      nickname?: string;
-    } | undefined;
-    const profile = (status as {
-      data?: { profile?: { userId?: number; nickname?: string; avatarUrl?: string } };
-      profile?: { userId?: number; nickname?: string; avatarUrl?: string };
-    })?.data?.profile || (status as {
-      profile?: { userId?: number; nickname?: string; avatarUrl?: string };
-    })?.profile;
+    const { account, profile, isAnonymous, hasProfile, hasNamedAccount } = parseLoginStatus(status);
 
-    if (profile?.userId) {
+    if (hasProfile && profile?.userId) {
       return {
         valid: true,
         userId: profile.userId,
@@ -227,7 +254,16 @@ export async function getLoginProfile({
         reason: "ok",
       };
     }
-    if (account?.id) {
+    if (account?.id && hasNamedAccount) {
+      return {
+        valid: true,
+        userId: account.id,
+        nickname: account.nickname || account.userName || "",
+        avatarUrl: account.avatarUrl || "",
+        reason: "ok-account-only",
+      };
+    }
+    if (account?.id && isAnonymous) {
       return {
         valid: true,
         userId: account.id,
@@ -310,16 +346,25 @@ export async function checkQrLogin({
 
   if (code === 803 && cookie) {
     const verify = await requestNeteaseJson("/login/status", {}, { baseUrl, cookie });
-    const isAnon = (verify as { data?: { account?: { anonimousUser?: boolean; anonymousUser?: boolean } } })?.data?.account?.anonimousUser ?? (verify as { data?: { account?: { anonimousUser?: boolean; anonymousUser?: boolean } } })?.data?.account?.anonymousUser;
-    if (isAnon) {
+    const { account, profile, isAnonymous, hasProfile, hasNamedAccount } = parseLoginStatus(verify);
+    const shouldRejectAsAnonymous = isAnonymous && !hasProfile && !hasNamedAccount;
+    if (shouldRejectAsAnonymous) {
       return {
         ok: false,
         code,
-        message: "Anonymous login — please ensure your Netease app is logged in to liric28 before scanning.",
+        terminal: true,
+        message: "Login verification failed: Netease returned an anonymous session instead of an account profile.",
       };
     }
     const saved = writeLocalConfig({ cookie: cleanCookie(cookie), source: "qr-login" });
-    return { ok: true, code, cookieSaved: true, cookieSource: saved.source || "qr-login" };
+    return {
+      ok: true,
+      code,
+      cookieSaved: true,
+      cookieSource: saved.source || "qr-login",
+      profileUserId: profile?.userId || null,
+      accountId: account?.id || null,
+    };
   }
 
   return {
