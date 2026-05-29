@@ -764,6 +764,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 默认折叠避免占地，点 LIST 才展开——视觉上等同于一条"系统插播的歌单消息"。
    */
   const [showQueueList, setShowQueueList] = useState<boolean>(false);
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/favorites")
+      .then((r) => r.json())
+      .then((ids) => setFavorites(ids as string[]))
+      .catch(() => null);
+  }, []);
   /**
    * TODAY 行触发的"全天四段歌单"弹层。
    * 与 LIST 按钮的 showQueueList 完全独立——LIST 显示当前段、TODAY 显示 4 段全部，
@@ -1277,6 +1285,21 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       actionLabels[action],
       isPlaying,
     );
+  }
+
+  function toggleFavorite() {
+    const track = program.currentTrack;
+    if (!track?.id) return;
+    const isFav = favorites.includes(track.id);
+    const action = isFav ? "remove" : "add";
+    setFavorites((prev) =>
+      action === "add" ? [...prev, track.id] : prev.filter((id) => id !== track.id)
+    );
+    void fetch("/api/favorites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trackId: track.id, action }),
+    }).catch(() => null);
   }
 
   /**
@@ -1952,8 +1975,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             <button type="button" className={styles.roundIconBtn} onClick={() => setShowQueueList((value) => !value)} aria-expanded={showQueueList} aria-label="切换当前段歌单显示">
               LIST
             </button>
-            <button type="button" className={styles.roundIconBtn} onClick={() => sendFeedback("familiar")}>
-              FAV
+            <button
+              type="button"
+              className={`${styles.roundIconBtn} ${favorites.includes(program.currentTrack?.id ?? "") ? styles.favActive : ""}`}
+              onClick={toggleFavorite}
+              aria-label="收藏当前歌曲"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill={favorites.includes(program.currentTrack?.id ?? "") ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
             </button>
             <div className={styles.volumeCluster}>
               <span>VOL</span>

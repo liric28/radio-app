@@ -772,6 +772,10 @@
   color: #4d465f;
 }
 
+.favActive {
+  color: #ff6b8a !important;
+}
+
 .roundButton {
   width: 42px;
   height: 42px;
