@@ -319,7 +319,7 @@ export function ClaudioLiveShell() {
 
     let rafId = 0;
     let time = 0;
-    const barCount = 56;
+    const barCount = 100;
     const barGap = 4;
     const bars = Array.from({ length: barCount }, (_, index) => ({
       height: 0,
