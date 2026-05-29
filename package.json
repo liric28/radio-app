@@ -7,7 +7,8 @@
     "sidecar": "node scripts/start-sidecar.js",
     "next": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "npm-run-all -p sidecar next",
+    "start:app": "next start",
     "lint": "eslint"
   },
   "dependencies": {

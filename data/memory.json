@@ -1,5 +1,6 @@
 {
   "recentTrackIds": [
+    "local-unknown-artist-光辉岁月-83",
     "local-dj-好想大声说爱你-19",
     "local-周杰伦-告白气球-123",
     "local-周杰伦-晴天-122",
@@ -10,21 +11,20 @@
     "local-beyond-amani-5",
     "local-beyond-amani-5",
     "local-albums-风中的遗憾dj-169",
-    "local-unknown-artist-我走后dj-85",
-    "local-unknown-artist-光辉岁月-77"
+    "local-unknown-artist-我走后dj-85"
   ],
   "recentProgramTitles": [
+    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门 · 从旧歌单里捞出最像你的缓慢主旋律",
     "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
     "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
     "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "傍晚归家 · 从旧歌单里捞出最像你的缓慢主旋律"
+    "深夜降速 · 从旧歌单里捞出最像你的缓慢主旋律"
   ],
   "feedbackBias": {
     "calmer": 3,
     "familiar": 8,
     "fresh": 15
   },
-  "lastAction": "manual-pick"
+  "lastAction": "schedule-next"
 }

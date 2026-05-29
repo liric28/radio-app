@@ -1906,7 +1906,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             >
               {clockDisplayMode === "pixel"
                 ? (
-                    <div className={`${styles.pixelClock} ${claudioPixelFont.className}`} aria-hidden="true">
+                    <div className={`${styles.pixelClock} ${claudioPixelFont.className}`} aria-hidden="true" suppressHydrationWarning>
                       {currentClock}
                     </div>
                   )
@@ -1915,10 +1915,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                       text={currentClock}
                       className={styles.dotClock}
                       cellClassName={styles.clockDot}
+                      suppressHydrationWarning
                     />
                   )}
             </button>
-            <div className={styles.clockMeta} onClick={() => setLoaderVariant(v => v === "hex1" ? "hex10" : v === "hex10" ? "square15" : v === "square15" ? "square18" : v === "square18" ? "circular8" : "hex1")}>
+            <div className={styles.clockMeta} onClick={() => setLoaderVariant(v => v === "hex1" ? "hex10" : v === "hex10" ? "square15" : v === "square15" ? "square18" : v === "square18" ? "circular8" : "hex1")} suppressHydrationWarning>
               <strong>{dayLabel}</strong>
               <span>{dateLabel}</span>
               <em className={styles.onAir}>
