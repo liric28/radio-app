@@ -10,14 +10,15 @@ export async function POST(request: NextRequest) {
     source?: string;
     djLanguage?: "en" | "zh";
   };
+  const djLanguage = body.djLanguage === "zh" ? "zh" : "en";
 
   const key = `program_start:${Date.now()}`;
   const accepted = enqueueClaudioJob({
     type: "program_start",
     key,
-    input: body.input?.trim() || "Open the station.",
+    input: body.input?.trim() || "",
     source: body.source?.trim() || "user",
-    djLanguage: body.djLanguage === "zh" ? "zh" : "en",
+    djLanguage,
   });
 
   const completed = await drainClaudioJobs({ stopAfterKey: key });

@@ -8,6 +8,11 @@ type ClaudioLlmResponse = {
   mode?: string;
 };
 
+type ClaudioStartIntentResponse = {
+  input: string;
+  reason: string;
+};
+
 const DEFAULT_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 120000);
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "deepseek";
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
@@ -30,6 +35,13 @@ export async function generateClaudioJson(prompt: string, options: GenerateJsonO
   // 最终都收口成 parseResponse 的同一份 JSON 结构。
   if (provider === "deepseek") return callDeepSeek(prompt, options);
   if (provider === "minimax") return callMiniMax(prompt, options);
+  throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
+}
+
+export async function generateClaudioStartIntent(prompt: string, options: GenerateJsonOptions = {}) {
+  const provider = options.provider || DEFAULT_PROVIDER;
+  if (provider === "deepseek") return callDeepSeekStartIntent(prompt, options);
+  if (provider === "minimax") return callMiniMaxStartIntent(prompt, options);
   throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
 }
 
@@ -96,6 +108,68 @@ async function callMiniMax(prompt: string, options: GenerateJsonOptions) {
   return parseResponse(raw);
 }
 
+async function callDeepSeekStartIntent(prompt: string, options: GenerateJsonOptions) {
+  if (!process.env.DEEPSEEK_API_KEY) {
+    throw new Error("DEEPSEEK_API_KEY not set");
+  }
+
+  const { default: OpenAI } = await import("openai");
+  const client = new OpenAI({
+    baseURL: process.env.DEEPSEEK_BASE_URL || DEEPSEEK_BASE_URL,
+    apiKey: process.env.DEEPSEEK_API_KEY,
+  });
+  const model = options.model || process.env.DEEPSEEK_MODEL || DEEPSEEK_MODEL;
+  const request = {
+    model,
+    messages: [
+      { role: "system", content: "You are Claudio FM. Return strict JSON only." },
+      { role: "user", content: prompt },
+    ],
+    stream: false,
+  } as Record<string, unknown>;
+  if (DEEPSEEK_THINKING) request.thinking = { type: DEEPSEEK_THINKING };
+  if (DEEPSEEK_REASONING_EFFORT) request.reasoning_effort = DEEPSEEK_REASONING_EFFORT;
+
+  const completion = await withTimeout(
+    client.chat.completions.create(request as never),
+    options.timeoutMs || DEFAULT_TIMEOUT_MS,
+    `DeepSeek request timed out after ${Math.round((options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000)}s`,
+  );
+  const raw = cleanMiniMaxContent(
+    (completion as { choices?: Array<{ message?: { content?: string | null } }> }).choices?.[0]?.message?.content,
+  );
+  return parseStartIntentResponse(raw);
+}
+
+async function callMiniMaxStartIntent(prompt: string, options: GenerateJsonOptions) {
+  if (!process.env.MINIMAX_API_KEY) {
+    throw new Error("MINIMAX_API_KEY not set");
+  }
+
+  const { default: OpenAI } = await import("openai");
+  const client = new OpenAI({
+    baseURL: process.env.MINIMAX_BASE_URL || MINIMAX_BASE_URL,
+    apiKey: process.env.MINIMAX_API_KEY,
+  });
+  const model = options.model || process.env.MINIMAX_MODEL || MINIMAX_MODEL;
+  const completion = await withTimeout(
+    client.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: "You are Claudio FM. Return strict JSON only." },
+        { role: "user", content: prompt },
+      ],
+      stream: false,
+    } as never),
+    options.timeoutMs || DEFAULT_TIMEOUT_MS,
+    `MiniMax request timed out after ${Math.round((options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000)}s`,
+  );
+  const raw = cleanMiniMaxContent(
+    (completion as { choices?: Array<{ message?: { content?: string | null } }> }).choices?.[0]?.message?.content,
+  );
+  return parseStartIntentResponse(raw);
+}
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
@@ -127,6 +201,22 @@ export function parseResponse(raw: string): ClaudioLlmResponse {
     }
   }
   return { title: "", say: raw || "Okay.", play: [], segments: [], intros: [], reason: "", mode: "" };
+}
+
+function parseStartIntentResponse(raw: string): ClaudioStartIntentResponse {
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]) as Partial<ClaudioStartIntentResponse>;
+      return {
+        input: String(parsed.input || "").trim(),
+        reason: String(parsed.reason || "").trim(),
+      };
+    } catch {
+      // fall through
+    }
+  }
+  return { input: raw.trim(), reason: "" };
 }
 
 function cleanMiniMaxContent(content?: string | null) {

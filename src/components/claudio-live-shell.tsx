@@ -124,7 +124,11 @@ export function ClaudioLiveShell() {
   function advanceKaraoke(currentTime: number, duration: number) {
     if (activeWordCount <= 0 || duration <= 0) return;
     const ratio = Math.max(0, Math.min(1, currentTime / duration));
-    const nextIndex = Math.min(Math.floor(ratio * activeWordCount), Math.max(activeWordCount - 1, 0));
+    const progressedWords = Math.ceil(ratio * activeWordCount);
+    const nextIndex = Math.min(
+      Math.max(0, progressedWords - 1),
+      Math.max(activeWordCount - 1, 0),
+    );
     setCurrentWordIndex(nextIndex);
   }
 
@@ -546,10 +550,14 @@ export function ClaudioLiveShell() {
     setStarting(true);
     setStatus("Starting");
     try {
+      const djLanguage = process.env.NEXT_PUBLIC_DEFAULT_DJ_LANGUAGE === "zh" ? "zh" : "en";
       const response = await fetch("/api/claudio/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: "Open the station.", source: "live-page", djLanguage: process.env.NEXT_PUBLIC_DEFAULT_DJ_LANGUAGE ?? "zh" }),
+        body: JSON.stringify({
+          source: "live-page",
+          djLanguage,
+        }),
       });
       if (!response.ok) {
         throw new Error(await response.text().catch(() => response.statusText));

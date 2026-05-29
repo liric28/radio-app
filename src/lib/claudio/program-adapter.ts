@@ -2,9 +2,13 @@ import {
   applyFeedbackAndBuildProgram,
   buildRadioProgram,
 } from "@/lib/radio-engine";
-import { buildBridgePrompt, buildColdOpenForTracksPrompt } from "@/lib/claudio/context";
+import {
+  buildBridgePrompt,
+  buildColdOpenForTracksPrompt,
+  buildLiveStartIntentPrompt,
+} from "@/lib/claudio/context";
 import { buildOnlineClaudioTracks } from "@/lib/claudio/live-music";
-import { generateClaudioJson } from "@/lib/claudio/llm";
+import { generateClaudioJson, generateClaudioStartIntent } from "@/lib/claudio/llm";
 import {
   applyLegacyTrackIntrosFromSegments,
   normalizeSegments,
@@ -32,6 +36,13 @@ const PROGRAM_NAME = "Live";
 // - online：独立在线搜歌 live，不走本地四时段 program
 // - local：回退到原本的 buildRadioProgram，本地歌单逻辑保持不变
 const LIVE_MUSIC_MODE = process.env.CLAUDIO_LIVE_MUSIC_MODE || "online";
+
+function fallbackLiveStartIntent(language: "en" | "zh") {
+  if (language === "zh") {
+    return "先从本地音乐库里找熟悉感强的歌，再慢慢把情绪推开。";
+  }
+  return "Start from the local library and pull a few songs that feel familiar before widening the mood.";
+}
 
 function toClaudioTrack(program: RadioProgram): ClaudioTrack[] {
   return [program.currentTrack, ...program.queue].map((track) => ({
@@ -69,13 +80,25 @@ async function synthesizeSegments(segments: ClaudioSegment[]) {
 
 export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
   const onlineMode = LIVE_MUSIC_MODE === "online";
+  const needsGeneratedInput = !job.input?.trim();
+  const effectiveInput = needsGeneratedInput
+    ? await (async () => {
+      try {
+        const prompt = await buildLiveStartIntentPrompt({ djLanguage: job.djLanguage });
+        const generated = await generateClaudioStartIntent(prompt);
+        return generated.input?.trim() || fallbackLiveStartIntent(job.djLanguage);
+      } catch {
+        return fallbackLiveStartIntent(job.djLanguage);
+      }
+    })()
+    : job.input.trim();
   // 起台分两路：
   // 1. online：根据风格 seed 在线搜出“已确认可播”的 tracks
   // 2. local：沿用原来的本地 RadioProgram → ClaudioTrack 转换
   const program = onlineMode ? null : await buildRadioProgram();
   const online = onlineMode
     ? await buildOnlineClaudioTracks({
-        input: job.input,
+        input: effectiveInput,
       })
     : null;
   const tracks = onlineMode ? online?.tracks || [] : toClaudioTrack(program!);
@@ -88,7 +111,7 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
   const llmPrompt = await buildColdOpenForTracksPrompt({
     programTitle: onlineMode ? online?.sessionTitle || "Live" : program!.segmentTitle,
     tracks,
-    userInput: job.input,
+    userInput: effectiveInput,
     djLanguage: job.djLanguage,
   });
   const llmResult = await generateClaudioJson(llmPrompt);
@@ -119,7 +142,7 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
     stationName: STATION_NAME,
     programName: PROGRAM_NAME,
     failedTracks: [],
-    reason: llmResult.reason || (onlineMode ? online?.reason : job.input),
+    reason: llmResult.reason || (onlineMode ? online?.reason : effectiveInput),
   };
 
   broadcastClaudioEvent(payload);
@@ -133,7 +156,7 @@ export async function runClaudioProgramStartJob(job: ClaudioProgramStartJob) {
       segments.map((segment) => segment.text).filter(Boolean).join("\n\n") ||
       (program ? programTranscript(program) : ""),
     djNote: llmResult.say || program?.hostIntro || "",
-    reason: llmResult.reason || (onlineMode ? online?.reason : job.input),
+    reason: llmResult.reason || (onlineMode ? online?.reason : effectiveInput),
     mode: "music",
     status: "queued",
     stationName: STATION_NAME,
