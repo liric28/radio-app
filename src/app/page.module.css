@@ -734,6 +734,44 @@
   gap: 10px;
 }
 
+.transportIconBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #d6d2ea;
+  cursor: pointer;
+}
+
+.panelLight .transportIconBtn {
+  color: #4d465f;
+}
+
+.roundIconBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #d6d2ea;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.panelLight .roundIconBtn {
+  border-color: rgba(25, 23, 34, 0.08);
+  background: rgba(18, 16, 30, 0.03);
+  color: #4d465f;
+}
+
 .roundButton {
   width: 42px;
   height: 42px;
@@ -2219,6 +2257,10 @@
 }
 
 @media (max-width: 720px) {
+  .topGhost {
+    display: none;
+  }
+
   .brandTitle {
     font-size: 27px;
   }
@@ -2249,6 +2291,7 @@
 
   .inputDock {
     grid-template-columns: 1fr 44px 44px;
+    padding-left: 0;
   }
 
   .weatherBadge {

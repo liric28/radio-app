@@ -1737,8 +1737,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   /**
    * 鼠标在面板内移动时，把指针坐标喂给背景点阵层。
    * 点阵层自己做补间和回弹，不走 React state。
+   * 手机上 skip 避免持续 requestAnimationFrame 发烫。
    */
   function handlePanelPointerMove(event: MouseEvent<HTMLElement>) {
+    if (navigator.maxTouchPoints > 0) return;
+
     const node = panelRef.current;
     if (!node) return;
 
@@ -1946,16 +1949,10 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             <button type="button" className={styles.roundButton} onClick={stopPlayback}>
               ■
             </button>
-            <button
-              type="button"
-              className={`${styles.chipButton} ${showQueueList ? styles.chipButtonActive : ""}`}
-              onClick={() => setShowQueueList((value) => !value)}
-              aria-expanded={showQueueList}
-              aria-label="切换当前段歌单显示"
-            >
+            <button type="button" className={styles.roundIconBtn} onClick={() => setShowQueueList((value) => !value)} aria-expanded={showQueueList} aria-label="切换当前段歌单显示">
               LIST
             </button>
-            <button type="button" className={styles.chipButton} onClick={() => sendFeedback("familiar")}>
+            <button type="button" className={styles.roundIconBtn} onClick={() => sendFeedback("familiar")}>
               FAV
             </button>
             <div className={styles.volumeCluster}>
