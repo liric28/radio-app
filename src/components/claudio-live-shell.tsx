@@ -1,5 +1,33 @@
 "use client";
 
+// 主题同步 - module scope 常驻 listener（兼容 BroadcastChannel + storage 双重兜底）
+if (typeof window !== "undefined") {
+  // 方案1: BroadcastChannel（跨页面同 origin 广播）
+  try {
+    const ch = new BroadcastChannel("claudio-theme");
+    ch.onmessage = (e) => {
+      const t = e.data as "dark" | "light";
+      localStorage.setItem("radio.theme", t);
+      document.querySelectorAll("[data-theme]").forEach(el => {
+        (el as HTMLElement).setAttribute("data-theme", t);
+      });
+    };
+  } catch (err) {
+    console.warn("[live] BroadcastChannel not supported:", err);
+  }
+
+  // 方案2: storage 事件（跨标签页兜底，polling 作为最终保底）
+  try {
+    window.addEventListener("storage", (e) => {
+      if (e.key === "radio.theme" && (e.newValue === "dark" || e.newValue === "light")) {
+        document.querySelectorAll("[data-theme]").forEach(el => {
+          (el as HTMLElement).setAttribute("data-theme", e.newValue as "dark" | "light");
+        });
+      }
+    });
+  } catch {}
+}
+
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Doto } from "next/font/google";
 import type { ClaudioProgramEvent, ClaudioSegment, ClaudioTrack } from "@/lib/claudio/types";
@@ -9,6 +37,8 @@ const claudioPixelFont = Doto({
   subsets: ["latin"],
   weight: ["400", "600"],
 });
+
+type Theme = "dark" | "light";
 
 type SnapshotEvent = {
   type: "snapshot";
@@ -65,6 +95,22 @@ export function ClaudioLiveShell() {
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const [activeWordCount, setActiveWordCount] = useState(0);
   const [starting, setStarting] = useState(false);
+  const [theme, setTheme] = useState<Theme>(
+    (typeof window !== "undefined" ? localStorage.getItem("radio.theme") as Theme : null) ?? "dark"
+  );
+
+  // 监听主页 theme 变化（跨页面同步）
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<Theme>;
+      setTheme(ce.detail);
+    };
+    window.addEventListener("claudio-theme-change", handler);
+    // 同步当前 theme（live panel 后开时已错过之前的 event）
+    const current = document.querySelector("[data-theme]")?.getAttribute("data-theme") as Theme | null;
+    if (current) setTheme(current);
+    return () => window.removeEventListener("claudio-theme-change", handler);
+  }, []);
   const logRef = useRef<HTMLDivElement | null>(null);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -597,8 +643,8 @@ export function ClaudioLiveShell() {
   }
 
   return (
-    <main className={styles.page}>
-      <section className={styles.shell}>
+    <main data-theme={theme} className={`${styles.page} ${theme === "light" ? styles.pageLight : styles.pageDark}`}>
+      <section data-theme={theme} className={`${styles.shell} ${theme === "light" ? styles.shellLight : styles.shellDark}`}>
         <audio
           ref={ttsAudioRef}
           preload="auto"
@@ -736,7 +782,7 @@ export function ClaudioLiveShell() {
           </div>
         </section>
 
-        <section className={styles.player}>
+        <section data-theme={theme} className={`${styles.player} ${theme === "light" ? styles.playerLight : styles.playerDark}`}>
           <div className={styles.playerTime}>{fmt(activeMediaTime)}</div>
           <button
             type="button"

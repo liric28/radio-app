@@ -1,24 +1,12 @@
 .page {
   min-height: 100vh;
   padding: 20px;
-  background:
-    radial-gradient(circle at top, rgba(81, 128, 255, 0.16), transparent 28%),
-    linear-gradient(180deg, #141522 0%, #0b0c13 100%);
   color: #f4f4fb;
 }
 
 .shell {
   width: min(1080px, 100%);
   margin: 0 auto;
-  border-radius: 28px;
-  border: 1px solid rgba(138, 156, 255, 0.16);
-  background:
-    linear-gradient(180deg, rgba(25, 27, 41, 0.96), rgba(12, 13, 20, 0.98)),
-    #10111a;
-  box-shadow:
-    0 30px 70px rgba(0, 0, 0, 0.38),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-  overflow: hidden;
 }
 
 .header {
@@ -33,11 +21,11 @@
 }
 
 .brand {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 14px;
-  position: relative;
-  z-index: 2;
 }
 
 .avatar {
@@ -196,11 +184,13 @@
   max-height: 420px;
   margin: 0;
   border-radius: 42px 42px 0 0;
-  background: #f7f6f3;
-  color: #111111;
+  background:
+    linear-gradient(180deg, rgba(25, 27, 41, 0.92), rgba(12, 13, 20, 0.96)),
+    #10111a;
+  color: #f4f4fb;
   box-shadow:
-    0 -1px 0 rgba(255, 255, 255, 0.12) inset,
-    0 -18px 40px rgba(0, 0, 0, 0.08);
+    0 -1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -18px 40px rgba(0, 0, 0, 0.12);
 }
 
 .panelHeader {
@@ -210,7 +200,7 @@
   padding: 26px 28px 12px;
   font-size: 12px;
   letter-spacing: 0.14em;
-  color: rgba(17, 17, 17, 0.42);
+  color: rgba(244, 244, 251, 0.42);
 }
 
 .transcript {
@@ -224,7 +214,7 @@
 .transcriptEmpty {
   margin: 0;
   line-height: 1.6;
-  color: rgba(17, 17, 17, 0.46);
+  color: rgba(244, 244, 251, 0.36);
 }
 
 .turn {
@@ -240,17 +230,17 @@
   margin-bottom: 6px;
   font-size: 11px;
   letter-spacing: 0.04em;
-  color: rgba(17, 17, 17, 0.4);
+  color: rgba(244, 244, 251, 0.4);
 }
 
 .turnWho {
-  color: rgba(17, 17, 17, 0.58);
+  color: rgba(244, 244, 251, 0.58);
 }
 
 .turnBody {
   font-size: 15px;
   line-height: 1.7;
-  color: rgba(17, 17, 17, 0.92);
+  color: rgba(244, 244, 251, 0.92);
   text-wrap: pretty;
 }
 
@@ -259,11 +249,11 @@
 }
 
 .wordSaid {
-  color: #1d6b4f;
+  color: rgba(244, 244, 251, 0.54);
 }
 
 .wordCurrent {
-  color: #143f2d;
+  color: #043328;
   background: rgba(67, 255, 198, 0.88);
   box-shadow: 0 0 0 1px rgba(67, 255, 198, 0.32);
   border-radius: 4px;
@@ -272,7 +262,7 @@
 }
 
 .wordFuture {
-  color: rgba(17, 17, 17, 0.32);
+  color: rgba(244, 244, 251, 0.28);
 }
 
 .player {
@@ -281,8 +271,10 @@
   gap: 14px;
   margin-top: 0;
   padding: 14px 18px 18px;
-  border-top: 1px solid rgba(17, 17, 17, 0.06);
-  background: rgb(255, 255, 255);
+  border-top: 1px solid rgba(244, 244, 251, 0.06);
+  background:
+    linear-gradient(180deg, rgba(25, 27, 41, 0.96), rgba(12, 13, 20, 0.98)),
+    #10111a;
 }
 
 .playerTime {
@@ -290,7 +282,7 @@
   font-size: 13px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: rgb(17, 17, 17);
+  color: rgba(244, 244, 251, 0.62);
 }
 
 .playerBars {
@@ -310,13 +302,13 @@
 .playerBar {
   flex: 1 1 auto;
   border-radius: 999px;
-  background: rgb(207, 207, 209);
+  background: rgba(244, 244, 251, 0.18);
   transition: background 0.12s ease;
   pointer-events: none;
 }
 
 .playerBarPlayed {
-  background: rgb(17, 17, 17);
+  background: rgba(67, 255, 198, 0.72);
 }
 
 .playButton {
@@ -325,8 +317,8 @@
   flex: 0 0 auto;
   border: none;
   border-radius: 999px;
-  background: #ffffff;
-  color: #111111;
+  background: rgba(67, 255, 198, 0.14);
+  color: #43ffc6;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -358,6 +350,236 @@
   display: block;
   border-radius: 999px;
   background: currentColor;
+}
+
+/* light 模式覆盖（React class 方式） */
+.pageLight {
+  background:
+    radial-gradient(circle at top, rgba(220, 230, 255, 0.22), transparent 30%),
+    linear-gradient(180deg, #e8ecf4 0%, #d4d8e2 100%);
+}
+
+.pageDark {
+  background:
+    radial-gradient(circle at top, rgba(81, 128, 255, 0.16), transparent 28%),
+    linear-gradient(180deg, #141522 0%, #0b0c13 100%);
+  color: #f4f4fb;
+}
+
+.shellLight {
+  border-radius: 28px;
+  border: 1px solid rgba(140, 160, 220, 0.22);
+  background:
+    linear-gradient(180deg, rgba(248, 250, 255, 0.94), rgba(236, 240, 250, 0.96)),
+    #f0f2f8;
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+
+.shellDark {
+  border-radius: 28px;
+  border: 1px solid rgba(138, 156, 255, 0.16);
+  background:
+    linear-gradient(180deg, rgba(25, 27, 41, 0.96), rgba(12, 13, 20, 0.98)),
+    #10111a;
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.panelLight {
+  background:
+    linear-gradient(180deg, rgba(248, 250, 255, 0.96), rgba(240, 244, 252, 0.98)),
+    #f5f7fc;
+  color: #1a1a2e;
+  box-shadow:
+    0 -1px 0 rgba(0, 0, 0, 0.06) inset,
+    0 -18px 40px rgba(0, 0, 0, 0.04);
+}
+/* data-theme 属性同步方案：直接切换背景 */
+:global([data-theme="light"]).page,
+:global([data-theme="light"]) .page {
+  background:
+    radial-gradient(circle at top, rgba(220, 230, 255, 0.22), transparent 30%),
+    linear-gradient(180deg, #e8ecf4 0%, #d4d8e2 100%);
+  color: #1a1a2e;
+}
+
+:global([data-theme="dark"]).page,
+:global([data-theme="dark"]) .page {
+  background:
+    radial-gradient(circle at top, rgba(81, 128, 255, 0.16), transparent 28%),
+    linear-gradient(180deg, #141522 0%, #0b0c13 100%);
+  color: #f4f4fb;
+}
+
+:global([data-theme="light"]).panel,
+:global([data-theme="light"]) .panel {
+  background:
+    linear-gradient(180deg, rgba(248, 250, 255, 0.96), rgba(240, 244, 252, 0.98)),
+    #f5f7fc;
+  color: #1a1a2e;
+}
+
+:global([data-theme="dark"]).panel,
+:global([data-theme="dark"]) .panel {
+  background:
+    linear-gradient(180deg, rgba(25, 27, 41, 0.92), rgba(12, 13, 20, 0.96)),
+    #10111a;
+  color: #f4f4fb;
+}
+
+:global([data-theme="light"]) .panel .panelHeader {
+  color: rgba(26, 26, 46, 0.42);
+}
+
+:global([data-theme="light"]) .panel .transcriptEmpty {
+  color: rgba(26, 26, 46, 0.38);
+}
+
+:global([data-theme="light"]) .panel .turnHead {
+  color: rgba(26, 26, 46, 0.38);
+}
+
+:global([data-theme="light"]) .panel .turnWho {
+  color: rgba(26, 26, 46, 0.56);
+}
+
+:global([data-theme="light"]) .panel .turnBody {
+  color: rgba(26, 26, 46, 0.88);
+}
+
+:global([data-theme="light"]) .panel .wordSaid {
+  color: rgba(26, 26, 46, 0.52);
+}
+
+:global([data-theme="light"]) .panel .wordCurrent {
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.82);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+:global([data-theme="light"]) .panel .playerTime {
+  color: rgba(26, 26, 46, 0.62);
+}
+
+:global([data-theme="light"]) .panel .playerBar {
+  background: rgba(26, 26, 46, 0.18);
+}
+
+:global([data-theme="light"]) .panel .playerBarPlayed {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+:global([data-theme="light"]) .panel .playButton {
+  background: rgba(26, 26, 46, 0.08);
+  color: #1a1a2e;
+}
+
+:global([data-theme="light"]) .panel .playButton:hover {
+  transform: scale(1.04);
+}
+
+.panelLight .panelHeader {
+  color: rgba(26, 26, 46, 0.42);
+}
+
+.panelLight .transcriptEmpty {
+  color: rgba(26, 26, 46, 0.38);
+}
+
+.panelLight .turnHead {
+  color: rgba(26, 26, 46, 0.38);
+}
+
+.panelLight .turnWho {
+  color: rgba(26, 26, 46, 0.56);
+}
+
+.panelLight .turnBody {
+  color: rgba(26, 26, 46, 0.88);
+}
+
+.panelLight .wordSaid {
+  color: rgba(26, 26, 46, 0.52);
+}
+
+.panelLight .wordCurrent {
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.82);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.panelLight .wordFuture {
+  color: rgba(26, 26, 46, 0.28);
+}
+
+.playerLight {
+  background: rgba(236, 240, 250, 0.9);
+  border-top: 1px solid rgba(26, 26, 46, 0.08);
+}
+
+.playerLight .playerTime {
+  color: rgba(26, 26, 46, 0.62);
+}
+
+.playerLight .playerBar {
+  background: rgba(26, 26, 46, 0.18);
+}
+
+.playerLight .playerBarPlayed {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.playerLight .playButton {
+  background: rgba(26, 26, 46, 0.08);
+  color: #1a1a2e;
+}
+
+.playerLight .playButton:hover {
+  transform: scale(1.04);
+}
+
+.themeToggle {
+  display: flex;
+  gap: 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.themeToggle button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition: background 0.15s ease;
+}
+
+.themeIdle {
+  color: rgba(244, 244, 251, 0.36);
+}
+
+.themeActive {
+  color: #43ffc6;
+  background: rgba(67, 255, 198, 0.12);
+}
+
+.pageLight .themeIdle {
+  color: rgba(26, 26, 46, 0.38);
+}
+
+.pageLight .themeActive {
+  color: #1a1a2e;
+  background: rgba(26, 26, 46, 0.1);
 }
 
 @media (max-width: 820px) {

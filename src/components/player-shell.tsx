@@ -1856,7 +1856,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               <button
                 type="button"
                 className={theme === "dark" ? styles.themeActive : styles.themeIdle}
-                onClick={() => setTheme("dark")}
+                onClick={() => {
+                  setTheme("dark");
+                  localStorage.setItem("radio.theme", "dark");
+                  const evt = new CustomEvent("claudio-theme-change", { detail: "dark" });
+                  console.log("[home] dispatching dark event");
+                  window.dispatchEvent(evt);
+                  // 广播给同一 origin 的其他页面（包括 /claudio-live）
+                  try { new BroadcastChannel("claudio-theme").postMessage("dark"); } catch {}
+                }}
                 aria-label="Dark mode"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{transform:'scale(1.2)',display:'block'}}>
@@ -1866,7 +1874,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               <button
                 type="button"
                 className={theme === "light" ? styles.themeActive : styles.themeIdle}
-                onClick={() => setTheme("light")}
+                onClick={() => {
+                  setTheme("light");
+                  localStorage.setItem("radio.theme", "light");
+                  const evt = new CustomEvent("claudio-theme-change", { detail: "light" });
+                  console.log("[home] dispatching light event");
+                  window.dispatchEvent(evt);
+                  try { new BroadcastChannel("claudio-theme").postMessage("light"); } catch {}
+                }}
                 aria-label="Light mode"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform:'scale(1.2)',display:'block'}}>
@@ -1915,11 +1930,10 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                       text={currentClock}
                       className={styles.dotClock}
                       cellClassName={styles.clockDot}
-                      suppressHydrationWarning
                     />
                   )}
             </button>
-            <div className={styles.clockMeta} onClick={() => setLoaderVariant(v => v === "hex1" ? "hex10" : v === "hex10" ? "square15" : v === "square15" ? "square18" : v === "square18" ? "circular8" : "hex1")} suppressHydrationWarning>
+            <div className={styles.clockMeta} onClick={() => setLoaderVariant(v => v === "hex1" ? "hex10" : v === "hex10" ? "square15" : v === "square15" ? "square18" : v === "square18" ? "circular8" : "hex1")}>
               <strong>{dayLabel}</strong>
               <span>{dateLabel}</span>
               <em className={styles.onAir}>
