@@ -670,14 +670,11 @@ export function ClaudioLiveShell() {
         />
         <header className={styles.header}>
           <div className={styles.brand}>
-            <div className={styles.avatar} />
-            <div>
-              <h1 className={`${styles.brandTitle} ${claudioPixelFont.className}`}>Claudio</h1>
-              <p className={styles.brandMeta}>
-                <span className={styles.liveDot} />
-                {status}
-              </p>
-            </div>
+            <img src="/claudio.jpg" alt="Claudio" className={styles.avatar} />
+            <p className={styles.brandMeta}>
+              <span className={styles.liveDot} />
+              {status}
+            </p>
           </div>
           <div className={styles.waveWrap} aria-hidden="true">
             <canvas ref={waveCanvasRef} className={styles.waveCanvas} />

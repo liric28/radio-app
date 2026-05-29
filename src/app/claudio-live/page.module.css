@@ -34,7 +34,7 @@
 
 .brand {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   position: relative;
   z-index: 2;
