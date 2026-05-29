@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm-run-all -p sidecar next",
+    "dev": "npm-run-all -p sidecar next:dev",
     "sidecar": "node scripts/start-sidecar.js",
-    "next": "next dev",
+    "next:dev": "next dev",
+    "next:start": "next start",
     "build": "next build",
-    "start": "npm-run-all -p sidecar next",
-    "start:app": "next start",
+    "start": "npm-run-all -p sidecar next:start",
+    "start:app": "npm run next:start",
     "lint": "eslint"
   },
   "dependencies": {
