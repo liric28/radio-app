@@ -523,7 +523,7 @@ export function ClaudioLiveShell() {
     void fetch("/api/claudio/refill", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ count: 3, djLanguage: "en" }),
+      body: JSON.stringify({ count: 3, djLanguage: process.env.NEXT_PUBLIC_DEFAULT_DJ_LANGUAGE ?? "zh" }),
     }).catch(() => null);
   }, [programId, tracks.length, currentTrackIndex]);
 
@@ -549,7 +549,7 @@ export function ClaudioLiveShell() {
       const response = await fetch("/api/claudio/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: "Open the station.", source: "live-page", djLanguage: "en" }),
+        body: JSON.stringify({ input: "Open the station.", source: "live-page", djLanguage: process.env.NEXT_PUBLIC_DEFAULT_DJ_LANGUAGE ?? "zh" }),
       });
       if (!response.ok) {
         throw new Error(await response.text().catch(() => response.statusText));
