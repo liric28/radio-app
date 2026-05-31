@@ -246,6 +246,23 @@ export async function downloadAndIngestSong(hit: MusicSearchHit): Promise<Downlo
   return { song, filePath, alreadyExists: false };
 }
 
+export function toMusicSearchHitFromSong(song: Song): MusicSearchHit | null {
+  const context = song.downloadContext;
+  if (!context) return null;
+
+  return {
+    source: context.source,
+    title: song.title,
+    artist: song.artist,
+    duration: context.duration,
+    payable: context.payable,
+    downloadable: context.downloadable,
+    albumName: context.albumName,
+    imageUrl: context.imageUrl,
+    raw: context.raw as MusicSearchHit["raw"],
+  };
+}
+
 /**
  * 从 MusicSearchHit 提取用户脚本需要的 musicInfo 字段
  */

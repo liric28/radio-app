@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
               intent: agentResult.state.intent,
               program: agentResult.program,
               schedule: agentResult.schedule,
+              favorites: agentResult.favorites,
               weather: agentResult.state.weather ?? null,
             })}\n\n`,
           ),

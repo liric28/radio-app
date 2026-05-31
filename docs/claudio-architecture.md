@@ -273,10 +273,15 @@ flowchart TD
 
 ### 数据层
 
+- `src/lib/online-radio.ts`
+  首页默认在线推荐链路。它和 Claudio live 共用同一批在线搜索/可播校验能力，但输出目标不同：
+  首页输出 `RadioProgram`，Claudio live 输出 `ClaudioTrack[]`。
+- `src/lib/preference-learning.ts`
+  首页推荐学习层：行为事件落盘、偏好模型聚合、后续推荐反哺主入口。
 - `src/lib/radio-engine.ts`
-  当前主选歌逻辑入口。
+  旧本地选歌入口；当前更多是 `local` 模式回退和 Claudio 兼容层。
 - `data/`
-  本地持久化数据，如 `songs / memory / schedule`。
+  本地持久化数据，如 `songs / memory / schedule / online-radio-state / preference-events / preference-model`。
 - `src/lib/netease-session.ts`
   网易云登录 cookie 生命周期管理。
 
@@ -288,12 +293,30 @@ flowchart TD
 - 主聊天出口已迁到 `minimax/deepseek`。
 - Claudio `start -> 开场 TTS -> 首歌 -> refill -> bridge -> 下一首` 主流程已跑通。
 - 网易云二维码登录已接回项目。
+- 首页在线推荐已经接上最小自学习闭环：推荐生成、聊天控歌、收藏、下载、重播、播放完成/中断都会进入事件流，并聚合成偏好模型。
 
 还未完成：
 
 - `Claudio live` 的 caller/chat on-air 流程还没接。
-- 选歌仍主要复用当前 `radio-engine`，还不是原 Claudio 那种完整节目编排后端。
+- Claudio live 的在线搜歌能力已经跑通，但首页与 live 还没有完全统一成同一个节目编排后端。
+- 自学习层还只是第一版：没有时间衰减、探索策略、细粒度场景分层和可视化调试页。
 - 外部对照页 `src/app/claudio-live/external/route.ts` 仍保留，仅用于对照。
+
+## 后续唯一主线
+
+推荐相关工作的后续方向已经收敛，不再以“多加几个功能按钮”为主，而是只围绕下面这件事推进：
+
+- 让系统越来越懂你，并且能通过真实使用行为持续自我学习
+
+拆成工程目标就是：
+
+1. 提高事件采样质量
+2. 提高偏好模型表达能力
+3. 提高模型对 seed/query/ranking 的反哺强度
+4. 再考虑把这套能力迁回 Claudio live
+
+也就是说，后续如果有新功能进入推荐链路，默认要回答一个问题：
+它能不能让系统更准确地学会你，而不是只是多一个静态规则。
 
 ## 配置关系
 

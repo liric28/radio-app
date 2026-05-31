@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { downloadAndIngestSong, SongDownloadError } from "@/lib/song-download";
 import { regenerateDailySchedule } from "@/lib/daily-schedule";
+import { regenerateOnlineRadioProgram } from "@/lib/online-radio";
+import { appendPreferenceEvent, preferenceTrackFromSong } from "@/lib/preference-learning";
+import { isOnlineRadioMode } from "@/lib/radio-mode";
 import { buildRadioProgram } from "@/lib/radio-engine";
 import { deriveTasteProfileFromSongs } from "@/lib/local-library";
 import type { MusicSearchHit } from "@/lib/music-search";
@@ -36,8 +39,18 @@ export async function POST(request: NextRequest) {
     const result = await downloadAndIngestSong(body);
     const songs = await readSongCatalog();
     await writeTasteProfile(deriveTasteProfileFromSongs(songs));
-    const schedule = await regenerateDailySchedule();
-    const program = await buildRadioProgram();
+    const { program, schedule } = isOnlineRadioMode()
+      ? await regenerateOnlineRadioProgram()
+      : {
+          schedule: await regenerateDailySchedule(),
+          program: await buildRadioProgram(),
+        };
+    await appendPreferenceEvent({
+      type: "download",
+      action: "manual-download",
+      scene: program.scene,
+      track: preferenceTrackFromSong(program.currentTrack, program.scene),
+    }).catch(() => null);
     return NextResponse.json({ ok: true, data: result, schedule, program });
   } catch (error) {
     if (error instanceof SongDownloadError) {

@@ -160,9 +160,16 @@ export function describeAgentState({
   if (state.mode === "music-control") {
     const currentChanged = beforeProgram.currentTrack.id !== afterProgram.currentTrack.id;
     const nextTrack = afterProgram.queue[0];
-    const changeText = currentChanged
-      ? `当前歌已切到 ${afterProgram.currentTrack.artist}《${afterProgram.currentTrack.title}》。`
-      : "当前歌没切，但后面的队列已经改了。";
+    const changeText =
+      state.intent.action === "favorite"
+        ? `这首已经替你收进喜欢里了。`
+        : state.intent.action === "download-current"
+          ? `这首我已经按你这句去处理下载了。`
+          : state.intent.action === "regenerate"
+            ? `我刚按这句话重刷了一轮队列，新的头一首已经顶上来了。`
+            : currentChanged
+              ? `当前歌已切到 ${afterProgram.currentTrack.artist}《${afterProgram.currentTrack.title}》。`
+              : "当前歌没切，但后面的队列已经改了。";
     const nextText = nextTrack
       ? `接下来会跟到 ${nextTrack.artist}《${nextTrack.title}》。`
       : "暂时没有明确下一首。";
@@ -195,6 +202,33 @@ export function buildRuleBasedDjReply({
 
   if (state?.mode === "weather" && state.weather) {
     return `今天${state.weather.locationLabel}${state.weather.conditionText}，现在差不多${state.weather.temperatureC}度。`;
+  }
+
+  if (
+    intent?.action === "favorite" ||
+    normalized.includes("收藏") ||
+    normalized.includes("喜欢这首")
+  ) {
+    return "行，这首我给你收进喜欢里。";
+  }
+
+  if (
+    intent?.action === "download-current" ||
+    normalized.includes("下载这首") ||
+    normalized.includes("把这首下下来")
+  ) {
+    return "行，这首我给你往本地收。";
+  }
+
+  if (
+    intent?.action === "regenerate" ||
+    normalized.includes("推荐一批") ||
+    normalized.includes("来一轮") ||
+    normalized.includes("换一轮") ||
+    normalized.includes("换一批") ||
+    normalized.includes("重新推荐")
+  ) {
+    return "行，我给你整轮翻新，前面这首现在就切，后面也一起换掉。";
   }
 
   if (

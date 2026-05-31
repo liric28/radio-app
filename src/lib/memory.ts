@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { RadioMemory } from "./types";
 import { dataDir } from "./paths";
+import { migrateStoredTrackLabels } from "./track-labels";
 
 const memoryPath = path.join(dataDir, "memory.json");
 
@@ -23,7 +24,15 @@ const defaultMemory: RadioMemory = {
 export async function readMemory() {
   try {
     const content = await fs.readFile(memoryPath, "utf8");
-    return JSON.parse(content) as RadioMemory;
+    const memory = JSON.parse(content) as RadioMemory;
+    const migrated = {
+      ...memory,
+      recentTrackIds: await migrateStoredTrackLabels(memory.recentTrackIds || []),
+    };
+    if (JSON.stringify(migrated) !== JSON.stringify(memory)) {
+      await writeMemory(migrated);
+    }
+    return migrated;
   } catch {
     await writeMemory(defaultMemory);
     return defaultMemory;

@@ -14,10 +14,12 @@ import {
 } from "@/components/pointer-matrix-field";
 import styles from "@/app/page.module.css";
 import type { MusicSearchHit, MusicSearchSource } from "@/lib/music-search";
+import { buildTrackLabel } from "@/lib/track-labels";
 import type {
   ChatMessage,
   DailySchedule,
   RadioProgram,
+  Song,
   WeatherSnapshot,
 } from "@/lib/types";
 
@@ -53,6 +55,19 @@ type NeteaseViewer = {
   nickname: string;
   avatarUrl: string;
 };
+
+function toPreferenceTrack(track: Song, scene?: string) {
+  return {
+    id: track.id,
+    title: track.title,
+    artist: track.artist,
+    language: track.language,
+    energy: track.energy,
+    tags: track.tags,
+    source: track.source,
+    scene,
+  };
+}
 
 function createThinkTagStripper() {
   const OPEN = "<think>";
@@ -757,8 +772,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   // 流式中的 assistant 气泡 id：用于在内容末尾追加 loading 指示
   const streamingMessageId =
     isChatSending && latestDjMessage?.role === "assistant" ? latestDjMessage.id : null;
-  const currentBlockPeriod = schedule.currentBlockPeriod;
-  const currentTrackIndex = schedule.currentTrackIndex;
   /**
    * LIST 按钮 toggle：在聊天流和输入框之间插入"当前段歌单卡片"。
    * 默认折叠避免占地，点 LIST 才展开——视觉上等同于一条"系统插播的歌单消息"。
@@ -772,26 +785,31 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       .then((ids) => setFavorites(ids as string[]))
       .catch(() => null);
   }, []);
-  /**
-   * TODAY 行触发的"全天四段歌单"弹层。
-   * 与 LIST 按钮的 showQueueList 完全独立——LIST 显示当前段、TODAY 显示 4 段全部，
-   * 两个开关互不干涉，可同时打开/独立关闭。
-   */
-  const [showDayList, setShowDayList] = useState<boolean>(false);
   const [showClaudioLivePanel, setShowClaudioLivePanel] = useState<boolean>(false);
   /**
    * 顶部搜索按钮触发的"网络歌曲搜索"弹层。
    * 搜索酷狗免费曲库，下载入库后自动进入当日节目单。
    */
   const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
-  const [searchSource, setSearchSource] = useState<MusicSearchSource>("kugou");
+  const [searchSource, setSearchSource] = useState<MusicSearchSource>("qq");
   const [searchPreview, setSearchPreview] = useState<{
     key: string;
     title: string;
     artist: string;
     url: string;
   } | null>(null);
-  const activeScheduleBlock = schedule.blocks.find((block) => block.period === currentBlockPeriod);
+  const currentQueueTracks = useMemo(
+    () => [program.currentTrack, ...program.queue],
+    [program.currentTrack, program.queue],
+  );
+
+  function sendPreferenceEvent(payload: Record<string, unknown>) {
+    void fetch("/api/preference-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => null);
+  }
 
   function renderNeteaseAvatar() {
     if (!neteaseViewer?.avatarUrl) return null;
@@ -813,17 +831,16 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   }
 
   useEffect(() => {
-    if (!showDayList && !showSearchModal) return;
+    if (!showSearchModal) return;
 
     const handleEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      setShowDayList(false);
       setShowSearchModal(false);
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [showDayList, showSearchModal]);
+  }, [showSearchModal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -917,12 +934,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     if (searchPreview?.url) {
       return searchPreview.url;
     }
+    if (program.currentTrack.streamUrl) {
+      return program.currentTrack.streamUrl;
+    }
     if (!program.currentTrack.sourcePath) {
       return "";
     }
 
     return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath || "")}&libraryRoot=${encodeURIComponent(program.currentTrack.libraryRoot || "")}`;
-  }, [program.currentTrack.sourcePath, searchPreview?.url]);
+  }, [program.currentTrack.libraryRoot, program.currentTrack.sourcePath, program.currentTrack.streamUrl, searchPreview?.url]);
 
   const visibleTrack = searchPreview
     ? { title: searchPreview.title, artist: searchPreview.artist }
@@ -1027,6 +1047,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 其他三段保持 reasonSeed 占位，等用户切到那段时再触发润色。
    */
   useEffect(() => {
+    if (schedule.currentBlockPeriod === "online") return;
     // 用 SSR 的 currentBlockPeriod 找当前 block（而非实时 hours）
     const activePeriod = schedule.currentBlockPeriod;
     const currentBlock = schedule.blocks.find((b) => b.period === activePeriod);
@@ -1109,6 +1130,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   ) {
     // 正式节目切换前先退出搜索试听态，避免 preview 远程流继续占着播放器。
     clearSearchPreview();
+    sendPreferenceEvent({
+      type: "playback_interrupted",
+      action: nextLabel || url,
+      scene: program.scene,
+      track: toPreferenceTrack(program.currentTrack, program.scene),
+      playbackSeconds: currentTime,
+      playbackRatio: duration > 0 ? currentTime / duration : 0,
+    });
     setError(null);
     if (nextLabel) setActiveLabel(nextLabel);
     shouldResumePlaybackRef.current = keepPlaying;
@@ -1241,6 +1270,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     audio.currentTime = 0;
     setCurrentTime(0);
     setError(null);
+    sendPreferenceEvent({
+      type: "replay",
+      action: "replay-current",
+      scene: program.scene,
+      track: toPreferenceTrack(program.currentTrack, program.scene),
+    });
 
     if (audio.paused) {
       try {
@@ -1290,16 +1325,25 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   function toggleFavorite() {
     const track = program.currentTrack;
     if (!track?.id) return;
-    const isFav = favorites.includes(track.id);
+    const trackLabel = buildTrackLabel(track.title, track.artist);
+    const isFav = favorites.includes(trackLabel);
     const action = isFav ? "remove" : "add";
     setFavorites((prev) =>
-      action === "add" ? [...prev, track.id] : prev.filter((id) => id !== track.id)
+      action === "add" ? [...prev, trackLabel] : prev.filter((id) => id !== trackLabel)
     );
     void fetch("/api/favorites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ trackId: track.id, action }),
+      body: JSON.stringify({ title: track.title, artist: track.artist, action }),
     }).catch(() => null);
+    if (action === "add") {
+      sendPreferenceEvent({
+        type: "favorite",
+        action: "favorite-button",
+        scene: program.scene,
+        track: toPreferenceTrack(track, program.scene),
+      });
+    }
   }
 
   /**
@@ -1621,6 +1665,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 setProgram(chunk.program);
               }
               if (chunk.schedule) setSchedule(chunk.schedule);
+              if (Array.isArray(chunk.favorites)) setFavorites(chunk.favorites as string[]);
               if ("weather" in chunk) setWeather(chunk.weather);
               continue;
             }
@@ -1992,11 +2037,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             </button>
             <button
               type="button"
-              className={`${styles.roundIconBtn} ${favorites.includes(program.currentTrack?.id ?? "") ? styles.favActive : ""}`}
+              className={`${styles.roundIconBtn} ${favorites.includes(buildTrackLabel(program.currentTrack?.title ?? "", program.currentTrack?.artist ?? "")) ? styles.favActive : ""}`}
               onClick={toggleFavorite}
               aria-label="收藏当前歌曲"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill={favorites.includes(program.currentTrack?.id ?? "") ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill={favorites.includes(buildTrackLabel(program.currentTrack?.title ?? "", program.currentTrack?.artist ?? "")) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
             </button>
@@ -2028,38 +2073,16 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           </div>
         </section>
 
-        {/*
-         * TODAY ... TRACKS 整行可点：toggle showDayList，弹出全天 4 段歌单。
-         * 中间天气块 stopPropagation 不触发——点天气不应该展开列表。
-         */}
-        <section
-          className={styles.queueHeader}
-          onClick={() => setShowDayList((value) => !value)}
-          role="button"
-          tabIndex={0}
-          aria-expanded={showDayList}
-          aria-label="切换全天歌单显示"
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setShowDayList((value) => !value);
-            }
-          }}
-        >
-          <span>TODAY</span>
+        <section className={styles.queueHeader}>
+          <span>QUEUE</span>
           {weather && (
-            <div
-              className={styles.weatherInHeader}
-              onClick={(event) => event.stopPropagation()}
-            >
+            <div className={styles.weatherInHeader}>
               <span>{weather.conditionText}</span>
               <span className={styles.weatherTemp}>{weather.temperatureC}°</span>
             </div>
           )}
-          <span>{schedule.blocks.reduce((sum, block) => sum + block.tracks.length, 0)} TRACKS</span>
+          <span>{currentQueueTracks.length} TRACKS</span>
         </section>
-
-{/* 全天 4 段歌单 modal 弹层渲染在 PlayerShell 末尾，见 .dayListBackdrop */}
 
         <section className={styles.liveStrip}>
           <div className={styles.liveTitle}>
@@ -2141,20 +2164,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             ))}
           </div>
 
-          {showQueueList && activeScheduleBlock && (
-            /*
-             * "当前段歌单"弹出卡片组（LIST 按钮触发）。
-             * 数据：schedule 当前 block 的所有 tracks，用 currentTrackIndex 高亮当前曲。
-             * 注意：这里只显示当前段。要看全天 4 段请点 TODAY 行 → 另一个弹层 .dayList。
-             */
+          {showQueueList && (
             <div
               className={styles.queueOverlay}
               ref={queueOverlayRef}
               role="list"
-              aria-label="当前段歌单"
+              aria-label="当前推荐队列"
             >
-              {activeScheduleBlock.tracks.map((track, index) => {
-                const isActive = index === currentTrackIndex;
+              {currentQueueTracks.map((track, index) => {
+                const isActive = index === 0;
                 return (
                   <button
                     key={track.id}
@@ -2184,7 +2202,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               onChange={(event) => setChatInput(event.target.value)}
               onKeyDown={handleInputKeyDown}
             />
-            <button type="button" className={styles.iconButton} onClick={regenerateSchedule}>
+            <button type="button" className={styles.iconButton} onClick={regenerateSchedule} title="换一批在线推荐">
               ⌁
             </button>
             <button
@@ -2247,6 +2265,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
           onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
           onEnded={() => {
+            sendPreferenceEvent({
+              type: "playback_completed",
+              action: "track-ended",
+              scene: program.scene,
+              track: toPreferenceTrack(program.currentTrack, program.scene),
+              playbackSeconds: duration || currentTime,
+              playbackRatio: 1,
+            });
             setIsPlaying(false);
             setCurrentTime(0);
             if (searchPreview) {
@@ -2297,73 +2323,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         </div>
       )}
 
-      {showDayList && (
-        /*
-         * 全天 4 段歌单 modal 弹层。
-         * - 放在 .panel section 外层，避免被 .panel 的 overflow:hidden 裁剪
-         * - position: fixed 全屏遮罩 + 居中卡片
-         * - 点遮罩 / ESC / ✕ 都能关
-         */
-        <div
-          className={styles.dayListBackdrop}
-          role="dialog"
-          aria-modal="true"
-          aria-label="全天歌单"
-          onClick={() => setShowDayList(false)}
-        >
-          <div
-            className={styles.dayListModal}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className={styles.dayListHeader}>
-              <strong>
-                TODAY · {schedule.blocks.reduce((sum, b) => sum + b.tracks.length, 0)} TRACKS
-              </strong>
-              <button
-                type="button"
-                className={styles.dayListClose}
-                onClick={() => setShowDayList(false)}
-                aria-label="关闭"
-              >
-                ✕
-              </button>
-            </header>
-            <div className={styles.dayListBody}>
-              {schedule.blocks.map((block) => (
-                <section key={block.period} className={styles.queueBlock}>
-                  <header className={styles.queueBlockHeader}>
-                    <strong>{block.scene}</strong>
-                    <span>{block.tracks.length} 首</span>
-                  </header>
-                  {block.tracks.map((track, index) => {
-                    const isActive =
-                      block.period === currentBlockPeriod && index === currentTrackIndex;
-                    return (
-                      <button
-                        key={track.id}
-                        type="button"
-                        className={`${styles.queueCard} ${isActive ? styles.queueCardActive : ""}`}
-                        onClick={() => {
-                          selectQueueTrack(track.id, true);
-                          setShowDayList(false);
-                        }}
-                      >
-                        <span className={styles.queueCardIcon} aria-hidden>
-                          {isActive ? "★" : "▶"}
-                        </span>
-                        <div className={styles.queueCardText}>
-                          <strong className={styles.queueCardTitle}>{track.title}</strong>
-                          <p className={styles.queueCardArtist}>{track.artist}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </section>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

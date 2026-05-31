@@ -1,0 +1,31 @@
+{
+  "date": "1970-01-01",
+  "seed": {
+    "input": "",
+    "reason": ""
+  },
+  "source": "qq",
+  "program": {
+    "stationName": "Claudio FM",
+    "segmentTitle": "",
+    "scene": "",
+    "energyLabel": "",
+    "hostIntro": "",
+    "currentTrack": {
+      "id": "",
+      "title": "",
+      "artist": "",
+      "year": 2026,
+      "mood": "",
+      "energy": 5,
+      "language": "中文",
+      "tags": [],
+      "reasonSeed": "",
+      "reason": ""
+    },
+    "queue": [],
+    "explanation": [],
+    "controlsHint": "",
+    "memorySummary": ""
+  }
+}

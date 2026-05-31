@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { regenerateDailySchedule } from "@/lib/daily-schedule";
+import { regenerateOnlineRadioProgram } from "@/lib/online-radio";
+import { isOnlineRadioMode } from "@/lib/radio-mode";
 import { buildRadioProgram } from "@/lib/radio-engine";
 
 /**
@@ -18,6 +20,11 @@ import { buildRadioProgram } from "@/lib/radio-engine";
  */
 export async function POST() {
   try {
+    if (isOnlineRadioMode()) {
+      const { program, schedule } = await regenerateOnlineRadioProgram();
+      return NextResponse.json({ ok: true, program, schedule });
+    }
+
     const schedule = await regenerateDailySchedule();
     const program = await buildRadioProgram();
     return NextResponse.json({ ok: true, program, schedule });

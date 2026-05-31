@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { trackLabelFromSong } from "@/lib/track-labels";
 import type { Song, UserTasteProfile } from "@/lib/types";
 
 const execFileAsync = promisify(execFile);
@@ -219,5 +220,6 @@ export function deriveTasteProfileFromSongs(songs: Song[]): UserTasteProfile {
     favoriteLanguages: languages.length > 0 ? languages : ["中文", "英文"],
     anchorArtists: artists,
     radioPersona: "那个会优先从你本地音乐库里把熟悉感捞出来的 DJ",
+    localSongs: songs.map((song) => trackLabelFromSong(song)),
   };
 }

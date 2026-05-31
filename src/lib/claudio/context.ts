@@ -38,8 +38,7 @@ export async function buildLiveStartIntentPrompt({
   const currentHour = new Date().getHours();
   const currentPeriod = currentHour < 9 ? "morning" : currentHour < 18 ? "daytime" : currentHour < 23 ? "evening" : "late-night";
   const currentRoutine = routines.find((item) => item.period === currentPeriod);
-  const recentTitleMap = new Map(songs.map((song) => [song.id, `${song.title}${song.artist ? ` — ${song.artist}` : ""}`]));
-  const recentTracks = topUnique(memory.recentTrackIds.map((id) => recentTitleMap.get(id)), 5);
+  const recentTracks = topUnique(memory.recentTrackIds, 5);
   const recentProgramTitles = topUnique(memory.recentProgramTitles.slice(-6), 6);
   const localAnchorSongs = topUnique(
     songs

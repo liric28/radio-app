@@ -31,6 +31,7 @@ import {
   readTasteProfile,
 } from "@/lib/profile";
 import { readMemory, writeMemory } from "@/lib/memory";
+import { buildTrackLabel, trackLabelFromSong } from "@/lib/track-labels";
 import {
   advanceDailyScheduleTrack,
   ensureDailySchedule,
@@ -76,7 +77,7 @@ function scoreSong(
   let score = 0;
 
   if (preferredMoods.includes(song.mood)) score += 4;
-  if (memory.recentTrackIds.includes(song.id)) score -= 6;
+  if (memory.recentTrackIds.includes(trackLabelFromSong(song))) score -= 6;
   score += song.tags.includes("华语") ? 2 : 0;
   score += taste.favoriteMoods.includes(song.mood) ? 3 : 0;
   score += taste.favoriteLanguages.includes(song.language) ? 2 : 0;
@@ -415,7 +416,7 @@ async function applyFeedbackAndBuildProgramWithOptions(
 
   const refreshedMemory = await readMemory();
   refreshedMemory.recentTrackIds = [
-    program.currentTrack.id,
+    buildTrackLabel(program.currentTrack.title, program.currentTrack.artist),
     ...refreshedMemory.recentTrackIds,
   ].slice(0, 6);
   refreshedMemory.recentProgramTitles = [
@@ -438,7 +439,7 @@ export async function advanceProgramRandomly() {
   const nextMemory = {
     ...memory,
     lastAction: "schedule-next",
-    recentTrackIds: [program.currentTrack.id, ...memory.recentTrackIds].slice(0, 12),
+    recentTrackIds: [buildTrackLabel(program.currentTrack.title, program.currentTrack.artist), ...memory.recentTrackIds].slice(0, 12),
     recentProgramTitles: [program.segmentTitle, ...memory.recentProgramTitles].slice(0, 6),
   };
 
@@ -457,7 +458,7 @@ export async function selectTrackProgram(trackId: string) {
   const nextMemory = {
     ...memory,
     lastAction: "manual-pick",
-    recentTrackIds: [program.currentTrack.id, ...memory.recentTrackIds].slice(0, 12),
+    recentTrackIds: [buildTrackLabel(program.currentTrack.title, program.currentTrack.artist), ...memory.recentTrackIds].slice(0, 12),
     recentProgramTitles: [program.segmentTitle, ...memory.recentProgramTitles].slice(0, 6),
   };
 
@@ -548,6 +549,44 @@ export function resolveChatIntent(message: string, program: RadioProgram): ChatI
   }
 
   if (
+    normalized.includes("收藏") ||
+    normalized.includes("喜欢这首") ||
+    normalized.includes("爱这首") ||
+    normalized.includes("加入喜欢") ||
+    normalized.includes("like this")
+  ) {
+    return { action: "favorite", targetPeriod };
+  }
+
+  if (
+    normalized.includes("下载这首") ||
+    normalized.includes("把这首下下来") ||
+    normalized.includes("把当前这首下下来") ||
+    normalized.includes("下载当前") ||
+    normalized.includes("download this")
+  ) {
+    return { action: "download-current", targetPeriod };
+  }
+
+  if (
+    normalized.includes("推荐一批") ||
+    normalized.includes("来一批") ||
+    normalized.includes("来一轮") ||
+    normalized.includes("换一轮") ||
+    normalized.includes("换一批") ||
+    normalized.includes("重新推荐") ||
+    normalized.includes("重来一组") ||
+    normalized.includes("再来一组") ||
+    normalized.includes("给我一批") ||
+    normalized.includes("another round") ||
+    normalized.includes("another batch") ||
+    normalized.includes("new batch") ||
+    normalized.includes("refresh the queue")
+  ) {
+    return { action: "regenerate", targetPeriod };
+  }
+
+  if (
     normalized.includes("下一首") ||
     normalized.includes("切歌") ||
     normalized.includes("跳过") ||
@@ -618,9 +657,12 @@ export async function applyChatIntent(intent: ChatIntent) {
   }
 
   if (
+    intent.action === "regenerate" ||
     intent.action === "fresh" ||
     intent.action === "calmer" ||
-    intent.action === "familiar"
+    intent.action === "familiar" ||
+    intent.action === "favorite" ||
+    intent.action === "download-current"
   ) {
     return null;
   }
@@ -633,6 +675,7 @@ export async function applyChatIntent(intent: ChatIntent) {
  *
  * 分派：
  *   - scene-change + targetPeriod → buildRadioProgramForScene（切段后取新段第一首）
+ *   - regenerate → 重新生成整轮推荐
  *   - fresh/calmer/familiar → applyFeedbackAndBuildProgramWithOptions
  *       ↳ 传 avoidTrackId = 当前曲，确保聊天后必定换曲
  *       ↳ 再 rewriteCurrentScheduleBlock 重排剩余 queue 的顺序
@@ -647,6 +690,14 @@ export async function applyChatIntentWithProgram(
 ) {
   if (intent.action === "scene-change" && intent.targetPeriod) {
     return buildRadioProgramForScene(intent.targetPeriod);
+  }
+
+  if (intent.action === "regenerate") {
+    return buildRadioProgram({
+      forceRandom: true,
+      excludeTrackIds: [currentProgram.currentTrack.id],
+      targetPeriod: intent.targetPeriod,
+    });
   }
 
   if (intent.action === "fresh" || intent.action === "calmer" || intent.action === "familiar") {

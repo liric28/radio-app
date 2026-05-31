@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureDailySchedule } from "@/lib/daily-schedule";
+import { applyOnlineFeedbackAndBuildProgram } from "@/lib/online-radio";
+import { isOnlineRadioMode } from "@/lib/radio-mode";
 import { applyFeedbackAndBuildProgram } from "@/lib/radio-engine";
 
 /**
@@ -13,6 +15,13 @@ export async function POST(request: NextRequest) {
       { ok: false, message: "缺少反馈动作" },
       { status: 400 },
     );
+  }
+
+  if (isOnlineRadioMode()) {
+    const { program, schedule } = await applyOnlineFeedbackAndBuildProgram(
+      payload.action as "skip" | "fresh" | "calmer" | "familiar",
+    );
+    return NextResponse.json({ ok: true, program, schedule });
   }
 
   const [program, schedule] = await Promise.all([

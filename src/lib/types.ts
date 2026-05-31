@@ -4,6 +4,7 @@ export type UserTasteProfile = {
   favoriteLanguages: string[];
   anchorArtists: string[];
   radioPersona: string;
+  localSongs?: string[];
 };
 
 export type PlaylistProfile = {
@@ -42,6 +43,22 @@ export type Song = {
    * - "qq" / "netease"：通过搜索结果下载到 data/downloads/ 的网络曲目
    */
   source?: "local" | "kugou" | "qq" | "netease";
+  /**
+   * 在线推荐时保留原始搜索命中，供“下载当前这首”这类动作复用。
+   */
+  downloadContext?: {
+    source: "kugou" | "qq" | "netease";
+    duration: number;
+    payable: boolean;
+    downloadable: boolean;
+    albumName?: string;
+    imageUrl?: string | null;
+    raw: unknown;
+  };
+  /**
+   * 在线推荐时直接返回远端可播地址；本地文件场景留空。
+   */
+  streamUrl?: string;
   /**
    * 本地音乐库根目录，导入时记录。播放时用 libraryRoot + sourcePath 拼接完整路径。
    * 网络来源（kugou/qq/netease）此字段为空。
@@ -96,9 +113,12 @@ export type ChatMessage = {
 export type ChatIntentAction =
   | "none"
   | "skip"
+  | "regenerate"
   | "fresh"
   | "calmer"
   | "familiar"
+  | "favorite"
+  | "download-current"
   | "select-track"
   | "scene-change";
 

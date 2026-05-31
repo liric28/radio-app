@@ -19,13 +19,20 @@
  *      模型只负责"用自然语言确认"，不再决定"要不要切"——避免幻觉。
  */
 import { ensureDailySchedule } from "@/lib/daily-schedule";
+import { readFavorites, updateFavorite } from "@/lib/favorites";
 import { readMemory } from "@/lib/memory";
+import { applyOnlineChatIntent, ensureOnlineRadioProgram } from "@/lib/online-radio";
+import { appendPreferenceEvent, preferenceTrackFromSong } from "@/lib/preference-learning";
+import { downloadAndIngestSong, toMusicSearchHitFromSong } from "@/lib/song-download";
 import {
   buildChatModelMessages,
   describeAgentState,
 } from "@/lib/providers/llm";
+import { isOnlineRadioMode } from "@/lib/radio-mode";
 import { applyChatIntentWithProgram, resolveChatIntent } from "@/lib/radio-engine";
 import { isWeatherQuestion, readWeatherSnapshot } from "@/lib/weather";
+import { deriveTasteProfileFromSongs } from "@/lib/local-library";
+import { readSongCatalog, writeTasteProfile } from "@/lib/profile";
 import type {
   ChatAgentState,
   ChatMessage,
@@ -42,6 +49,7 @@ type RunChatAgentResult = {
   state: ChatAgentState;
   program: RadioProgram;
   schedule: Awaited<ReturnType<typeof ensureDailySchedule>>;
+  favorites: string[];
   llmMessages: Array<{ role: string; content: string }>;
 };
 
@@ -88,6 +96,7 @@ export async function runChatAgent({
   const initialState = resolveAgentState(message, program);
   let nextProgram = program;
   let nextState = initialState;
+  let nextFavorites = await readFavorites();
 
   if (initialState.mode === "weather") {
     const weather = await readWeatherSnapshot().catch(() => null);
@@ -101,7 +110,42 @@ export async function runChatAgent({
   }
 
   if (initialState.mode === "music-control") {
-    nextProgram = (await applyChatIntentWithProgram(initialState.intent, program)) ?? program;
+    await appendPreferenceEvent({
+      type: "chat_request",
+      message,
+      action: initialState.intent.action,
+      scene: program.scene,
+      track: preferenceTrackFromSong(program.currentTrack, program.scene),
+    }).catch(() => null);
+
+    if (initialState.intent.action === "favorite") {
+      nextFavorites = await updateFavorite(program.currentTrack, "add");
+      await appendPreferenceEvent({
+        type: "favorite",
+        message,
+        action: "favorite",
+        scene: program.scene,
+        track: preferenceTrackFromSong(program.currentTrack, program.scene),
+      }).catch(() => null);
+    } else if (initialState.intent.action === "download-current") {
+      const hit = toMusicSearchHitFromSong(program.currentTrack);
+      if (hit) {
+        await downloadAndIngestSong(hit);
+        const songs = await readSongCatalog();
+        await writeTasteProfile(deriveTasteProfileFromSongs(songs));
+        await appendPreferenceEvent({
+          type: "download",
+          message,
+          action: "download-current",
+          scene: program.scene,
+          track: preferenceTrackFromSong(program.currentTrack, program.scene),
+        }).catch(() => null);
+      }
+    }
+
+    nextProgram = isOnlineRadioMode()
+      ? (await applyOnlineChatIntent(initialState.intent, program, message)).program
+      : (await applyChatIntentWithProgram(initialState.intent, program)) ?? program;
     nextState = {
       ...initialState,
       summary: describeAgentState({
@@ -113,11 +157,17 @@ export async function runChatAgent({
     };
   }
 
-  const [memory, schedule] = await Promise.all([readMemory(), ensureDailySchedule()]);
+  const [memory, schedule] = await Promise.all([
+    readMemory(),
+    isOnlineRadioMode()
+      ? ensureOnlineRadioProgram().then((result) => result.schedule)
+      : ensureDailySchedule(),
+  ]);
   return {
     state: nextState,
     program: nextProgram,
     schedule,
+    favorites: nextFavorites,
     llmMessages: buildChatModelMessages({
       message,
       program: nextProgram,

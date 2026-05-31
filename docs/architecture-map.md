@@ -8,17 +8,41 @@
 | 模块 | 文件 | 角色 |
 |---|---|---|
 | 前端壳 | `src/components/player-shell.tsx` (1280 行) | 整个 UI + 所有按钮 / 输入 / 流式接收 |
-| 中央节目生成器 | `src/lib/radio-engine.ts` | 把曲库+画像+schedule+memory 装配成 RadioProgram |
-| 每日歌单层 | `src/lib/daily-schedule.ts` | 4 段歌单的生成 / 持久化 / 游标操作 |
+| 在线节目生成器 | `src/lib/online-radio.ts` | **当前首页主链路**：AI 推荐意图 + 在线搜歌 + 可播校验 + 队列持久化 |
+| 模式开关 | `src/lib/radio-mode.ts` | `RADIO_PROGRAM_MODE=online|local` 分流首页与交互接口 |
+| 兼容节目生成器 | `src/lib/radio-engine.ts` | 旧本地曲库 / daily schedule 主链路，当前保留作 `local` 回退 |
+| 每日歌单层 | `src/lib/daily-schedule.ts` | 旧 4 段歌单生成 / 游标 / 重排，当前不是首页默认真相源 |
 | LLM 封装 | `src/lib/providers/llm.ts` | 所有 Hermes 调用 + 本地模板兜底 |
 | 聊天 Agent | `src/lib/chat-agent.ts` | 意图分发 + 工具调用 + Hermes 消息装配 |
 | SSE 代理 | `src/app/api/agent/route.ts` | 聊天流式接口 |
 | 音频代理 | `src/app/api/audio/route.ts` | 本地音乐文件白名单 + Range 请求 |
-| 歌单重生成 | `src/app/api/regenerate-schedule/route.ts` | ⌁ 按钮接口 |
+| 队列重生成 | `src/app/api/regenerate-schedule/route.ts` | `⌁` 按钮接口；online 模式下语义是“换一批在线推荐” |
 | 搜索聚合 | `src/lib/music-search.ts` | 酷狗 / QQ / 网易云搜索协议统一层 |
 | 下载入库 | `src/lib/song-download.ts` | 三路下载、文件重命名、补封面/歌词/tag |
-| 下载接口 | `src/app/api/song-download/route.ts` | 下载成功后重建画像 / schedule / program |
+| 下载接口 | `src/app/api/song-download/route.ts` | 下载成功后重建画像，并按模式刷新 online program 或 local schedule |
 | 试听接口 | `src/app/api/song-playback/route.ts` | 搜索结果转真实直链，临时试听不入库 |
+| 学习事件流 | `src/lib/preference-learning.ts` | 行为事件落盘、偏好模型聚合、推荐学习主入口 |
+| 学习事件接口 | `src/app/api/preference-event/route.ts` | 前端播放行为埋点写入入口 |
+
+## 当前主推荐模式
+
+从 2026-06 这轮改造开始，**首页默认不再围绕本地 `songs.json`/`daily-schedule.json` 选歌**。
+
+- 默认模式：`RADIO_PROGRAM_MODE=online`
+- 主真相源：`src/lib/online-radio.ts`
+- 本地曲库角色：口味画像、缓存命中、本地兜底，不再是首页默认推荐候选池
+- 旧 `radio-engine.ts` / `daily-schedule.ts`：继续保留，用于 `local` 模式回退和 Claudio 兼容链路
+
+## 当前主目标
+
+从这一版开始，后续主线不再是继续堆“切歌 / 搜索 / 下载”功能，而是持续推进：
+
+- 更懂你
+- 真正记住你
+- 持续自我学习
+- 让在线推荐越来越像你的 DJ，而不是固定规则表
+
+后续所有推荐相关改动，默认都应该围绕这个目标评估，而不是回到“再多加几个关键词分支”。
 
 ## player-shell.tsx 速查
 
@@ -64,7 +88,7 @@
 触发源（regenerateSchedule / 聊天 SSE state / playNext / sendFeedback / ...）
   ↓ 设 shouldResumePlaybackRef.current = true
   ↓ setProgram(新 program)
-  ↓ program.currentTrack.sourcePath 变
+  ↓ program.currentTrack.streamUrl 或 sourcePath 变
   ↓ audioSource useMemo 重算
   ↓ audioSource useEffect 触发
   ↓ pause → load → ref?.play() → 复位 ref
@@ -131,7 +155,7 @@ mount: effect-A (恢复)
 
 | 符号 | 类型 | 一句话 |
 |---|---|---|
-| 文件头 | 文档 | 中央节目生成器，5 个 API 路由入口、3 个下游依赖、2 条主路径 |
+| 文件头 | 文档 | 旧本地节目生成器；仍服务 `local` 模式和 Claudio 兼容链路 |
 | `buildRadioProgram` | fn ⭐ | 主入口：无 options 走轻量路径，带 forceRandom/pinned/period 走重路径 |
 | `buildProgramFromDailySchedule` | fn | 轻量路径：直接读 schedule，仅调一次 LLM 串词，<1s |
 | `applyFeedbackAndBuildProgramWithOptions` | fn | 反馈主流程 6 步：累加 bias → writeMemory → 重排或随机 → 记 recent |
@@ -141,11 +165,44 @@ mount: effect-A (恢复)
 | `applyChatIntentWithProgram` | fn | 意图执行器：scene-change/feedback 各自分派 |
 | `scoreSong` | fn | 评分核心：偏好 +4 / 最近播 -6 / 锚点 +5 / feedbackBias 偏移 |
 
+## online-radio.ts 速查
+
+| 符号 | 类型 | 一句话 |
+|---|---|---|
+| `ensureOnlineRadioProgram` | fn ⭐ | 首页默认入口：读 `online-radio-state.json`，没有就新建一轮在线推荐 |
+| `regenerateOnlineRadioProgram` | fn | 重新生成在线推荐队列；前端 `⌁` 按钮默认走这里 |
+| `advanceOnlineRadioProgram` | fn | 下一首：消费当前在线 queue，不再推进 daily schedule |
+| `selectOnlineTrackProgram` | fn | 直接把当前在线队列里的任意一首提升为 currentTrack |
+| `applyOnlineFeedbackAndBuildProgram` | fn | `skip/fresh/calmer/familiar` 影响 memory，再决定“推进队列”或“重搜一批” |
+| `applyOnlineChatIntent` | fn | 聊天控制在线版分发：scene-change/select/feedback 全走在线语义 |
+| `buildRecommendationSeed` | fn | 先根据 taste / memory / routine 生成 AI 搜歌意图 |
+| `collectRankedHits` | fn | 多 query 在线搜歌后统一打分、去重、排候选 |
+| `buildProgramTracks` | fn | 命中本地缓存则播本地，否则校验远端直链并写入 `streamUrl` |
+
+## preference-learning.ts 速查
+
+| 符号 | 类型 | 一句话 |
+|---|---|---|
+| `appendPreferenceEvent` | fn ⭐ | 写入一条用户/播放/推荐事件，并立即重建偏好模型 |
+| `readPreferenceEvents` | fn | 读取 `preference-events.jsonl` 全量事件流 |
+| `buildPreferenceModel` | fn ⭐ | 从原始事件聚合出 `preference-model.json` |
+| `readPreferenceModel` | fn | 推荐时读取当前学习模型；不存在就现场重建 |
+| `preferenceTrackFromSong` | fn | 将当前播放曲压成学习事件可用的 track snapshot |
+
+当前模型字段：
+
+- `artistAffinity`
+- `languageAffinity`
+- `tagAffinity`
+- `energyPreferenceByScene`
+- `negativeSignals`
+- `requestPatternStats`
+
 ## daily-schedule.ts 速查
 
 | 符号 | 类型 | 一句话 |
 |---|---|---|
-| 文件头 | 文档 | schedule 持久化 + 操作层，函数分 5 类（读写/生成/定位/游标/重排） |
+| 文件头 | 文档 | 旧 schedule 持久化 + 操作层；当前主要服务 `local` 模式 |
 | `generateDailySchedule` | fn | 4 段生成，每段数量随机，**不调 LLM**（速度优先） |
 | `regenerateDailySchedule` | fn | ⌁ 按钮入口：generate + write |
 | `readDailySchedule` | fn | 读盘 + normalize，过期 / 损坏自动重生成 |
@@ -181,17 +238,110 @@ mount: effect-A (恢复)
 
 | 路由 | 关键点 |
 |---|---|
-| `POST /api/regenerate-schedule` | ⌁ 按钮，~1s（不调 LLM） |
+| `GET /api/radio` | 首页主接口；online 模式返回在线推荐 program + 兼容 schedule 占位 |
+| `POST /api/regenerate-schedule` | `⌁` 按钮；online=换一批在线推荐，local=重建 4 段歌单 |
 | `POST /api/agent` | 聊天 SSE，先吐 state 帧再透传 Hermes token |
 | `GET /api/audio` | 白名单 + Range 请求 + 长期缓存 |
-| `POST /api/next-track` | advanceProgramRandomly |
-| `POST /api/feedback` | applyFeedbackAndBuildProgram |
-| `POST /api/select-track` | selectTrackProgram |
+| `POST /api/next-track` | online=消费当前在线 queue；local=advanceProgramRandomly |
+| `POST /api/feedback` | online=改 memory 后重组在线队列；local=applyFeedbackAndBuildProgram |
+| `POST /api/select-track` | online=从当前在线 queue 选歌；local=selectTrackProgram |
 | `POST /api/rewrite-reasons` | 懒加载润色当前段推荐语 |
 | `POST /api/import-library` | 全量扫描本地音乐目录写 songs.json |
 | `GET /api/song-search` | 搜索三路来源，前端通过 `source` 切换 |
 | `POST /api/song-playback` | 只解析搜索结果的可播直链，不改节目单 |
-| `POST /api/song-download` | 下载搜索结果并刷新整个电台状态 |
+| `POST /api/song-download` | 下载搜索结果并刷新整个电台状态；online 模式下刷新在线 program，不再重建今日歌单 |
+| `POST /api/preference-event` | 前端埋点入口：播放完成 / 中断 / 重播 / 收藏按钮等行为写入学习事件流 |
+
+## 首页在线推荐链路
+
+```
+SSR / GET /api/radio
+  ↓ isOnlineRadioMode()
+  ↓ ensureOnlineRadioProgram()
+      1. 读 data/online-radio-state.json
+      2. 若不存在 / 过期：
+         - buildRecommendationSeed() 用 taste / memory / routines 生成搜歌意图
+         - collectRankedHits() 走在线搜索聚合
+         - buildProgramTracks() 校验可播 URL，并优先命中本地缓存
+         - batchRewriteTrackReasons() 生成推荐语
+         - 写回 online-radio-state.json
+      3. 组装 RadioProgram
+      4. 衍生一个单 block 的兼容 schedule 给前端
+  ↓ PlayerShell 渲染 currentTrack / queue
+```
+
+关键设计：
+
+- `streamUrl` 是在线模式新增字段；主播放器优先播它，其次才走本地 `sourcePath -> /api/audio`
+- 首页 `QUEUE/LIST` 现在展示的是“当前在线推荐队列”，不是“今日四段歌单”
+- `schedule` 仍返回，但只是兼容老前端结构；`currentBlockPeriod="online"` 时不再触发旧 block 润色逻辑
+
+## 自我学习闭环
+
+当前已经接上的最小闭环如下：
+
+```
+推荐生成 / 聊天控歌 / 收藏 / 下载 / 重播 / 播放完成 / 播放中断
+  ↓ appendPreferenceEvent()
+  ↓ data/preference-events.jsonl
+  ↓ buildPreferenceModel()
+  ↓ data/preference-model.json
+  ↓ online-radio.ts 在下一轮推荐时 readPreferenceModel()
+  ↓ 影响 seed / query / ranking
+```
+
+### 已接入的学习事件
+
+- `recommendation_generated`
+  每轮在线推荐生成后写入：scene、seed、source、当前 track、整条 queue
+- `chat_request`
+  聊天里所有真正落到控歌的请求会写入：用户原话、动作、当前 track
+- `favorite`
+  包括聊天“收藏这首”和播放器爱心按钮
+- `download`
+  包括聊天“下载这首”和手动下载按钮
+- `replay`
+  当前曲回到 0 重播
+- `playback_interrupted`
+  在切歌 / 换一轮 / 反馈前，记录上一首被中断时的播放秒数与播放比例
+- `playback_completed`
+  一首完整播完
+
+### 当前模型如何反哺推荐
+
+`online-radio.ts` 现在已经开始读取 `preference-model.json`，并用于：
+
+- seed prompt：把学习到的高频艺人、语言、请求模式写回推荐意图生成
+- query 生成：把 learned language / artist / tag 混进在线搜索 queries
+- ranking：给高亲和艺人、语言、tag 加权；负反馈艺人/语言降权
+
+### 当前还没做完
+
+这套学习闭环已经开始工作，但离“真正成熟的自学习 DJ”还差几层关键能力：
+
+- 还没有播放时长分桶后的精细打分
+  现在只粗分 `playback_completed` 和 `playback_interrupted`
+- 还没有时间衰减
+  一个月前和刚刚的偏好权重还没拉开
+- 还没有场景分层模型
+  目前只有 `energyPreferenceByScene` 是分 scene 的，artist/language 还偏全局
+- 还没有显式负反馈库
+  比如“这类歌别再给我推”的长期黑名单还没建立
+- 还没有探索策略
+  现在主要是利用已有偏好，还没有刻意做少量探索来发现新喜欢
+- 还没有模型可视化/调试页
+  暂时只能直接看 `data/preference-events.jsonl` 和 `data/preference-model.json`
+
+### 后续推进原则
+
+从现在开始，推荐系统的后续工作默认只围绕“更懂你 / 更会学你”推进。优先级建议固定为：
+
+1. 提升学习信号质量
+2. 提升偏好模型表达能力
+3. 提升模型对推荐 seed/query/ranking 的反哺强度
+4. 最后才考虑更多 UI 包装
+
+不再优先做“再多加几个关键词 if/else”这种短期补丁，除非它明显修复学习闭环中的关键误判。
 
 ## 搜索 / 下载链路
 
@@ -272,10 +422,15 @@ SearchPanelInline.handleDownload()
       6. 写回 songs.json
   ↓ route.ts 后处理
       7. deriveTasteProfileFromSongs()
-      8. regenerateDailySchedule()
-      9. buildRadioProgram()
+      8. online 模式：regenerateOnlineRadioProgram()
+         local 模式：regenerateDailySchedule() + buildRadioProgram()
   ↓ 前端 setProgram / setSchedule，主界面立即刷新
 ```
+
+现在“下载一首歌”不再默认意味着“重建今日四段歌单”。
+
+- online 模式：下载结果进入 `songs.json`，更新 taste，再刷新一轮在线推荐
+- local 模式：保持旧行为，重建 daily schedule
 
 ### 命名策略
 

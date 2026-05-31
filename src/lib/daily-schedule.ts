@@ -43,6 +43,7 @@ import {
 import type { ChatIntentAction, ScheduledTrack } from "@/lib/types";
 import { recommendBlockTrackCount, rewriteTrackReason, summarizeReasons } from "@/lib/providers/llm";
 import { dataDir } from "@/lib/paths";
+import { trackLabelFromSong } from "@/lib/track-labels";
 import type {
   DailySchedule,
   DailyScheduleBlock,
@@ -131,7 +132,7 @@ function scoreSongForBlock(
   let score = 0;
 
   if (preferredMoods.includes(song.mood)) score += 4;
-  if (memory.recentTrackIds.includes(song.id)) score -= 6;
+  if (memory.recentTrackIds.includes(trackLabelFromSong(song))) score -= 6;
   score += song.tags.includes("华语") ? 2 : 0;
   score += taste.favoriteMoods.includes(song.mood) ? 3 : 0;
   score += taste.favoriteLanguages.includes(song.language) ? 2 : 0;
@@ -166,7 +167,7 @@ function scoreSongForIntent(
 
   if (action === "fresh") {
     score += song.energy;
-    score += memory.recentTrackIds.includes(song.id) ? -8 : 0;
+    score += memory.recentTrackIds.includes(trackLabelFromSong(song)) ? -8 : 0;
     score += !taste.anchorArtists.includes(song.artist) ? 2 : 0;
   }
 

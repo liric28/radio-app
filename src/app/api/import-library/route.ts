@@ -6,6 +6,8 @@ import {
   deriveTasteProfileFromSongs,
 } from "@/lib/local-library";
 import { regenerateDailySchedule } from "@/lib/daily-schedule";
+import { regenerateOnlineRadioProgram } from "@/lib/online-radio";
+import { isOnlineRadioMode } from "@/lib/radio-mode";
 import { writeSongCatalog, writeTasteProfile } from "@/lib/profile";
 import { buildRadioProgram } from "@/lib/radio-engine";
 
@@ -35,8 +37,12 @@ export async function POST(request: NextRequest) {
     await writeSongCatalog(scannedSongs);
     await writeTasteProfile(deriveTasteProfileFromSongs(scannedSongs));
     await addAllowedAudioRoot(libraryPath);
-    const schedule = await regenerateDailySchedule();
-    const program = await buildRadioProgram();
+    const { program, schedule } = isOnlineRadioMode()
+      ? await regenerateOnlineRadioProgram()
+      : {
+          schedule: await regenerateDailySchedule(),
+          program: await buildRadioProgram(),
+        };
 
     return NextResponse.json({
       ok: true,

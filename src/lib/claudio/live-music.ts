@@ -13,7 +13,7 @@ import { scriptVM } from "@/lib/script-vm";
 import type { ClaudioTrack } from "@/lib/claudio/types";
 import type { Song } from "@/lib/types";
 
-const DEFAULT_SOURCE = (process.env.CLAUDIO_LIVE_MUSIC_SOURCE || "kugou") as MusicSearchSource;
+const DEFAULT_SOURCE = (process.env.CLAUDIO_LIVE_MUSIC_SOURCE || "qq") as MusicSearchSource;
 const DEFAULT_COUNT = Number(process.env.CLAUDIO_LIVE_TRACK_COUNT || 6);
 const SEARCH_PAGE_SIZE = 8;
 
@@ -76,11 +76,7 @@ async function buildSeedQueries(input: string) {
   const currentRoutine = routines.find((item) => item.period === currentPeriod);
   const scene = currentRoutine?.scene || "";
   const currentBlock = schedule?.blocks.find((block) => block.period === schedule.currentBlockPeriod);
-  const recentTitleMap = new Map(songs.map((song) => [song.id, song.title]));
-  const recentTrackTitles = topUnique(
-    memory.recentTrackIds.map((id) => recentTitleMap.get(id)),
-    4,
-  );
+  const recentTrackTitles = topUnique(memory.recentTrackIds, 4);
   const playlistKeywords = topUnique(
     playlists.flatMap((playlist) => [playlist.name, playlist.summary, ...(playlist.tags || [])]),
     6,
