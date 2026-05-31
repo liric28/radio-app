@@ -1,4 +1,6 @@
 const { spawn } = require("node:child_process");
+const { readFileSync } = require("node:fs");
+const path = require("node:path");
 
 const DEFAULT_NETEASE_BASE = "http://127.0.0.1:3001";
 const DEFAULT_NETEASE_COMMAND = "npx";
@@ -110,7 +112,19 @@ function shutdown(code = 0) {
   setTimeout(() => process.exit(code), 300).unref();
 }
 
+// ─── 启动横幅 ───────────────────────────────────
+function printBanner() {
+  const script = path.join(__dirname, "radio-banner.sh");
+  try {
+    const { execSync } = require("node:child_process");
+    execSync(`bash "${script}"`, { stdio: "inherit", timeout: 10000 });
+  } catch {
+    // 天气/歌单获取失败不影响主流程，静默跳过
+  }
+}
+
 async function main() {
+  printBanner();
   process.on("SIGINT", () => shutdown(0));
   process.on("SIGTERM", () => shutdown(0));
 

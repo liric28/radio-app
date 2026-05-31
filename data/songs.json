@@ -3341,23 +3341,6 @@
     "libraryRoot": ""
   },
   {
-    "id": "netease-1480204501",
-    "title": "Salt",
-    "artist": "Ava Max",
-    "year": 2024,
-    "mood": "回忆感",
-    "energy": 5,
-    "language": "英文",
-    "tags": [
-      "个人歌单",
-      "本地音乐库"
-    ],
-    "reasonSeed": "刚从网上抓回来加进你的电台，先放一遍听听看合不合适",
-    "sourcePath": "data/downloads/Salt.mp3",
-    "source": "netease",
-    "libraryRoot": ""
-  },
-  {
     "id": "qq-001OyHbk2MSIi4",
     "title": "十年",
     "artist": "陈奕迅",
@@ -3389,6 +3372,23 @@
     "reasonSeed": "刚从网上抓回来加进你的电台，先放一遍听听看合不合适",
     "sourcePath": "data/downloads/清明上河图 (同花顺进行曲) - 好多倩.mp3",
     "source": "kugou",
+    "libraryRoot": ""
+  },
+  {
+    "id": "netease-1480204501",
+    "title": "Salt",
+    "artist": "Ava Max",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "英文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "刚从网上抓回来加进你的电台，先放一遍听听看合不合适",
+    "sourcePath": "data/downloads/Salt.mp3",
+    "source": "netease",
     "libraryRoot": ""
   }
 ]
