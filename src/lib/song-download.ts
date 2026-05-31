@@ -14,7 +14,8 @@ import type { Song } from "@/lib/types";
 
 const execFileAsync = promisify(execFile);
 
-const DOWNLOAD_DIR = path.join(process.cwd(), "data", "downloads");
+const DOWNLOAD_DIR = path.join("data", "downloads");
+const DOWNLOAD_ROOT = process.cwd();
 const TEMP_SOURCE_ENDPOINT = "http://ts.tempmusics.tk";
 
 export type DownloadResult = {
@@ -50,7 +51,7 @@ type RemoteTrackMetadata = {
 };
 
 async function ensureDownloadDir() {
-  await fs.mkdir(DOWNLOAD_DIR, { recursive: true });
+  await fs.mkdir(absPath(DOWNLOAD_DIR), { recursive: true });
 }
 
 async function writeSidecarIfPresent(filePath: string, nextExt: string, content: string | null) {
@@ -158,18 +159,18 @@ export async function downloadAndIngestSong(hit: MusicSearchHit): Promise<Downlo
    * 3. 否则按来源取直链，流式落到 tmp，再原子 rename 为最终文件名。
    * 4. 用 buildSongFromFile 统一构造 Song，并刷新 songs.json。
    */
-  if (existing) {
-    const exists = await fileExists(filePath);
+  if (existing && existing.sourcePath) {
+    const sp = existing.sourcePath as string;
+    const absExistingPath = absPath(sp);
+    const exists = await fileExists(absExistingPath);
     if (exists) {
-      await addAllowedAudioRoot(DOWNLOAD_DIR);
-      await ensureDownloadedSongAssets(filePath, hit);
-      if (existing.sourcePath !== filePath) {
-        await writeSongCatalog(
-          existingCatalog.map((song) =>
-            song.id === existing.id ? { ...song, sourcePath: filePath } : song,
-          ),
-        );
-      }
+      await addAllowedAudioRoot(absPath(DOWNLOAD_DIR));
+      await ensureDownloadedSongAssets(absExistingPath, hit);
+      await writeSongCatalog(
+        existingCatalog.map((song) =>
+          song.id === existing.id ? { ...song, sourcePath: filePath } : song,
+        ),
+      );
       return { song: existing, filePath, alreadyExists: true };
     }
   }
@@ -182,7 +183,7 @@ export async function downloadAndIngestSong(hit: MusicSearchHit): Promise<Downlo
     );
   }
 
-  const tmpPath = `${filePath}.tmp`;
+  const tmpPath = `${absPath(filePath)}.tmp`;
   try {
     const response = await fetch(playbackUrl, {
       signal: AbortSignal.timeout(20_000),
@@ -194,7 +195,7 @@ export async function downloadAndIngestSong(hit: MusicSearchHit): Promise<Downlo
       Readable.fromWeb(response.body as never),
       createWriteStream(tmpPath),
     );
-    await fs.rename(tmpPath, filePath);
+    await fs.rename(tmpPath, absPath(filePath));
   } catch (error) {
     await fs.rm(tmpPath, { force: true });
     throw new SongDownloadError(
@@ -203,11 +204,16 @@ export async function downloadAndIngestSong(hit: MusicSearchHit): Promise<Downlo
     );
   }
 
-  await addAllowedAudioRoot(DOWNLOAD_DIR);
-  await ensureDownloadedSongAssets(filePath, hit);
+  // filePath stays absolute for fs operations and ffprobe
+  const absFilePath = absPath(filePath);
+
+  // DOWNLOAD_DIR is relative; resolve to absolute when adding to allowed roots
+  const absDownloadDir = absPath(DOWNLOAD_DIR);
+  await addAllowedAudioRoot(absDownloadDir);
+  await ensureDownloadedSongAssets(absFilePath, hit);
 
   const song = await buildSongFromFile(
-    filePath,
+    absFilePath,
     existingCatalog.length,
     {
       idOverride: metadata.songId,
@@ -220,6 +226,9 @@ export async function downloadAndIngestSong(hit: MusicSearchHit): Promise<Downlo
       album: metadata.album,
     },
   );
+  // Override to relative path so player-shell can use same libraryRoot="data" pattern as local songs
+  song.sourcePath = filePath;
+  song.libraryRoot = "";
 
   const next = [
     ...existingCatalog.filter((item) => item.id !== song.id && item.sourcePath !== song.sourcePath),
@@ -341,13 +350,26 @@ function getTrackMetadata(hit: MusicSearchHit): RemoteTrackMetadata {
   }
 }
 
+function absPath(relativePath: string) {
+  return path.resolve(DOWNLOAD_ROOT, relativePath);
+}
+
+async function fileExistsAt(relativePath: string): Promise<boolean> {
+  try {
+    await fs.access(absPath(relativePath));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function resolveDownloadFilePath(metadata: RemoteTrackMetadata, songs: Song[]) {
   const preferredPath = path.join(DOWNLOAD_DIR, `${metadata.preferredStem}.mp3`);
   const secondaryPath = path.join(DOWNLOAD_DIR, `${metadata.secondaryStem}.mp3`);
   const legacyPath = path.join(DOWNLOAD_DIR, `${metadata.key}.mp3`);
   const existingSong = songs.find((song) => song.id === metadata.songId);
 
-  if (existingSong?.sourcePath && (await fileExists(existingSong.sourcePath))) {
+  if (existingSong?.sourcePath && await fileExistsAt(existingSong.sourcePath)) {
     const targetPath = await chooseAvailableFilePath(
       songs,
       metadata.songId,
@@ -361,7 +383,7 @@ async function resolveDownloadFilePath(metadata: RemoteTrackMetadata, songs: Son
     return targetPath;
   }
 
-  if (await fileExists(legacyPath)) {
+  if (await fileExistsAt(legacyPath)) {
     const targetPath = await chooseAvailableFilePath(
       songs,
       metadata.songId,
@@ -405,17 +427,17 @@ async function isPathUsable(
     (song) => song.id !== songId && song.sourcePath === targetPath,
   );
   if (occupiedByOtherSong) return false;
-  const exists = await fileExists(targetPath);
+  const exists = await fileExistsAt(targetPath);
   return !exists;
 }
 
 async function moveSongBundle(fromPath: string, toPath: string) {
-  await fs.rename(fromPath, toPath);
+  await fs.rename(absPath(fromPath), absPath(toPath));
   for (const ext of [".jpg", ".lrc"]) {
     const fromSidecar = fromPath.replace(/\.mp3$/i, ext);
     const toSidecar = toPath.replace(/\.mp3$/i, ext);
-    if (await fileExists(fromSidecar)) {
-      await fs.rename(fromSidecar, toSidecar).catch(() => null);
+    if (await fileExistsAt(fromSidecar)) {
+      await fs.rename(absPath(fromSidecar), absPath(toSidecar)).catch(() => null);
     }
   }
 }

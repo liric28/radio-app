@@ -483,9 +483,9 @@ function SearchPanelInline({
       {successMessage && <p className={styles.searchSuccess}>{successMessage}</p>}
       {error && <p className={styles.searchError}>{error}</p>}
       <div ref={resultsRef} className={styles.searchResults}>
-        {results.map((hit) => (
+        {results.map((hit, index) => (
           <div
-            key={`${hit.source}-${hit.title}-${hit.artist}`}
+            key={`${hit.source}-${hit.title}-${hit.artist}-${index}`}
             className={styles.searchResultCard}
             onClick={() => void handlePlay(hit)}
             role="button"
