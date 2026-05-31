@@ -88,26 +88,24 @@ export async function recommendBlockTrackCount(
 }
 
 const INTRO_TEMPLATES = [
-  `这里是 {persona}。把 {currentArtist} 的《{currentTitle}》放在前面，不是因为煽情，而是因为 {scene} 更适合先用 {moodHint} 打底。下一首自然滑到 {nextArtist} 的《{nextTitle}》，让情绪过门更顺。`,
-  `欢迎回到 {persona}。我选了 {currentArtist} 的《{currentTitle}》开场，原因是 {scene} 需要一点 {moodHint} 垫底。接下来的 {nextArtist}《{nextTitle}》，是顺着一个情绪弧度走的。`,
-  `{persona} 时间。先上 {currentArtist} 的《{currentTitle}》，{scene} 的节奏里，{moodHint} 是最好的切入点。后面 {nextArtist}《{nextTitle}》，刚好接住这个情绪。`,
-  `{currentArtist} 的《{currentTitle}》——这是 {scene} 最好的开场。{moodHint} 打底，情绪先落下来，再让 {nextArtist} 的《{nextTitle}》把氛围顺上去。`,
-  `{persona} 回来了。《{currentTitle}》是今天的起点，{scene} 里 {moodHint} 能让人快速沉进去。然后是 {nextArtist} 的《{nextTitle}》，自然过渡，不打断。`,
-  `今天的开场，我选 {currentArtist} 的《{currentTitle}》。{scene} 的基调，先用 {moodHint} 定住。《{nextTitle}》跟在后面，是同一个情绪方向的自然延伸。`,
-  `{currentArtist}《{currentTitle}》，这首歌放在 {scene} 最合适。{moodHint} 是引子，把人带进去，之后 {nextArtist} 的《{nextTitle}》顺势把情绪展开。`,
-  `{persona} 这里。先让 {currentArtist} 的《{currentTitle}》响起，{scene} 需要这种 {moodHint} 铺底。{nextArtist} 的《{nextTitle}》会在后面接上，保持连贯。`,
-  `《{currentTitle}》，{currentArtist} 的声音打开 {scene}。我在这首歌后面藏了一个情绪钩子——{nextArtist} 的《{nextTitle}》。{moodHint} 先行，过渡就不生硬。`,
-  `{persona} 的节目从这里开始。《{currentTitle}》对应 {scene}，先用 {moodHint} 建立氛围感，然后 {nextArtist} 的《{nextTitle}》把这种感觉延续下去，不割裂。`,
+  `先来一首 {currentArtist} 的《{currentTitle}》，早上出门这个点，{moodHint} 刚好把节奏带起来。后面接 {nextArtist} 的《{nextTitle}》，顺着往下走就行。`,
+  `早上好。《{currentTitle}》先上，{currentArtist} 的声音配 {moodHint} 正合适，后面 {nextArtist} 的《{nextTitle}》慢慢把情绪展开。`,
+  `《{currentTitle}》开场，{currentArtist} 的歌配{moodHint}，这个点先把气口定住。后面还有 {nextArtist} 的《{nextTitle}》。`,
+  `{currentArtist} 的《{currentTitle}》，早上听着正合适。{moodHint} 先打底，后面 {nextArtist} 的《{nextTitle}》把节奏顺下来。`,
+  `《{currentTitle}》先播，{currentArtist} 的声音配上 {moodHint}，正好衬这个点。后面 {nextArtist} 的《{nextTitle}》，不打断。`,
+  `早上好，先来 {currentArtist} 的《{currentTitle}》。{moodHint} 开路，后面 {nextArtist} 的《{nextTitle}》自然接上。`,
+  `{currentArtist}《{currentTitle}》，早上这个时间先上这首，{moodHint} 垫着，后面 {nextArtist} 的《{nextTitle}》顺势推过去。`,
+  `先听 {currentArtist} 的《{currentTitle}》，{moodHint} 把氛围定好，后面 {nextArtist} 的《{nextTitle}》接着走。`,
+  `《{currentTitle}》响起，{currentArtist} 的声音配 {moodHint}，早上最适合这样的开场，后面 {nextArtist} 的《{nextTitle}》把情绪收住。`,
+  `{currentArtist} 的《{currentTitle}》，{moodHint} 先铺一层，后面 {nextArtist} 的《{nextTitle}》自然跟上来，不割裂。`,
 ];
 
 function fillIntro(template: string, input: ComposeIntroInput) {
   return template
-    .replaceAll("{persona}", input.persona)
     .replaceAll("{currentArtist}", input.currentTrack.artist)
     .replaceAll("{currentTitle}", input.currentTrack.title)
     .replaceAll("{nextArtist}", input.nextTrack.artist)
     .replaceAll("{nextTitle}", input.nextTrack.title)
-    .replaceAll("{scene}", input.scene)
     .replaceAll("{moodHint}", input.moodHint);
 }
 
