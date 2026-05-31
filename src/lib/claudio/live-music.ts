@@ -8,7 +8,8 @@ import {
   readTasteProfile,
 } from "@/lib/profile";
 import { searchSongsBySource, type MusicSearchHit, type MusicSearchSource } from "@/lib/music-search";
-import { resolvePlaybackUrlForHit } from "@/lib/song-download";
+import { resolvePlaybackUrlForHit, extractMusicInfo } from "@/lib/song-download";
+import { scriptVM } from "@/lib/script-vm";
 import type { ClaudioTrack } from "@/lib/claudio/types";
 import type { Song } from "@/lib/types";
 
@@ -176,6 +177,22 @@ async function verifyPlaybackUrl(url: string) {
   return probe?.ok || probe?.status === 206;
 }
 
+/**
+ * 尝试通过 scriptVM 获取 lyric URL
+ */
+async function tryScriptLyricUrl(hit: MusicSearchHit): Promise<string | null> {
+  if (!scriptVM.isLoaded) return null;
+  const musicInfo = extractMusicInfo(hit);
+  const lyricResult = await scriptVM.resolve({
+    source: hit.source,
+    action: "lyric",
+    info: { type: "320k", musicInfo },
+  });
+  if (!lyricResult) return null;
+  // lyricResult 是 JSON 字符串，存储到 data/lyrics/ 目录
+  return lyricResult; // 前端/后端共同协议：lyricResult 直接是 JSON 字符串
+}
+
 export async function buildOnlineClaudioTracks({
   input,
   count = DEFAULT_COUNT,
@@ -199,10 +216,12 @@ export async function buildOnlineClaudioTracks({
   // 2. 本地库里找同歌，命中则优先播本地
   // 3. 本地没有才尝试远端直链
   // 4. 远端直链必须验活通过，否则直接丢弃
+  // 5. 如果 scriptVM 声明了 lyric action，顺带拿 lyric
   for (const hit of hits) {
     if (tracks.length >= count) break;
     const localSong = findLocalMatch(hit, songs);
     let streamUrl = "";
+    let lyricUrl: string | null = null;
 
     if (localSong?.sourcePath) {
       streamUrl = `/api/audio?path=${encodeURIComponent(localSong.sourcePath)}&libraryRoot=${encodeURIComponent(localSong.libraryRoot || "")}`;
@@ -212,6 +231,8 @@ export async function buildOnlineClaudioTracks({
       const playable = await verifyPlaybackUrl(remoteUrl).catch(() => false);
       if (!playable) continue;
       streamUrl = remoteUrl;
+      // 远端歌曲，尝试从 scriptVM 获取 lyric
+      lyricUrl = await tryScriptLyricUrl(hit).catch(() => null);
     }
 
     tracks.push({
@@ -219,6 +240,7 @@ export async function buildOnlineClaudioTracks({
       title: hit.title,
       artist: hit.artist,
       streamUrl,
+      lyricUrl,
       sourceSong: localSong,
     });
   }

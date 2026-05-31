@@ -5,6 +5,8 @@ export type ClaudioTrack = {
   title: string;
   artist: string;
   streamUrl: string;
+  /** lyric URL（远端歌曲由 scriptVM 提供，可为 null） */
+  lyricUrl?: string | null;
   introTtsUrl?: string;
   introTranscript?: string;
   segmentId?: string;

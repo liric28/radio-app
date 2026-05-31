@@ -1,5 +1,6 @@
 import { createCipheriv, createHash } from "node:crypto";
 import { searchSongs, type KugouSearchHit } from "@/lib/kugou";
+import { ensureScriptVMLoaded, scriptVM } from "@/lib/script-vm";
 
 export type MusicSearchSource = "kugou" | "qq" | "netease";
 
@@ -92,6 +93,7 @@ export async function searchSongsBySource(
   page = 1,
   limit = 20,
 ): Promise<MusicSearchHit[]> {
+  await ensureScriptVMLoaded();
   switch (source) {
     case "qq":
       return searchQQSongs(keyword, page, limit);
@@ -101,6 +103,10 @@ export async function searchSongsBySource(
     default:
       return searchKugouSongs(keyword, page, limit);
   }
+}
+
+function isCustomSourceDownloadable(source: MusicSearchSource) {
+  return scriptVM.canResolve(source, "musicUrl");
 }
 
 export function asKugouDownloadHit(hit: MusicSearchHit): KugouSearchHit | null {
@@ -113,13 +119,14 @@ async function searchKugouSongs(
   limit: number,
 ): Promise<MusicSearchHit[]> {
   const hits = await searchSongs(keyword, page, limit);
+  const customDownloadable = isCustomSourceDownloadable("kugou");
   return hits.map((hit) => ({
     source: "kugou",
     title: hit.title,
     artist: hit.artist,
     duration: hit.duration,
     payable: hit.payable,
-    downloadable: hit.payable,
+    downloadable: hit.payable || customDownloadable,
     albumName: hit.albumName,
     imageUrl: materializeKugouImage(hit.imageTemplate),
     raw: hit,

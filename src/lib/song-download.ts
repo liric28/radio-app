@@ -8,6 +8,7 @@ import { addAllowedAudioRoot } from "@/lib/audio-roots";
 import { buildSongFromFile } from "@/lib/local-library";
 import { getLyricText, getPlaybackUrl, type KugouSearchHit } from "@/lib/kugou";
 import { readSongCatalog, writeSongCatalog } from "@/lib/profile";
+import { ensureScriptVMLoaded, scriptVM } from "@/lib/script-vm";
 import type { MusicSearchHit, NeteaseSearchHit, QQSearchHit } from "@/lib/music-search";
 import type { Song } from "@/lib/types";
 
@@ -236,6 +237,53 @@ export async function downloadAndIngestSong(hit: MusicSearchHit): Promise<Downlo
   return { song, filePath, alreadyExists: false };
 }
 
+/**
+ * 从 MusicSearchHit 提取用户脚本需要的 musicInfo 字段
+ */
+export function extractMusicInfo(hit: MusicSearchHit): {
+  songmid?: string;
+  songId?: number | string;
+  hash?: string;
+  name?: string;
+  singer?: string;
+  album?: string;
+  duration?: number;
+} {
+  switch (hit.source) {
+    case "qq": {
+      const raw = hit.raw as QQSearchHit;
+      return {
+        songmid: raw.songmid,
+        name: hit.title,
+        singer: hit.artist,
+        album: hit.albumName,
+        duration: hit.duration,
+      };
+    }
+    case "netease": {
+      const raw = hit.raw as NeteaseSearchHit;
+      return {
+        songId: raw.songId,
+        name: hit.title,
+        singer: hit.artist,
+        album: hit.albumName,
+        duration: hit.duration,
+      };
+    }
+    case "kugou":
+    default: {
+      const raw = hit.raw as KugouSearchHit;
+      return {
+        hash: raw.hash,
+        name: hit.title,
+        singer: hit.artist,
+        album: hit.albumName,
+        duration: hit.duration,
+      };
+    }
+  }
+}
+
 function getTrackMetadata(hit: MusicSearchHit): RemoteTrackMetadata {
   switch (hit.source) {
     case "qq": {
@@ -381,6 +429,19 @@ function sanitizeFileStem(value: string) {
 }
 
 export async function resolvePlaybackUrlForHit(hit: MusicSearchHit) {
+  await ensureScriptVMLoaded();
+
+  // 优先尝试自定义源
+  if (scriptVM.isLoaded) {
+    const musicInfo = extractMusicInfo(hit);
+    const url = await scriptVM.resolve({
+      source: hit.source,
+      action: "musicUrl",
+      info: { type: "320k", musicInfo },
+    });
+    if (url) return url;
+  }
+
   switch (hit.source) {
     case "qq": {
       const raw = hit.raw as QQSearchHit;

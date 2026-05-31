@@ -410,7 +410,7 @@ export function ClaudioLiveShell() {
         } else {
           bar.target = (0.03 + normalized * 0.08) * height;
         }
-        bar.height += (bar.target - bar.height) * 0.14;
+        bar.height += (bar.target - bar.height) * 0.55;
 
         const x = index * (barWidth + barGap);
         const barHeight = Math.max(2, bar.height);
@@ -423,7 +423,7 @@ export function ClaudioLiveShell() {
         context.fill();
       });
 
-      time += isAnimated ? 0.022 : 0.01;
+      time += isAnimated ? 0.055 : 0.01;
       rafId = window.requestAnimationFrame(draw);
     }
 
