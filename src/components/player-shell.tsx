@@ -1915,7 +1915,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       >
         <PointerMatrixField
           ref={matrixFieldRef}
-          className={styles.panelMatrix}
+          className={`${styles.panelMatrix} ${theme === "light" ? styles.panelMatrixLight : styles.panelMatrixDark}`}
           theme={theme}
         />
         <div className={styles.panelContent}>

@@ -131,8 +131,8 @@ export const PointerMatrixField = forwardRef<
     // 矩阵圆点颜色和透明度
     const baseColor =
       themeRef.current === "light"
-        ? { r: 80, g: 70, b: 130, a: 0.18 }
-        : { r: 165, g: 155, b: 204, a: 0.22};
+        ? { r: 88, g: 80, b: 128, a: 0.3 }
+        : { r: 244, g: 243, b: 248, a: 0.36 };
     // 鼠标跟随悬停时的颜色和透明度
     const accentColor =
       themeRef.current === "light"
@@ -161,9 +161,8 @@ export const PointerMatrixField = forwardRef<
 
         if (strength > 0.04) {
           context.beginPath();
-          context.fillStyle = `rgba(${accentColor.r}, ${accentColor.g}, ${accentColor.b}, ${strength * 0.16})`;
-          // 矩阵光晕(边框)
-          // context.arc(dotX, dotY, radius + strength * 5.5, 0, Math.PI * 2);
+          context.fillStyle = `rgba(${accentColor.r}, ${accentColor.g}, ${accentColor.b}, ${strength * 0.22})`;
+          context.arc(dotX, dotY, radius + strength * 7.2, 0, Math.PI * 2);
           context.fill();
         }
 

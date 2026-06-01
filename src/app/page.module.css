@@ -112,12 +112,41 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 4;
+  opacity: 0.52;
+}
+
+.panelMatrixDark {
+  mix-blend-mode: screen;
+}
+
+.panelMatrixLight {
+  opacity: 0.42;
+  mix-blend-mode: normal;
+}
+
+.panelContent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(7, 7, 12, 0.14), rgba(7, 7, 12, 0.22));
+}
+
+.panelLight .panelContent::before {
+  background: transparent;
 }
 
 .panelContent {
   position: relative;
-  z-index: 2;
+  z-index: 3;
+}
+
+.panelContent > * {
+  position: relative;
+  z-index: 1;
 }
 
 .pageLight {
@@ -174,6 +203,7 @@
 .inputDock,
 .footerBar {
   position: relative;
+  z-index: 5;
 }
 
 /* 点阵底纹现在统一由 .panelLight / .panelDark 的 background-image 全铺，无需各 section 重复 ::before。 */
@@ -491,6 +521,12 @@
   padding: 26px 22px 24px;
   display: grid;
   place-items: center;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #050509 0%, #020204 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .dotGrid {
@@ -516,6 +552,15 @@
   z-index: 1;
   text-align: center;
 }
+
+.panelLight .clockStage {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0) 26%),
+    linear-gradient(180deg, #f7f5fc 0%, #ece8f6 100%);
+  border-top-color: rgba(125, 112, 168, 0.14);
+  border-bottom-color: rgba(125, 112, 168, 0.18);
+}
+
 
 .weatherBadge {
   position: absolute;
@@ -981,7 +1026,7 @@
 
 /* 直播条背景色 */
 .liveStrip {
-  background: rgba(0, 0, 0, 0.75);
+  background: #000000;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
