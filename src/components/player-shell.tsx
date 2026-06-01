@@ -2589,7 +2589,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         <audio
           ref={audioRef}
           preload="auto"
-          src={audioSource}
+          src={audioSource || undefined}
           onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
           onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
           onEnded={() => {

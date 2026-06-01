@@ -100,8 +100,9 @@ export async function searchSongsBySource(
     case "netease":
       return searchNeteaseSongs(keyword, page, limit);
     case "kugou":
-    default:
       return searchKugouSongs(keyword, page, limit);
+    default:
+      return searchQQSongs(keyword, page, limit);
   }
 }
 

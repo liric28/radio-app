@@ -93,7 +93,7 @@ function resolveRoutine(routines: RoutineProfile[], targetPeriod?: string) {
 
 function normalizeSource(source: string | undefined): MusicSearchSource {
   if (source === "qq" || source === "netease" || source === "kugou") return source;
-  return "kugou";
+  return "qq";
 }
 
 function sourceFallbackOrder(preferred: MusicSearchSource) {
