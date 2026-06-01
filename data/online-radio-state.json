@@ -1,150 +1,107 @@
 {
   "date": "2026-06-01",
   "seed": {
-    "input": "白天通勤时段，用华语经典旋律唤醒回忆感，在熟悉歌单和在线推荐里找几首能呼应周杰伦、BEYOND气质的中文流行摇滚",
-    "reason": "本地音乐库以周杰伦和BEYOND的华语摇滚为核心锚点，回忆感标签占比最高，近期Maroon 5播放显示英文摇滚偏好但语言请求明确指向中文，需将两者结合生成既能承接熟悉感又具备通勤激励属性的在线搜索意图"
+    "input": "从本地歌单里捞出几首听着像老朋友的华语慢歌，配合通勤回忆感在线电台",
+    "reason": "本地库回忆感强、中文占比高，BEYOND和周杰伦的歌最适合这个方向，避免重复之前的缓慢主旋律框架，用通勤回忆感来重新包装"
   },
-  "source": "qq",
+  "source": "kugou",
   "program": {
     "stationName": "Claudio FM",
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "先别急着认歌，这一轮我想先把气口放稳。前面偏专注，后面会慢慢亮一点。",
+    "hostIntro": "今天先不急着解释，先让《Outta Your Mind (Album Version) (Explicit)》把气口定住。后面那首我也给你连好了。",
     "currentTrack": {
-      "id": "online-85991d5d8e20",
-      "title": "낮 (Day off) (白天)",
-      "artist": "脸红的思春期",
+      "id": "online-0a5456fffccf",
+      "title": "Outta Your Mind (Album Version) (Explicit)",
+      "artist": "Lil Jon、LMFAO",
       "year": 2026,
       "mood": "专注",
       "energy": 7,
-      "language": "韩语",
+      "language": "英语",
       "tags": [
         "在线推荐",
         "白天工作流",
-        "qq"
+        "kugou"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / Lil Jon、LMFAO / Outta Your Mind (Album Version) (Explicit)”这条在线推荐线索命中的。",
       "libraryRoot": "",
-      "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D00045fv91egfYd%26level%3Dexhigh",
-      "source": "qq",
+      "streamUrl": "",
+      "source": "kugou",
       "recommendationMeta": {
-        "sourceLabel": "口味",
-        "slotType": "learned",
+        "sourceLabel": "顺推",
+        "slotType": "fallback",
         "slotLabel": "主推"
       },
       "downloadContext": {
-        "source": "qq",
-        "duration": 192,
+        "source": "kugou",
+        "duration": 250,
         "payable": false,
         "downloadable": true,
-        "albumName": "Two Five",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg",
+        "albumName": "",
+        "imageUrl": "http://imge.kugou.com/stdmusic/240/20250316/20250316073201138763.jpg",
         "raw": {
-          "source": "qq",
-          "songId": 237776459,
-          "songmid": "00045fv91egfYd",
-          "mediaMid": "000C6adX259x6U",
-          "title": "낮 (Day off) (白天)",
-          "artist": "脸红的思春期",
-          "albumName": "Two Five",
-          "duration": 192,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg"
+          "audioId": 1098772,
+          "hash": "8388DAF64A3817510C0DC6F3782B3AFA",
+          "title": "Outta Your Mind (Album Version) (Explicit)",
+          "artist": "Lil Jon、LMFAO",
+          "albumName": "",
+          "duration": 250,
+          "payType": 3,
+          "payable": false,
+          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250316/20250316073201138763.jpg"
         }
       },
-      "reason": "这首歌来自脸红的思春期，带你找回白天工作的专注节奏，韩国小清新的魔力真的绝了。"
+      "reason": "电子节拍敲进来，别想太多，让节奏带着你走"
     },
     "queue": [
       {
-        "id": "online-b964c3f0105a",
-        "title": "Daylight",
-        "artist": "Maroon 5",
+        "id": "online-94ded8b959b4",
+        "title": "Shots",
+        "artist": "LMFAO",
         "year": 2026,
-        "mood": "克制",
-        "energy": 8,
+        "mood": "轻推力",
+        "energy": 9,
         "language": "英语",
         "tags": [
           "在线推荐",
           "白天工作流",
-          "qq"
+          "kugou"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / LMFAO / Shots”这条在线推荐线索命中的。",
         "libraryRoot": "",
-        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D001DwtBl2gdXYN%26level%3Dexhigh",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "口味",
-          "slotType": "learned",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 226,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Singles (Explicit)",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 104357077,
-            "songmid": "001DwtBl2gdXYN",
-            "mediaMid": "000XzVwY1T07TK",
-            "title": "Daylight",
-            "artist": "Maroon 5",
-            "albumName": "Singles (Explicit)",
-            "duration": 226,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
-          }
-        },
-        "reason": "Maroon 5 送上 Daylight，阳光男声陪着你，克制不闹腾，工作日里刚刚好。"
-      },
-      {
-        "id": "online-06fe23b436e5",
-        "title": "百战成诗",
-        "artist": "白天",
-        "year": 2026,
-        "mood": "轻推力",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 百战成诗”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D004YBAEm0SZrrg%26level%3Dexhigh",
-        "source": "qq",
+        "streamUrl": "",
+        "source": "kugou",
         "recommendationMeta": {
           "sourceLabel": "顺推",
           "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
-          "source": "qq",
-          "duration": 393,
-          "payable": false,
+          "source": "kugou",
+          "duration": 222,
+          "payable": true,
           "downloadable": true,
-          "albumName": "温柔男声版",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg",
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20200812/20200812170735783392.jpg",
           "raw": {
-            "source": "qq",
-            "songId": 376647925,
-            "songmid": "004YBAEm0SZrrg",
-            "mediaMid": "000uIunD1K4GmS",
-            "title": "百战成诗",
-            "artist": "白天",
-            "albumName": "温柔男声版",
-            "duration": 393,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg"
+            "audioId": 305683329,
+            "hash": "463023EF7A9E9466421165C18F2F4EA4",
+            "title": "Shots",
+            "artist": "LMFAO",
+            "albumName": "",
+            "duration": 222,
+            "payType": 0,
+            "payable": true,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20200812/20200812170735783392.jpg"
           }
         },
-        "reason": "百战成诗来啦，前进的力量已经准备好了，听完这首今天绝对满血复活。"
+        "reason": "来一杯Shot，干了这杯再干活"
       },
       {
-        "id": "online-6d638b08f27a",
-        "title": "连名带姓",
-        "artist": "曹杨",
+        "id": "online-4034c6e162a4",
+        "title": "我们的天空",
+        "artist": "粤剧龙振飞",
         "year": 2026,
         "mood": "专注",
         "energy": 9,
@@ -152,42 +109,42 @@
         "tags": [
           "在线推荐",
           "白天工作流",
-          "qq"
+          "kugou"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 曹杨 / 连名带姓”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 粤剧龙振飞 / 我们的天空”这条在线推荐线索命中的。",
         "libraryRoot": "",
-        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D001vmuVt2FpRSI%26level%3Dexhigh",
-        "source": "qq",
+        "streamUrl": "",
+        "source": "kugou",
         "recommendationMeta": {
           "sourceLabel": "顺推",
           "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
-          "source": "qq",
-          "duration": 311,
-          "payable": false,
+          "source": "kugou",
+          "duration": 188,
+          "payable": true,
           "downloadable": true,
-          "albumName": "连名带姓",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003T0RQZ03Ss2m.jpg",
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20260112/20260112224524433599.jpg",
           "raw": {
-            "source": "qq",
-            "songId": 652890346,
-            "songmid": "001vmuVt2FpRSI",
-            "mediaMid": "002d8UFl1cEGF9",
-            "title": "连名带姓",
-            "artist": "曹杨",
-            "albumName": "连名带姓",
-            "duration": 311,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003T0RQZ03Ss2m.jpg"
+            "audioId": 527322062,
+            "hash": "7860FF0E746AFB2D1415D3A885A10C03",
+            "title": "我们的天空",
+            "artist": "粤剧龙振飞",
+            "albumName": "",
+            "duration": 188,
+            "payType": 0,
+            "payable": true,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20260112/20260112224524433599.jpg"
           }
         },
-        "reason": "曹杨的连名带姓送给你们，专注模式下就听这样的歌，温柔地陪你搞定一切。"
+        "reason": "粤剧的腔调铺开来，工作也能有点诗意的味道"
       },
       {
-        "id": "online-e8d2ecb1b585",
-        "title": "北斗星",
-        "artist": "温岚",
+        "id": "online-c6163abeb633",
+        "title": "花海",
+        "artist": "周杰伦",
         "year": 2026,
         "mood": "克制",
         "energy": 9,
@@ -195,42 +152,42 @@
         "tags": [
           "在线推荐",
           "白天工作流",
-          "qq"
+          "kugou"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 温岚 / 北斗星”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 花海”这条在线推荐线索命中的。",
         "libraryRoot": "",
-        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D003IRHY530hRuN%26level%3Dexhigh",
-        "source": "qq",
+        "streamUrl": "",
+        "source": "kugou",
         "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
+          "sourceLabel": "常听",
+          "slotType": "anchor",
           "slotLabel": "延续"
         },
         "downloadContext": {
-          "source": "qq",
-          "duration": 288,
+          "source": "kugou",
+          "duration": 264,
           "payable": false,
           "downloadable": true,
-          "albumName": "有点野",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003koQ8f2ugWIh.jpg",
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20241118/20241118160622508429.jpg",
           "raw": {
-            "source": "qq",
-            "songId": 102808,
-            "songmid": "003IRHY530hRuN",
-            "mediaMid": "004TAZnF2wOzPw",
-            "title": "北斗星",
-            "artist": "温岚",
-            "albumName": "有点野",
-            "duration": 288,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003koQ8f2ugWIh.jpg"
+            "audioId": 327075,
+            "hash": "3328808CECBD1A1038166003840FDDD7",
+            "title": "花海",
+            "artist": "周杰伦",
+            "albumName": "",
+            "duration": 264,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20241118/20241118160622508429.jpg"
           }
         },
-        "reason": "温岚的北斗星闪耀着，克制又深情，安静的午后让这首歌陪你度过吧。"
+        "reason": "这首歌有点悲伤，但克制得住，很适合沉下心"
       },
       {
-        "id": "online-a4f4093a663b",
-        "title": "交换余生",
-        "artist": "白天",
+        "id": "online-623c1fc1568d",
+        "title": "兰亭序",
+        "artist": "周杰伦",
         "year": 2026,
         "mood": "轻推力",
         "energy": 9,
@@ -238,45 +195,131 @@
         "tags": [
           "在线推荐",
           "白天工作流",
-          "qq"
+          "kugou"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 兰亭序”这条在线推荐线索命中的。",
         "libraryRoot": "",
-        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D003Mr8HR2HksC8%26level%3Dexhigh",
-        "source": "qq",
+        "streamUrl": "",
+        "source": "kugou",
+        "recommendationMeta": {
+          "sourceLabel": "常听",
+          "slotType": "anchor",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "kugou",
+          "duration": 253,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20241118/20241118160622508429.jpg",
+          "raw": {
+            "audioId": 167645,
+            "hash": "4EC10B1B7B9BEB2F0ADB89BBEC5F664B",
+            "title": "兰亭序",
+            "artist": "周杰伦",
+            "albumName": "",
+            "duration": 253,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20241118/20241118160622508429.jpg"
+          }
+        },
+        "reason": "中国风的旋律轻轻推你一把，思路就这么来了"
+      },
+      {
+        "id": "online-83a040d68191",
+        "title": "Outta Your Mind (Album Version) (Edited)",
+        "artist": "Lil Jon、LMFAO",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 8,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "kugou"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Lil Jon、LMFAO / Outta Your Mind (Album Version) (Edited)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "kugou",
         "recommendationMeta": {
           "sourceLabel": "顺推",
           "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
-          "source": "qq",
-          "duration": 277,
+          "source": "kugou",
+          "duration": 250,
           "payable": false,
           "downloadable": true,
-          "albumName": "治愈男生版",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20210803/20210803181402601900.jpg",
           "raw": {
-            "source": "qq",
-            "songId": 495254237,
-            "songmid": "003Mr8HR2HksC8",
-            "mediaMid": "003Mr8HR2HksC8",
-            "title": "交换余生",
-            "artist": "白天",
-            "albumName": "治愈男生版",
-            "duration": 277,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
+            "audioId": 317995625,
+            "hash": "929162302789D00CA615507F0BD6E86B",
+            "title": "Outta Your Mind (Album Version) (Edited)",
+            "artist": "Lil Jon、LMFAO",
+            "albumName": "",
+            "duration": 250,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20210803/20210803181402601900.jpg"
           }
         },
-        "reason": "交换余生响起来了，旋律轻轻推着你往前走，今天的工作效率要起飞啦。"
+        "reason": "电子节奏稳住了，别走神，跟着节拍就行"
+      },
+      {
+        "id": "online-c831140e6721",
+        "title": "搁浅",
+        "artist": "周杰伦",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "kugou"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 搁浅”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "kugou",
+        "recommendationMeta": {
+          "sourceLabel": "常听",
+          "slotType": "anchor",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "kugou",
+          "duration": 240,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121745628430.jpg",
+          "raw": {
+            "audioId": 254112,
+            "hash": "FBC234520FED713C30C1C026E7352770",
+            "title": "搁浅",
+            "artist": "周杰伦",
+            "albumName": "",
+            "duration": 240,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121745628430.jpg"
+          }
+        },
+        "reason": "旋律缓缓铺开，情绪收一收，专注做手头的事"
       }
     ],
     "explanation": [
       "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
-      "推荐线索是“白天通勤时段，用华语经典旋律唤醒回忆感，在熟悉歌单和在线推荐里找几首能呼应周杰伦、BEYOND气质的中文流行摇滚”，实际落地优先保留 脸红的思春期、Maroon 5、白天 这些锚点。",
-      "当前来源是 qq，本轮确认了 6 首可播在线歌曲。"
+      "推荐线索是“从本地歌单里捞出几首听着像老朋友的华语慢歌，配合通勤回忆感在线电台”，实际落地优先保留 Lil Jon、LMFAO、LMFAO、粤剧龙振飞 这些锚点。",
+      "当前来源是 kugou，本轮确认了 7 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 online-regenerate，本轮种子是“白天通勤时段，用华语经典旋律唤醒回忆感，在熟悉歌单和在线推荐里找几首能呼应周杰伦、BEYOND气质的中文流行摇滚”。这时段更偏 Maroon 5，语言更偏 韩语，当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 manual-pick，本轮种子是“从本地歌单里捞出几首听着像老朋友的华语慢歌，配合通勤回忆感在线电台”。这时段更偏 LMFAO、Lauren Bennett、GoonRock，语言更偏 韩语，当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

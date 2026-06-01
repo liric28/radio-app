@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { MusicSearchHit } from "@/lib/music-search";
-import { resolvePlaybackUrlForHit, SongDownloadError } from "@/lib/song-download";
+import { resolveVerifiedPlaybackUrlForHit, SongDownloadError } from "@/lib/song-download";
 
 /**
  * 搜索结果试听入口。
@@ -29,15 +29,39 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const url = await resolvePlaybackUrlForHit(body);
+    const url = await resolveVerifiedPlaybackUrlForHit(body);
+    console.info("[song-playback] resolved", {
+      source: body.source,
+      title: body.title,
+      artist: body.artist,
+      url: url || "",
+    });
     if (!url) {
+      console.error("[song-playback] empty", {
+        source: body.source,
+        title: body.title,
+        artist: body.artist,
+      });
       return NextResponse.json({ ok: false, error: "当前没有可播放直链" }, { status: 404 });
     }
     return NextResponse.json({ ok: true, url });
   } catch (error) {
     if (error instanceof SongDownloadError) {
+      console.error("[song-playback] download-error", {
+        source: body.source,
+        title: body.title,
+        artist: body.artist,
+        code: error.code,
+        message: error.message,
+      });
       return NextResponse.json({ ok: false, error: error.message, code: error.code }, { status: 409 });
     }
+    console.error("[song-playback] unexpected-error", {
+      source: body.source,
+      title: body.title,
+      artist: body.artist,
+      message: (error as Error).message,
+    });
     return NextResponse.json(
       { ok: false, error: (error as Error).message },
       { status: 500 },

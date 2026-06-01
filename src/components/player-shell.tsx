@@ -90,6 +90,12 @@ type PlayerShellProps = {
   initialWeather: WeatherSnapshot | null;
 };
 
+type SearchPlaybackResponse = {
+  ok: boolean;
+  url?: string;
+  error?: string;
+};
+
 type NeteaseViewer = {
   valid: boolean;
   userId: number | null;
@@ -107,6 +113,22 @@ function toPreferenceTrack(track: Song, scene?: string) {
     tags: track.tags,
     source: track.source,
     scene,
+  };
+}
+
+function toMusicSearchHit(track: Song): MusicSearchHit | null {
+  const context = track.downloadContext;
+  if (!context?.raw) return null;
+  return {
+    source: context.source,
+    title: track.title,
+    artist: track.artist,
+    duration: context.duration,
+    payable: context.payable,
+    downloadable: context.downloadable,
+    albumName: context.albumName,
+    imageUrl: context.imageUrl,
+    raw: context.raw as MusicSearchHit["raw"],
   };
 }
 
@@ -779,6 +801,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const [loaderVariant, setLoaderVariant] = useState<"hex1" | "hex10" | "square15" | "square18" | "circular8">("circular8");
   const [neteaseViewer, setNeteaseViewer] = useState<NeteaseViewer | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playbackRecoveryKeyRef = useRef<string | null>(null);
   /**
    * 自动播放开关。
    *
@@ -851,6 +874,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     artist: string;
     url: string;
   } | null>(null);
+  const [resolvedProgramStreamUrl, setResolvedProgramStreamUrl] = useState<string>("");
   const currentQueueTracks = useMemo(
     () => [program.currentTrack, ...program.queue],
     [program.currentTrack, program.queue],
@@ -987,15 +1011,20 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     if (searchPreview?.url) {
       return searchPreview.url;
     }
-    if (program.currentTrack.streamUrl) {
-      return program.currentTrack.streamUrl;
+    if (program.currentTrack.sourcePath) {
+      return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath || "")}&libraryRoot=${encodeURIComponent(program.currentTrack.libraryRoot || "")}`;
     }
-    if (!program.currentTrack.sourcePath) {
-      return "";
+    if (program.currentTrack.downloadContext) {
+      return resolvedProgramStreamUrl;
     }
-
-    return `/api/audio?path=${encodeURIComponent(program.currentTrack.sourcePath || "")}&libraryRoot=${encodeURIComponent(program.currentTrack.libraryRoot || "")}`;
-  }, [program.currentTrack.libraryRoot, program.currentTrack.sourcePath, program.currentTrack.streamUrl, searchPreview?.url]);
+    return "";
+  }, [
+    program.currentTrack.downloadContext,
+    program.currentTrack.libraryRoot,
+    program.currentTrack.sourcePath,
+    resolvedProgramStreamUrl,
+    searchPreview?.url,
+  ]);
 
   const visibleTrack = searchPreview
     ? { title: searchPreview.title, artist: searchPreview.artist }
@@ -1003,6 +1032,152 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
   function clearSearchPreview() {
     setSearchPreview(null);
+  }
+
+  useEffect(() => {
+    if (searchPreview?.url) return;
+    if (program.currentTrack.sourcePath) {
+      console.info("[Audio] local-track", {
+        trackId: program.currentTrack.id,
+        title: program.currentTrack.title,
+        artist: program.currentTrack.artist,
+        sourcePath: program.currentTrack.sourcePath,
+        libraryRoot: program.currentTrack.libraryRoot || "",
+      });
+      setResolvedProgramStreamUrl("");
+      return;
+    }
+    const hit = toMusicSearchHit(program.currentTrack);
+    if (!hit) {
+      console.info("[Audio] no-online-context", {
+        trackId: program.currentTrack.id,
+        title: program.currentTrack.title,
+        artist: program.currentTrack.artist,
+      });
+      setResolvedProgramStreamUrl("");
+      return;
+    }
+
+    let cancelled = false;
+    setResolvedProgramStreamUrl("");
+    console.info("[Audio] resolving-program-stream", {
+      trackId: program.currentTrack.id,
+      title: hit.title,
+      artist: hit.artist,
+      source: hit.source,
+    });
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/song-playback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(hit),
+        });
+        const payload = (await response.json()) as SearchPlaybackResponse;
+        if (cancelled) return;
+        if (!response.ok || !payload.ok || !payload.url) {
+          console.error("[Audio] resolve-program-stream.failed", {
+            trackId: program.currentTrack.id,
+            title: hit.title,
+            artist: hit.artist,
+            source: hit.source,
+            status: response.status,
+            payload,
+          });
+          setError(payload.error ?? "当前歌曲没有可播放直链");
+          return;
+        }
+        console.info("[Audio] resolve-program-stream.ok", {
+          trackId: program.currentTrack.id,
+          title: hit.title,
+          artist: hit.artist,
+          source: hit.source,
+          url: payload.url,
+        });
+        setResolvedProgramStreamUrl(payload.url);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("[Audio] resolve-program-stream.error", {
+            trackId: program.currentTrack.id,
+            title: hit.title,
+            artist: hit.artist,
+            source: hit.source,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          setError("当前歌曲播放地址解析失败。");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    program.currentTrack.artist,
+    program.currentTrack.downloadContext,
+    program.currentTrack.id,
+    program.currentTrack.sourcePath,
+    program.currentTrack.title,
+    searchPreview?.url,
+  ]);
+
+  useEffect(() => {
+    console.info("[Audio] source-updated", {
+      trackId: program.currentTrack.id,
+      title: program.currentTrack.title,
+      artist: program.currentTrack.artist,
+      hasSearchPreview: Boolean(searchPreview?.url),
+      resolvedProgramStreamUrl,
+      finalAudioSource: audioSource,
+    });
+  }, [
+    audioSource,
+    program.currentTrack.artist,
+    program.currentTrack.id,
+    program.currentTrack.title,
+    resolvedProgramStreamUrl,
+    searchPreview?.url,
+  ]);
+
+  async function recoverCurrentTrackPlayback() {
+    const hit = toMusicSearchHit(program.currentTrack);
+    if (!hit) return false;
+
+    const recoveryKey = `${program.currentTrack.id}:${program.currentTrack.title}:${program.currentTrack.artist}`;
+    if (playbackRecoveryKeyRef.current === recoveryKey) {
+      return false;
+    }
+    playbackRecoveryKeyRef.current = recoveryKey;
+
+    try {
+      const response = await fetch("/api/song-playback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hit),
+      });
+      const payload = (await response.json()) as SearchPlaybackResponse;
+      if (!response.ok || !payload.ok || !payload.url) {
+        return false;
+      }
+
+      shouldResumePlaybackRef.current = true;
+      setProgram((currentProgram) => {
+        if (currentProgram.currentTrack.id !== program.currentTrack.id) {
+          return currentProgram;
+        }
+        return {
+          ...currentProgram,
+          currentTrack: {
+            ...currentProgram.currentTrack,
+            streamUrl: payload.url,
+          },
+        };
+      });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -1028,6 +1203,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    playbackRecoveryKeyRef.current = null;
 
     if (!shouldResume) return;
 
@@ -1246,7 +1422,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   async function togglePlayback() {
     const audio = audioRef.current;
     if (!audioSource || !audio) {
-      setError("请先从本地目录读取曲库。");
+      setError("当前歌曲还在解析播放地址，请稍后再试。");
       return;
     }
     setError(null);
@@ -1254,12 +1430,29 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     if (audio.paused) {
       try {
         shouldResumePlaybackRef.current = false;
+        console.info("[Audio] play.attempt", {
+          trackId: program.currentTrack.id,
+          title: program.currentTrack.title,
+          artist: program.currentTrack.artist,
+          audioSource,
+          readyState: audio.readyState,
+          networkState: audio.networkState,
+        });
         await audio.play();
         setIsPlaying(true);
         setActiveLabel("ON AIR");
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error("[Audio] play() failed:", msg);
+        console.error("[Audio] play() failed:", {
+          message: msg,
+          trackId: program.currentTrack.id,
+          title: program.currentTrack.title,
+          artist: program.currentTrack.artist,
+          audioSource,
+          readyState: audio.readyState,
+          networkState: audio.networkState,
+          currentSrc: audio.currentSrc,
+        });
         setError(`播放失败：${msg}`);
       }
       return;
@@ -2419,6 +2612,33 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           }}
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
+          onError={() => {
+            void (async () => {
+              console.error("[Audio] element.error", {
+                trackId: program.currentTrack.id,
+                title: program.currentTrack.title,
+                artist: program.currentTrack.artist,
+                audioSource,
+                currentSrc: audioRef.current?.currentSrc || "",
+                errorCode: audioRef.current?.error?.code || null,
+                errorMessage: audioRef.current?.error?.message || "",
+              });
+              if (searchPreview) {
+                setError("试听源播放失败。");
+                clearSearchPreview();
+                return;
+              }
+
+              const recovered = await recoverCurrentTrackPlayback();
+              if (recovered) {
+                setError(null);
+                return;
+              }
+
+              setError("播放失败：当前源不可播，已跳到下一首。");
+              playNextTrack();
+            })();
+          }}
         />
         </div>
       </section>

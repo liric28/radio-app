@@ -9,13 +9,14 @@ import { dataDir } from "@/lib/paths";
 import { appendPreferenceEvent, preferenceTrackFromSong, readPreferenceModel, type PreferenceModel } from "@/lib/preference-learning";
 import { readPlaylistProfiles, readRoutineProfiles, readSongCatalog, readTasteProfile } from "@/lib/profile";
 import { batchRewriteTrackReasons, composeHostIntro, summarizeReasons } from "@/lib/providers/llm";
-import { resolvePlaybackUrlForHit } from "@/lib/song-download";
+import { resolveVerifiedPlaybackUrlForHit } from "@/lib/song-download";
 import { buildTrackLabel, trackLabelFromSong } from "@/lib/track-labels";
 import type { ChatIntent, DailySchedule, RadioMemory, RadioProgram, RoutineProfile, Song, UserTasteProfile } from "@/lib/types";
 
 const onlineStatePath = path.join(dataDir, "online-radio-state.json");
 const DEFAULT_SOURCE = (process.env.RADIO_ONLINE_SOURCE || process.env.CLAUDIO_LIVE_MUSIC_SOURCE || "qq") as MusicSearchSource;
-const DEFAULT_TRACK_COUNT = Math.max(4, Number(process.env.RADIO_ONLINE_TRACK_COUNT || 6));
+const DEFAULT_TRACK_COUNT = 8;
+const HARD_EXCLUDE_RECENT_TRACKS = Math.max(12, Number(process.env.RADIO_HARD_EXCLUDE_RECENT_TRACKS || 15));
 
 type OnlineRecommendationSeed = {
   input: string;
@@ -111,8 +112,47 @@ function normalizeName(value: string | undefined) {
     .replace(/[()（）\[\]【】\-_.·,，/\\]+/g, "");
 }
 
-function buildRemoteAudioProxyUrl(remoteUrl: string) {
-  return `/api/remote-audio?url=${encodeURIComponent(remoteUrl)}`;
+function normalizeArtistToken(value: string | undefined) {
+  return normalizeName(value)
+    .replace(/feat|featuring|ft/g, "")
+    .trim();
+}
+
+function splitArtistTokens(artist: string | undefined) {
+  return String(artist || "")
+    .split(/[、,，/&＋+]|(?:\s+and\s+)|(?:\s+x\s+)|(?:\s*×\s*)/i)
+    .map((part) => part.replace(/[（(].*?[）)]/g, "").trim())
+    .map(normalizeArtistToken)
+    .filter(Boolean);
+}
+
+function buildArtistClusterKeys(artist: string | undefined) {
+  const tokens = splitArtistTokens(artist);
+  const normalizedWhole = normalizeArtistToken(String(artist || "").replace(/[（(].*?[）)]/g, ""));
+  return [...new Set([normalizedWhole, ...tokens].filter(Boolean))];
+}
+
+function normalizeTitleKey(title: string | undefined) {
+  return String(title || "")
+    .replace(/[（(][^（）()]*?(版|live|dj|remix|mix|ver|version)[^（）()]*?[）)]/gi, "")
+    .replace(/[（(][^（）()]*?[）)]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isJunkRecommendationHit(hit: MusicSearchHit) {
+  const text = `${hit.title} ${hit.artist} ${hit.albumName || ""}`.toLowerCase();
+
+  const junkPatterns = [
+    /第\s*[0-9一二三四五六七八九十百千两零〇]+[\s]*[集期季部]/i,
+    /ep\.?\s*\d+/i,
+    /episode\s*\d+/i,
+    /片头|片尾|预告|花絮|对白|台词|纯音乐|伴奏|铃声|闹铃|有声书|广播剧|朗读/i,
+    /电视剧|网剧|动漫|动画|游戏|ost|原声带|插曲|主题曲|片头曲|片尾曲/i,
+  ];
+
+  return junkPatterns.some((pattern) => pattern.test(text));
 }
 
 function titlesLookCompatible(left: string, right: string) {
@@ -691,27 +731,6 @@ function classifyRecommendationSource(
   return { sourceLabel: "顺推", slotType: "fallback" };
 }
 
-async function verifyPlaybackUrl(url: string) {
-  const head = await fetch(url, {
-    method: "HEAD",
-    redirect: "follow",
-    cache: "no-store",
-    signal: AbortSignal.timeout(8_000),
-  }).catch(() => null);
-
-  if (head?.ok) return true;
-
-  const probe = await fetch(url, {
-    method: "GET",
-    headers: { Range: "bytes=0-0" },
-    redirect: "follow",
-    cache: "no-store",
-    signal: AbortSignal.timeout(8_000),
-  }).catch(() => null);
-
-  return probe?.ok || probe?.status === 206;
-}
-
 async function findAlternatePlayableHit(hit: MusicSearchHit) {
   const sourceOrder: MusicSearchSource[] = [hit.source, "qq", "kugou", "netease"].filter(
     (value, index, list) => list.indexOf(value) === index,
@@ -724,14 +743,10 @@ async function findAlternatePlayableHit(hit: MusicSearchHit) {
         : (await searchSongsBySource(`${hit.title} ${hit.artist}`, source, 1, 6).catch(() => []))
             .find((item) => titlesLookCompatible(item.title, hit.title) && artistsLookCompatible(item.artist, hit.artist));
     if (!candidate) continue;
-
-    const remoteUrl = await resolvePlaybackUrlForHit(candidate).catch(() => null);
+    const remoteUrl = await resolveVerifiedPlaybackUrlForHit(candidate).catch(() => null);
     if (!remoteUrl) continue;
-    const playable = await verifyPlaybackUrl(remoteUrl).catch(() => false);
-    if (!playable) continue;
     return {
       hit: candidate,
-      streamUrl: buildRemoteAudioProxyUrl(remoteUrl),
     };
   }
 
@@ -867,14 +882,16 @@ async function collectRankedHits(
   excludeTrackIds: string[],
 ) {
   const hitMap = new Map<string, MusicSearchHit>();
-  const excluded = new Set(excludeTrackIds);
+  const excluded = new Set(excludeTrackIds.map((item) => item.toLowerCase()));
   const exploration = buildExplorationPlan(model, routine, taste, preferences);
 
   for (const query of queries) {
     const hits = await searchSongsBySource(query, source, 1, 10).catch(() => []);
     for (const hit of hits) {
+      if (isJunkRecommendationHit(hit)) continue;
       const id = buildOnlineTrackId(hit.title, hit.artist);
-      if (excluded.has(id)) continue;
+      const label = buildTrackLabel(hit.title, hit.artist).toLowerCase();
+      if (excluded.has(id.toLowerCase()) || excluded.has(label)) continue;
       const key = buildTrackKey(hit);
       if (!hitMap.has(key)) hitMap.set(key, hit);
     }
@@ -922,19 +939,33 @@ async function buildProgramTracks(
   const stableCandidates: OnlineTrackCandidate[] = [];
   const exploreCandidates: OnlineTrackCandidate[] = [];
   const artistCounts = new Map<string, number>();
+  const titleCounts = new Map<string, number>();
   const forcedArtist = explicitArtistRequest(options.messageHint, taste);
   const maxPerArtist = forcedArtist ? count : 2;
   const model = await readPreferenceModel();
   const preferences = parseRequestPreferences(options.messageHint);
   const exploration = buildExplorationPlan(model, routine, taste, preferences, options.action);
   const explorationSlots = reservedExplorationSlots(exploration, count, options.action);
+  const acceptedTrackIds = new Set<string>();
 
-  for (const [index, hit] of hits.entries()) {
-    if (stableCandidates.length + exploreCandidates.length >= count * 3) break;
-    if (hasExplicitLanguageConstraint(preferences) && !matchesLanguagePreference(hit, preferences.language)) continue;
-    const normalizedArtist = hit.artist.trim().toLowerCase();
-    const currentArtistCount = artistCounts.get(normalizedArtist) || 0;
-    if (currentArtistCount >= maxPerArtist) continue;
+  async function tryAppendHit(hit: MusicSearchHit, index: number, relaxed: boolean) {
+    if (stableCandidates.length + exploreCandidates.length >= count * 3) return;
+    if (hasExplicitLanguageConstraint(preferences) && !matchesLanguagePreference(hit, preferences.language)) return;
+    const trackId = buildOnlineTrackId(hit.title, hit.artist);
+    if (acceptedTrackIds.has(trackId)) return;
+
+    const artistClusterKeys = buildArtistClusterKeys(hit.artist);
+    const currentArtistCount = Math.max(
+      0,
+      ...artistClusterKeys.map((key) => artistCounts.get(key) || 0),
+    );
+    const allowedPerArtist = forcedArtist ? count : relaxed ? 3 : maxPerArtist;
+    if (currentArtistCount >= allowedPerArtist) return;
+
+    const normalizedTitle = normalizeTitleKey(hit.title);
+    const allowedTitleRepeats = relaxed ? 2 : 1;
+    if ((titleCounts.get(normalizedTitle) || 0) >= allowedTitleRepeats) return;
+
     const localCandidate = findLocalMatch(hit, localSongs);
     const localMatch = (await localSongFileExists(localCandidate)) ? localCandidate : undefined;
     const recommendationMeta = classifyRecommendationSource(
@@ -947,20 +978,19 @@ async function buildProgramTracks(
       options,
       exploration,
     );
-    let streamUrl = localMatch?.sourcePath
+    const streamUrl = localMatch?.sourcePath
       ? `/api/audio?path=${encodeURIComponent(localMatch.sourcePath)}&libraryRoot=${encodeURIComponent(localMatch.libraryRoot || "")}`
       : "";
     let resolvedHit = hit;
 
     if (!streamUrl) {
       const remotePlayback = await findAlternatePlayableHit(hit);
-      if (!remotePlayback) continue;
-      streamUrl = remotePlayback.streamUrl;
+      if (!remotePlayback) return;
       resolvedHit = remotePlayback.hit;
     }
 
     const track: Song = {
-      id: buildOnlineTrackId(hit.title, hit.artist),
+      id: trackId,
       title: hit.title,
       artist: hit.artist,
       year: new Date().getFullYear(),
@@ -995,7 +1025,22 @@ async function buildProgramTracks(
       },
       slotType: recommendationMeta.slotType,
     });
-    artistCounts.set(normalizedArtist, currentArtistCount + 1);
+    acceptedTrackIds.add(trackId);
+    for (const key of artistClusterKeys) {
+      artistCounts.set(key, (artistCounts.get(key) || 0) + 1);
+    }
+    titleCounts.set(normalizedTitle, (titleCounts.get(normalizedTitle) || 0) + 1);
+  }
+
+  for (const [index, hit] of hits.entries()) {
+    await tryAppendHit(hit, index, false);
+  }
+
+  if (stableCandidates.length + exploreCandidates.length < count) {
+    for (const [index, hit] of hits.entries()) {
+      if (stableCandidates.length + exploreCandidates.length >= count) break;
+      await tryAppendHit(hit, index, true);
+    }
   }
 
   return interleaveTrackCandidates(stableCandidates, exploreCandidates, count, explorationSlots);
@@ -1076,6 +1121,11 @@ async function buildOnlineProgramAttempt(options: BuildOnlineProgramOptions = {}
   const queries = buildSearchQueries(seed, taste, model, routine, options.messageHint, options.action);
   const preferences = parseRequestPreferences(options.messageHint);
   const exploration = buildExplorationPlan(model, routine, taste, preferences, options.action);
+  const recentTrackExcludes = memory.recentTrackIds.slice(0, HARD_EXCLUDE_RECENT_TRACKS);
+  const hardExcludes = [
+    ...recentTrackExcludes,
+    ...(options.excludeTrackIds || []),
+  ];
   const hits = await collectRankedHits(
     queries,
     source,
@@ -1085,7 +1135,7 @@ async function buildOnlineProgramAttempt(options: BuildOnlineProgramOptions = {}
     routine,
     seed,
     preferences,
-    options.excludeTrackIds || [],
+    hardExcludes,
   );
   const tracks = await buildProgramTracks(hits, DEFAULT_TRACK_COUNT, taste, routine, memory, options);
 
@@ -1139,7 +1189,11 @@ async function refillProgramQueue(program: RadioProgram, currentTrack: Song) {
   if (program.queue.length >= 2) return program;
   const rebuilt = await buildOnlineProgram({
     action: "skip",
-    excludeTrackIds: [currentTrack.id, ...program.queue.map((track) => track.id)],
+    excludeTrackIds: [
+      currentTrack.id,
+      buildTrackLabel(currentTrack.title, currentTrack.artist),
+      ...program.queue.flatMap((track) => [track.id, buildTrackLabel(track.title, track.artist)]),
+    ],
   });
   const existingKeys = new Set([currentTrack, ...program.queue].map((track) => buildTrackKey(track)));
   const refillQueue = rebuilt.program.queue
@@ -1204,10 +1258,24 @@ export async function ensureOnlineRadioProgram() {
 
 export async function regenerateOnlineRadioProgram(options: BuildOnlineProgramOptions = {}) {
   try {
+    const currentState = await readOnlineState();
+    const currentProgramExcludes =
+      options.action === "fresh" || options.action === "regenerate" || options.forceNew
+        ? [
+            currentState?.program.currentTrack,
+            ...(currentState?.program.queue || []),
+          ]
+            .filter(Boolean)
+            .flatMap((track) => [
+              track!.id,
+              buildTrackLabel(track!.title, track!.artist),
+            ])
+        : [];
     const next = await buildOnlineProgram({
       ...options,
       forceNew: true,
       action: options.action || "regenerate",
+      excludeTrackIds: [...(options.excludeTrackIds || []), ...currentProgramExcludes],
     });
     await writeOnlineState({
       date: getTodayDateKey(),

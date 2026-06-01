@@ -502,6 +502,35 @@ export async function resolvePlaybackUrlForHit(hit: MusicSearchHit) {
   }
 }
 
+async function verifyResolvedPlaybackUrl(url: string) {
+  const head = await fetch(url, {
+    method: "HEAD",
+    redirect: "follow",
+    cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
+  }).catch(() => null);
+
+  if (head?.ok) return true;
+
+  const probe = await fetch(url, {
+    method: "GET",
+    headers: { Range: "bytes=0-0" },
+    redirect: "follow",
+    cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
+  }).catch(() => null);
+
+  return probe?.ok || probe?.status === 206;
+}
+
+export async function resolveVerifiedPlaybackUrlForHit(hit: MusicSearchHit) {
+  const url = await resolvePlaybackUrlForHit(hit).catch(() => null);
+  if (!url) return null;
+  const playable = await verifyResolvedPlaybackUrl(url).catch(() => false);
+  if (!playable) return null;
+  return url;
+}
+
 async function getTempSourcePlaybackUrl(source: "tx" | "wy", trackId: string) {
   if (!trackId) return null;
   const response = await fetch(`${TEMP_SOURCE_ENDPOINT}/url/${source}/${trackId}/128k`, {
