@@ -1789,8 +1789,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    *
    * 副作用顺序：
    *   1. abort 当前进行中的请求（chatAbortRef）→ 防旧响应回来污染新历史
-   *   2. setChatHistory([intro])：保留一条 hostIntro 作初始气泡，避免界面空白
-   *   3. useEffect 跟着把 localStorage["radio.chatHistory"] 也覆盖成单条
+   *   2. setChatHistory([])：清空历史，UI 会回退到默认 hostIntro 空态气泡
+   *   3. useEffect 跟着把 localStorage["radio.chatHistory"] 也覆盖成空数组
    *   4. 状态标签闪 "CLEARED" 给用户视觉反馈
    *
    * 触发入口：发送键长按 ≥ 1s（见下面 handleSendPointerDown / End / Click）
@@ -2169,7 +2169,13 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           <div className={styles.chatLog} ref={chatLogRef}>
             {chatHistory.length === 0 && (
               <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
-                <div className={styles.avatar} />
+                <div className={styles.avatar}>
+                  <img
+                    src="/claudio.jpg"
+                    alt="Claudio"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                  />
+                </div>
                 <p className={styles.chatBubbleWithLabel}>
                   <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                   {program.hostIntro}
