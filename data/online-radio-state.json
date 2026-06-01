@@ -1,31 +1,283 @@
 {
-  "date": "1970-01-01",
+  "date": "2026-06-01",
   "seed": {
-    "input": "",
-    "reason": ""
+    "input": "搜索近期日韩女团热门单曲，拉出一组有节奏感、能带动白天工作状态的循环曲目",
+    "reason": "用户明确要求日韩女团组合歌曲作为换轮需求，需要从本地库之外的在线资源补充搜索本地库缺少的日韩女团内容"
   },
   "source": "qq",
   "program": {
     "stationName": "Claudio FM",
-    "segmentTitle": "",
-    "scene": "",
-    "energyLabel": "",
-    "hostIntro": "",
+    "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "scene": "白天工作流",
+    "energyLabel": "轻推力上行",
+    "hostIntro": "先别急着认歌，这一轮我想先把气口放稳。前面偏专注，后面会慢慢亮一点。",
     "currentTrack": {
-      "id": "",
-      "title": "",
-      "artist": "",
+      "id": "online-b964c3f0105a",
+      "title": "Daylight",
+      "artist": "Maroon 5",
       "year": 2026,
-      "mood": "",
-      "energy": 5,
-      "language": "中文",
-      "tags": [],
-      "reasonSeed": "",
-      "reason": ""
+      "mood": "专注",
+      "energy": 7,
+      "language": "英语",
+      "tags": [
+        "在线推荐",
+        "白天工作流",
+        "qq"
+      ],
+      "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
+      "libraryRoot": "",
+      "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D001DwtBl2gdXYN%26level%3Dexhigh",
+      "source": "qq",
+      "recommendationMeta": {
+        "sourceLabel": "顺着你的口味",
+        "slotType": "learned",
+        "slotLabel": "当前主推"
+      },
+      "downloadContext": {
+        "source": "qq",
+        "duration": 226,
+        "payable": false,
+        "downloadable": true,
+        "albumName": "Singles (Explicit)",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
+        "raw": {
+          "source": "qq",
+          "songId": 104357077,
+          "songmid": "001DwtBl2gdXYN",
+          "mediaMid": "000XzVwY1T07TK",
+          "title": "Daylight",
+          "artist": "Maroon 5",
+          "albumName": "Singles (Explicit)",
+          "duration": 226,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
+        }
+      },
+      "reason": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。"
     },
-    "queue": [],
-    "explanation": [],
-    "controlsHint": "",
-    "memorySummary": ""
+    "queue": [
+      {
+        "id": "online-2696ba6042f3",
+        "title": "Love Story",
+        "artist": "Taylor Swift",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 8,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Taylor Swift / Love Story”这条在线推荐线索命中的。",
+        "sourcePath": "Taylor Swift/Fearless (Platinum Edition)/Love Story.mp3",
+        "libraryRoot": "/Users/lipan/Music/Music/Media/Music",
+        "streamUrl": "/api/audio?path=Taylor%20Swift%2FFearless%20(Platinum%20Edition)%2FLove%20Story.mp3&libraryRoot=%2FUsers%2Flipan%2FMusic%2FMusic%2FMedia%2FMusic",
+        "source": "local",
+        "recommendationMeta": {
+          "sourceLabel": "本地收藏线",
+          "slotType": "local-match",
+          "slotLabel": "为你延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 236,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Fearless (Platinum Edition)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 639141,
+            "songmid": "004GK4aP4TGbbG",
+            "mediaMid": "001EqijX2A3asI",
+            "title": "Love Story",
+            "artist": "Taylor Swift",
+            "albumName": "Fearless (Platinum Edition)",
+            "duration": 236,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / Taylor Swift / Love Story”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-9cb2ffbef4e6",
+        "title": "Rolling in the Deep (Explicit)",
+        "artist": "Adele",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Adele / Rolling in the Deep (Explicit)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D0044Ostx3eJu5L%26level%3Dexhigh",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺着你的口味",
+          "slotType": "learned",
+          "slotLabel": "为你延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 228,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Rolling in the Deep (Explicit)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000VSeij2cyvtk.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 107509954,
+            "songmid": "0044Ostx3eJu5L",
+            "mediaMid": "004cKrKH1q61ru",
+            "title": "Rolling in the Deep (Explicit)",
+            "artist": "Adele",
+            "albumName": "Rolling in the Deep (Explicit)",
+            "duration": 228,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000VSeij2cyvtk.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / Adele / Rolling in the Deep (Explicit)”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-1d46e275c249",
+        "title": "Beauty And A Beat",
+        "artist": "Justin Bieber、Nicki Minaj",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Justin Bieber、Nicki Minaj / Beauty And A Beat”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D002ZGist4UyZoU%26level%3Dexhigh",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺着你的口味",
+          "slotType": "learned",
+          "slotLabel": "为你延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 227,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Believe (Deluxe Edition)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002XddZv4cGsXb.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 1473252,
+            "songmid": "002ZGist4UyZoU",
+            "mediaMid": "003FFvMu0tMeku",
+            "title": "Beauty And A Beat",
+            "artist": "Justin Bieber、Nicki Minaj",
+            "albumName": "Believe (Deluxe Edition)",
+            "duration": 227,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002XddZv4cGsXb.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / Justin Bieber、Nicki Minaj / Beauty And A Beat”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-6b0ac1b4e694",
+        "title": "We Don't Talk Anymore",
+        "artist": "Charlie Puth、Selena Gomez",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Charlie Puth、Selena Gomez / We Don't Talk Anymore”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D003uNk7n3Fpu7R%26level%3Dexhigh",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺着你的口味",
+          "slotType": "learned",
+          "slotLabel": "为你延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 217,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Nine Track Mind",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 105539541,
+            "songmid": "003uNk7n3Fpu7R",
+            "mediaMid": "001o13Y50H28Za",
+            "title": "We Don't Talk Anymore",
+            "artist": "Charlie Puth、Selena Gomez",
+            "albumName": "Nine Track Mind",
+            "duration": 217,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / Charlie Puth、Selena Gomez / We Don't Talk Anymore”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-9fef652c317a",
+        "title": "Baby",
+        "artist": "Justin Bieber、Ludacris",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Justin Bieber、Ludacris / Baby”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D0033qH7G0B1UER%26level%3Dexhigh",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺着你的口味",
+          "slotType": "learned",
+          "slotLabel": "为你延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 216,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Baby",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002TfnxG2yN1na.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 203644381,
+            "songmid": "0033qH7G0B1UER",
+            "mediaMid": "002nGT1F2A3YC4",
+            "title": "Baby",
+            "artist": "Justin Bieber、Ludacris",
+            "albumName": "Baby",
+            "duration": 216,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002TfnxG2yN1na.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / Justin Bieber、Ludacris / Baby”这条在线推荐线索命中的。"
+      }
+    ],
+    "explanation": [
+      "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
+      "推荐线索是“搜索近期日韩女团热门单曲，拉出一组有节奏感、能带动白天工作状态的循环曲目”，实际落地优先保留 Maroon 5、Taylor Swift、Adele 这些锚点。",
+      "当前来源是 qq，本轮确认了 6 首可播在线歌曲。"
+    ],
+    "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 manual-pick，本轮种子是“搜索近期日韩女团热门单曲，拉出一组有节奏感、能带动白天工作状态的循环曲目”。这时段更偏 Maroon 5，语言更偏 英语，当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

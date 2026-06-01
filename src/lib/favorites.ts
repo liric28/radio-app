@@ -1,7 +1,8 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { dataDir } from "@/lib/paths";
-import { buildTrackLabel, migrateStoredTrackLabels } from "@/lib/track-labels";
+import { buildTrackLabel } from "@/lib/track-labels";
+import { migrateStoredTrackLabels } from "@/lib/track-labels-server";
 
 const favoritesPath = path.join(dataDir, "favorites.json");
 

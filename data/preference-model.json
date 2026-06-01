@@ -1,10 +1,72 @@
 {
-  "updatedAt": "",
-  "totalEvents": 0,
-  "artistAffinity": {},
-  "languageAffinity": {},
-  "tagAffinity": {},
-  "energyPreferenceByScene": {},
-  "negativeSignals": {},
+  "updatedAt": "2026-06-01T03:56:11.302Z",
+  "totalEvents": 32,
+  "artistAffinity": {
+    "陈奕迅": -3.521,
+    "BEYOND": -136.488,
+    "周杰伦": -25.998,
+    "Maroon 5": 12
+  },
+  "artistAffinityByScene": {
+    "白天工作流": {
+      "陈奕迅": -3.521,
+      "BEYOND": -136.488,
+      "周杰伦": -25.998,
+      "Maroon 5": 12
+    }
+  },
+  "languageAffinity": {
+    "中文": -166.007,
+    "英语": 12
+  },
+  "languageAffinityByScene": {
+    "白天工作流": {
+      "中文": -166.007,
+      "英语": 12
+    }
+  },
+  "tagAffinity": {
+    "个人歌单": 51.979,
+    "本地音乐库": 51.979,
+    "在线推荐": -205.986,
+    "白天工作流": -205.986,
+    "qq": -205.986
+  },
+  "tagAffinityByScene": {
+    "白天工作流": {
+      "个人歌单": 51.979,
+      "本地音乐库": 51.979,
+      "在线推荐": -205.986,
+      "白天工作流": -205.986,
+      "qq": -205.986
+    }
+  },
+  "energyPreferenceByScene": {
+    "白天工作流": 7.13
+  },
+  "negativeSignals": {
+    "BEYOND": 155.988,
+    "中文": 118.748,
+    "在线推荐": 97.4,
+    "白天工作流": 97.4,
+    "qq": 97.4,
+    "周杰伦": 25.998,
+    "陈奕迅": 55.5,
+    "Maroon 5": 6,
+    "英语": 3
+  },
+  "negativeSignalsByScene": {
+    "白天工作流": {
+      "BEYOND": 155.988,
+      "中文": 118.748,
+      "在线推荐": 97.4,
+      "白天工作流": 97.4,
+      "qq": 97.4,
+      "周杰伦": 25.998,
+      "陈奕迅": 55.5,
+      "Maroon 5": 6,
+      "英语": 3
+    }
+  },
   "requestPatternStats": {}
 }

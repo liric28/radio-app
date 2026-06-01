@@ -14,7 +14,7 @@ function getDefaultAudioRoots(): string[] {
 }
 
 function normalizeRoot(rootPath: string) {
-  return path.isAbsolute(rootPath) ? rootPath : path.resolve(rootPath);
+  return path.isAbsolute(rootPath) ? rootPath : path.resolve(/* turbopackIgnore: true */ rootPath);
 }
 
 export async function readAllowedAudioRoots() {

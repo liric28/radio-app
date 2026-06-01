@@ -64,6 +64,19 @@ type TranscriptTurn = {
   tokens: TranscriptToken[];
 };
 
+function toPreferenceTrack(track: ClaudioTrack, scene: string) {
+  return {
+    id: track.sourceSong?.id || `${track.title}-${track.artist}`,
+    title: track.title,
+    artist: track.artist,
+    language: track.sourceSong?.language,
+    energy: track.sourceSong?.energy,
+    tags: track.sourceSong?.tags,
+    source: track.sourceSong?.source,
+    scene,
+  };
+}
+
 function transcriptTokens(text: string) {
   return [...String(text || "").matchAll(/(\s+)|([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}])|([^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+)/gu)]
     .map((match) => ({ text: match[0], word: !match[1] }));
@@ -124,6 +137,7 @@ export function ClaudioLiveShell() {
   const pendingSegueNextTrackRef = useRef<number | null>(null);
   const skipLeadSegmentsForTrackRef = useRef<number | null>(null);
   const volumeFadeFrameRef = useRef<number | null>(null);
+  const trackCompletedRef = useRef(false);
 
   function fmt(seconds: number) {
     if (!Number.isFinite(seconds)) return "0:00";
@@ -161,6 +175,14 @@ export function ClaudioLiveShell() {
 
   function appendSystemLine(text: string) {
     appendTurn("System", text, "now");
+  }
+
+  function sendPreferenceEvent(payload: Record<string, unknown>) {
+    void fetch("/api/preference-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => null);
   }
 
   function finishKaraoke() {
@@ -499,6 +521,7 @@ export function ClaudioLiveShell() {
     const music = musicAudioRef.current;
     if (!track || !music) return;
 
+    trackCompletedRef.current = false;
     const token = Date.now();
     playbackTokenRef.current = token;
     ttsAudioRef.current?.pause();
@@ -578,6 +601,23 @@ export function ClaudioLiveShell() {
   }, [programId, tracks.length, currentTrackIndex]);
 
   async function advanceToNextTrack() {
+    const currentTrack = tracks[currentTrackIndex];
+    const eventScene = currentTrack?.scene || sessionTitle;
+    if (
+      currentTrack &&
+      !trackCompletedRef.current &&
+      duration > 0 &&
+      currentTime > 0
+    ) {
+      sendPreferenceEvent({
+        type: "playback_interrupted",
+        action: "claudio-next-track",
+        scene: eventScene,
+        track: toPreferenceTrack(currentTrack, eventScene),
+        playbackSeconds: currentTime,
+        playbackRatio: duration > 0 ? currentTime / duration : 0,
+      });
+    }
     pendingSegueNextTrackRef.current = null;
     outroTalkStartedForTrackRef.current = -1;
     restoreMusicVolume();
@@ -691,6 +731,7 @@ export function ClaudioLiveShell() {
           }}
           onLoadedMetadata={(event) => {
             setDuration(event.currentTarget.duration || 0);
+            trackCompletedRef.current = false;
           }}
           onTimeUpdate={(event) => {
             const nextTime = event.currentTarget.currentTime || 0;
@@ -713,6 +754,19 @@ export function ClaudioLiveShell() {
             }
           }}
           onEnded={() => {
+            const completedTrack = tracks[currentTrackIndex];
+            const eventScene = completedTrack?.scene || sessionTitle;
+            if (completedTrack) {
+              trackCompletedRef.current = true;
+              sendPreferenceEvent({
+                type: "playback_completed",
+                action: "claudio-track-ended",
+                scene: eventScene,
+                track: toPreferenceTrack(completedTrack, eventScene),
+                playbackSeconds: duration || currentTime,
+                playbackRatio: 1,
+              });
+            }
             setCurrentTime(0);
             setActiveMediaTime(0);
             setActiveMediaDuration(0);

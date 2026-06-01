@@ -50,6 +50,7 @@ function toClaudioTrack(program: RadioProgram): ClaudioTrack[] {
     title: track.title,
     artist: track.artist,
     streamUrl: track.sourcePath ? `/api/audio?path=${encodeURIComponent(track.sourcePath)}&libraryRoot=${encodeURIComponent(track.libraryRoot || "")}` : "",
+    scene: program.scene,
     sourceSong: track,
   }));
 }

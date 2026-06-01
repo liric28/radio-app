@@ -64,6 +64,11 @@ export type Song = {
    * 网络来源（kugou/qq/netease）此字段为空。
    */
   libraryRoot?: string;
+  recommendationMeta?: {
+    sourceLabel: string;
+    slotType: "anchor" | "learned" | "request" | "explore" | "local-match" | "fallback";
+    slotLabel?: string;
+  };
 };
 
 export type SongImportItem = {

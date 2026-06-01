@@ -2,6 +2,29 @@
 
 这份文档只描述当前 `radio-app` 里已经接进去的 Claudio 主流程，不覆盖旧版 `docs/architecture-map.md` 的全量模块速查。
 
+## 产品定位
+
+Claudio 的核心定位不是“播放器 + 一些按钮”，而是：
+
+- 一个懂我的音乐 Agent
+- 通过我的偏好数据不断学习，并持续推荐我真正愿意听下去的歌
+- 允许我用很随意的自然语言聊天，随时切换想听的风格、气氛和方向
+
+这套产品的本质主循环是：
+
+1. 用户听歌、跳过、收藏、下载、聊天提要求
+2. 系统把这些行为持续记录成偏好事件和上下文数据
+3. 偏好模型从这些数据里学习用户长期口味、短期状态、场景差异和负反馈
+4. 推荐层再用这些学习结果去匹配下一轮更对味的歌曲
+5. 用户继续反馈，系统继续学习
+
+所以 Claudio 最重要的不是“静态规则推荐”，而是：
+
+- 不断喂用户数据
+- 不断记录打点
+- 不断匹配歌曲
+- 让推荐随着使用变得越来越像“这个人真的懂我在听什么”
+
 ## 总览
 
 ```mermaid
@@ -11,6 +34,7 @@ flowchart LR
 
     PS --> AGENT[/POST /api/agent/]
     PS --> LOGIN[/POST /api/netease-login/]
+    PS --> PREF[/GET /api/preference-insights/]
 
     CLS --> START[/POST /api/claudio/start/]
     CLS --> REFILL[/POST /api/claudio/refill/]
@@ -22,6 +46,7 @@ flowchart LR
     AGENT --> CHATAGENT[chat-agent<br/>src/lib/chat-agent.ts]
     CHATAGENT --> CHATLLM[chat-llm provider<br/>src/lib/providers/chat-llm.ts]
     CHATLLM --> MODEL[MiniMax / DeepSeek]
+    PREF --> LEARN[preference-learning<br/>src/lib/preference-learning.ts]
 
     START --> PROGRAM[program-adapter<br/>src/lib/claudio/program-adapter.ts]
     REFILL --> PROGRAM
@@ -29,12 +54,15 @@ flowchart LR
     STREAM --> RUNTIME
 
     PROGRAM --> ENGINE[radio-engine<br/>src/lib/radio-engine.ts]
+    PROGRAM --> LIVEMUSIC[claudio/live-music<br/>src/lib/claudio/live-music.ts]
     PROGRAM --> CLLM[claudio/llm<br/>src/lib/claudio/llm.ts]
     PROGRAM --> CTTS[claudio/tts<br/>src/lib/claudio/tts.ts]
     PROGRAM --> JOBS[jobs worker<br/>src/lib/claudio/jobs.ts]
     PROGRAM --> NORMALIZER[segment-normalizer<br/>src/lib/claudio/segment-normalizer.ts]
 
     ENGINE --> DATA[data/*.json<br/>songs / memory / schedule]
+    LIVEMUSIC --> DATA
+    LEARN --> DATA
     LOGIN --> NETEASE[netease-session<br/>src/lib/netease-session.ts]
     NETEASE --> NAPI[网易云 API]
 
@@ -58,6 +86,7 @@ flowchart TB
     subgraph L2["接口层"]
         AGENTAPI[/api/agent]
         LOGINAPI[/api/netease-login]
+        PREFAPI[/api/preference-insights]
         STARTAPI[/api/claudio/start]
         REFILLAPI[/api/claudio/refill]
         CONTROLAPI[/api/claudio/control]
@@ -72,10 +101,12 @@ flowchart TB
         RUNTIMECORE[station-runtime]
         JOBWORKER[jobs worker]
         NORMALIZER[segment-normalizer]
+        LEARNING[preference-learning]
     end
 
     subgraph L4["能力层"]
         RADIOENGINE[radio-engine]
+        LIVEMUSIC[claudio/live-music]
         CHATLLM[chat-llm]
         CLLM[claudio/llm]
         CTTS[claudio/tts]
@@ -93,6 +124,7 @@ flowchart TB
 
     MAINUI --> AGENTAPI
     MAINUI --> LOGINAPI
+    MAINUI --> PREFAPI
 
     LIVEUI --> STARTAPI
     LIVEUI --> REFILLAPI
@@ -103,6 +135,7 @@ flowchart TB
 
     AGENTAPI --> CHATAGENT
     LOGINAPI --> NETEASESESSION
+    PREFAPI --> LEARNING
     STARTAPI --> PROGRAMADAPTER
     REFILLAPI --> PROGRAMADAPTER
     CONTROLAPI --> RUNTIMECORE
@@ -110,6 +143,7 @@ flowchart TB
 
     CHATAGENT --> CHATLLM
     PROGRAMADAPTER --> RADIOENGINE
+    PROGRAMADAPTER --> LIVEMUSIC
     PROGRAMADAPTER --> CLLM
     PROGRAMADAPTER --> CTTS
     PROGRAMADAPTER --> NORMALIZER
@@ -118,8 +152,10 @@ flowchart TB
     JOBWORKER --> CLLM
     JOBWORKER --> CTTS
     JOBWORKER --> RUNTIMECORE
+    LEARNING --> LOCALDATA
 
     RADIOENGINE --> LOCALDATA
+    LIVEMUSIC --> LOCALDATA
     AUDIOAPI --> AUDIOFILES
     CHATLLM --> MINIMAX
     CHATLLM --> DEEPSEEK
@@ -164,6 +200,8 @@ sequenceDiagram
 - 主聊天页面继续复用 `PlayerShell`，没有另做第二套 UI。
 - 模型出口已经不再走本地 Hermes，统一走 `LLM_PROVIDER=minimax|deepseek`。
 - 推荐语重写也已经走同一个 provider 层。
+- 在在线推荐模式下，聊天不只是“回复一句话”，而是首页推荐的重要控制入口。
+- 用户可以很随意地说“来点抒情的 / 来点 DJ 上头的 / 摇滚劲爆一点 / 中文女声轻一点”，系统应默认把这类自由音乐请求转成一次新的推荐重组，而不是要求用户学习固定命令。
 
 ### 2. Claudio 开台与播放
 
@@ -191,7 +229,8 @@ sequenceDiagram
 
 说明：
 
-- 选歌目前仍谨慎复用 `radio-engine`，没有直接改成“LLM 产 play[]”。
+- `Claudio live` 在 `online` 模式下已经不再直接走 `radio-engine` 选歌，而是通过 `claudio/live-music.ts` 走在线搜歌、可播校验和学习反哺。
+- `local` 回退模式仍复用 `radio-engine`。
 - Claudio 的开场语、bridge 已经走独立的 `claudio/llm.ts` 和 `claudio/tts.ts`。
 - 事件通道目前是 SSE，不是 WebSocket。
 
@@ -231,6 +270,8 @@ flowchart TD
   主聊天流式接口。
 - `src/app/api/netease-login/route.ts`
   网易云二维码登录接口。
+- `src/app/api/preference-insights/route.ts`
+  偏好模型只读观测接口，给首页学习面板使用。
 - `src/app/api/claudio/start/route.ts`
   启动 Claudio 节目。
 - `src/app/api/claudio/refill/route.ts`
@@ -254,6 +295,8 @@ flowchart TD
   串行 job worker，负责 bridge 等异步任务。
 - `src/lib/claudio/program-adapter.ts`
   把现有 `radio-engine` 产物转换为 Claudio 所需的 `tracks + segments + events`。
+- `src/lib/claudio/live-music.ts`
+  Claudio live 在线搜歌入口，负责搜索 seed、可播校验、学习偏好反哺和探索模式。
 - `src/lib/claudio/segment-normalizer.ts`
   统一 bridge/cold open/intro segment 的结构。
 
@@ -277,7 +320,7 @@ flowchart TD
   首页默认在线推荐链路。它和 Claudio live 共用同一批在线搜索/可播校验能力，但输出目标不同：
   首页输出 `RadioProgram`，Claudio live 输出 `ClaudioTrack[]`。
 - `src/lib/preference-learning.ts`
-  首页推荐学习层：行为事件落盘、偏好模型聚合、后续推荐反哺主入口。
+  推荐学习层：行为事件落盘、偏好模型聚合、学习面板观测、后续推荐反哺首页和 Claudio live。
 - `src/lib/radio-engine.ts`
   旧本地选歌入口；当前更多是 `local` 模式回退和 Claudio 兼容层。
 - `data/`
@@ -293,30 +336,37 @@ flowchart TD
 - 主聊天出口已迁到 `minimax/deepseek`。
 - Claudio `start -> 开场 TTS -> 首歌 -> refill -> bridge -> 下一首` 主流程已跑通。
 - 网易云二维码登录已接回项目。
-- 首页在线推荐已经接上最小自学习闭环：推荐生成、聊天控歌、收藏、下载、重播、播放完成/中断都会进入事件流，并聚合成偏好模型。
+- 首页在线推荐已经接上增强版自学习闭环：推荐生成、聊天控歌、收藏、下载、重播、播放完成/中断都会进入事件流，并聚合成带时间衰减、scene 分层和负反馈的偏好模型。
+- 首页聊天已经不再只是显式命令入口，也开始承担“自由音乐请求 -> 重组推荐 LIST”的主入口职责。
+- 首页推荐队列已经支持“熟悉延续 + 新发现”混合编排，既保留符合口味的连续性，也保留受控探索。
+- 首页已有学习面板，能直接观察 top artists / languages / tags、scene profile、avoid signals 和 recent events。
+- Claudio live 的在线搜歌已经接入同一套学习上下文：会参考 confidence、scene 偏好和 exploration mode 生成 seed/query/ranking。
+- Claudio live 的真实播放完成/中断事件已回流到 `preference-events`，开始和首页共用同一条学习数据带。
 
 还未完成：
 
 - `Claudio live` 的 caller/chat on-air 流程还没接。
-- Claudio live 的在线搜歌能力已经跑通，但首页与 live 还没有完全统一成同一个节目编排后端。
-- 自学习层还只是第一版：没有时间衰减、探索策略、细粒度场景分层和可视化调试页。
+- 首页与 live 还没有完全统一成同一个节目编排后端，目前只是共享学习核心和部分在线搜歌能力。
+- Claudio live 侧还没有收藏/跳过/显式反馈按钮，因此 live 的偏好回流还主要依赖自然播放完成/中断。
+- 自学习层虽已具备时间衰减、探索策略、scene 分层和轻量面板，但还没有独立调试页，也没有更强的策略评估。
 - 外部对照页 `src/app/claudio-live/external/route.ts` 仍保留，仅用于对照。
 
 ## 后续唯一主线
 
 推荐相关工作的后续方向已经收敛，不再以“多加几个功能按钮”为主，而是只围绕下面这件事推进：
 
-- 让系统越来越懂你，并且能通过真实使用行为持续自我学习
+- 把 Claudio 做成一个越来越懂你的音乐 Agent，并且能通过真实使用行为持续自我学习
 
 拆成工程目标就是：
 
-1. 提高事件采样质量
-2. 提高偏好模型表达能力
-3. 提高模型对 seed/query/ranking 的反哺强度
-4. 再考虑把这套能力迁回 Claudio live
+1. 提高事件采样质量，让所有真实偏好信号都能进入数据层
+2. 提高偏好模型表达能力，让系统分得清长期口味、短期状态、scene 差异和负反馈
+3. 提高模型对 seed/query/ranking 的反哺强度，让“学到的偏好”真实改变推荐结果
+4. 把自由聊天稳定变成推荐控制入口，让用户随口一句话就能切换风格而不是学习命令
+5. 把这套能力迁回 Claudio live，并最终统一节目编排核心
 
 也就是说，后续如果有新功能进入推荐链路，默认要回答一个问题：
-它能不能让系统更准确地学会你，而不是只是多一个静态规则。
+它能不能让系统更准确地学会你，并把这种理解反映到下一轮歌单里，而不是只是多一个静态规则。
 
 ## 配置关系
 
@@ -427,7 +477,7 @@ sequenceDiagram
 
 这张图看的是“点下 START 后，主流程怎么一步步跑完”：
 
-- `radio-engine` 仍负责拿可播歌曲。
+- `online` 模式下由 `claudio/live-music.ts` 负责拿可播歌曲，并接入偏好学习和探索模式；`local` 回退模式仍走 `radio-engine`。
 - `claudio/llm.ts` 负责把节目口播内容生成出来。
 - `claudio/tts.ts` 把口播变成实际可播音频。
 - `station-runtime` 统一对外广播状态。

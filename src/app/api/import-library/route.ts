@@ -8,7 +8,7 @@ import {
 import { regenerateDailySchedule } from "@/lib/daily-schedule";
 import { regenerateOnlineRadioProgram } from "@/lib/online-radio";
 import { isOnlineRadioMode } from "@/lib/radio-mode";
-import { writeSongCatalog, writeTasteProfile } from "@/lib/profile";
+import { readSongCatalog, writeSongCatalog, writeTasteProfile } from "@/lib/profile";
 import { buildRadioProgram } from "@/lib/radio-engine";
 
 /**
@@ -34,8 +34,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await writeSongCatalog(scannedSongs);
-    await writeTasteProfile(deriveTasteProfileFromSongs(scannedSongs));
+    const existingSongs = payload.mode === "append" ? await readSongCatalog().catch(() => []) : [];
+    const nextSongs =
+      payload.mode === "append"
+        ? [
+            ...existingSongs.filter((song) =>
+              !scannedSongs.some((nextSong) =>
+                (nextSong.sourcePath && song.sourcePath === nextSong.sourcePath) || song.id === nextSong.id,
+              ),
+            ),
+            ...scannedSongs,
+          ]
+        : scannedSongs;
+
+    await writeSongCatalog(nextSongs);
+    await writeTasteProfile(deriveTasteProfileFromSongs(nextSongs));
     await addAllowedAudioRoot(libraryPath);
     const { program, schedule } = isOnlineRadioMode()
       ? await regenerateOnlineRadioProgram()
@@ -47,6 +60,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       importedCount: scannedSongs.length,
+      totalCount: nextSongs.length,
       libraryPath,
       schedule,
       program,

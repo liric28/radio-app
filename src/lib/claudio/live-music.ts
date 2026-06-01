@@ -1,5 +1,6 @@
 import { readDailySchedule } from "@/lib/daily-schedule";
 import { readMemory } from "@/lib/memory";
+import { readPreferenceModel, type PreferenceModel } from "@/lib/preference-learning";
 import {
   readMoodRules,
   readPlaylistProfiles,
@@ -16,6 +17,7 @@ import type { Song } from "@/lib/types";
 const DEFAULT_SOURCE = (process.env.CLAUDIO_LIVE_MUSIC_SOURCE || "qq") as MusicSearchSource;
 const DEFAULT_COUNT = Number(process.env.CLAUDIO_LIVE_TRACK_COUNT || 6);
 const SEARCH_PAGE_SIZE = 8;
+const MIN_EVENTS_FOR_STRONG_LEARNING = 12;
 
 function normalizeSource(value: string | undefined): MusicSearchSource {
   if (value === "qq" || value === "netease" || value === "kugou") return value;
@@ -28,6 +30,46 @@ function compactText(value: string) {
 
 function topUnique(values: Array<string | undefined>, limit: number) {
   return [...new Set(values.map((value) => compactText(value || "")).filter(Boolean))].slice(0, limit);
+}
+
+function topModelKey(map: Record<string, number>) {
+  return Object.entries(map)
+    .sort((left, right) => right[1] - left[1])
+    .map(([key]) => key)
+    .find(Boolean);
+}
+
+function topSceneModelKey(map: Record<string, Record<string, number>>, scene: string) {
+  return topModelKey(map[scene] || {});
+}
+
+function learningConfidence(model: PreferenceModel) {
+  return Math.max(0, Math.min(1, model.totalEvents / MIN_EVENTS_FOR_STRONG_LEARNING));
+}
+
+function scenePreferenceScore(
+  map: Record<string, Record<string, number>>,
+  scene: string,
+  key: string | undefined,
+) {
+  const normalized = String(key || "").trim();
+  if (!normalized) return 0;
+  return map[scene]?.[normalized] || 0;
+}
+
+function inferLanguage(title: string, artist: string) {
+  const text = `${title}${artist}`;
+  if (/[\u3040-\u30ff]/.test(text)) return "日语";
+  if (/[\uac00-\ud7af]/.test(text)) return "韩语";
+  if (/[a-z]/i.test(text) && !/[\u4e00-\u9fff]/.test(text)) return "英语";
+  return "中文";
+}
+
+function buildExplorationMode(model: PreferenceModel, scene: string) {
+  const confidence = learningConfidence(model);
+  if (confidence < 0.35) return { confidence, mode: "wide" as const, sceneTag: topSceneModelKey(model.tagAffinityByScene, scene) };
+  if (confidence < 0.7) return { confidence, mode: "balanced" as const, sceneTag: topSceneModelKey(model.tagAffinityByScene, scene) };
+  return { confidence, mode: "focused" as const, sceneTag: topSceneModelKey(model.tagAffinityByScene, scene) };
 }
 
 function buildTrackKey(track: { title?: string; artist?: string }) {
@@ -57,7 +99,7 @@ function findLocalMatch(hit: MusicSearchHit, songs: Song[]) {
 }
 
 async function buildSeedQueries(input: string) {
-  const [taste, routines, playlists, moodRules, memory, schedule, songs] = await Promise.all([
+  const [taste, routines, playlists, moodRules, memory, schedule, songs, model] = await Promise.all([
     readTasteProfile(),
     readRoutineProfiles(),
     readPlaylistProfiles(),
@@ -65,6 +107,7 @@ async function buildSeedQueries(input: string) {
     readMemory(),
     readDailySchedule().catch(() => null),
     readSongCatalog().catch(() => []),
+    readPreferenceModel().catch(() => null),
   ]);
   const currentPeriod = (() => {
     const hour = new Date().getHours();
@@ -75,6 +118,21 @@ async function buildSeedQueries(input: string) {
   })();
   const currentRoutine = routines.find((item) => item.period === currentPeriod);
   const scene = currentRoutine?.scene || "";
+  const preferenceModel = model || {
+    totalEvents: 0,
+    artistAffinity: {},
+    artistAffinityByScene: {},
+    languageAffinity: {},
+    languageAffinityByScene: {},
+    tagAffinity: {},
+    tagAffinityByScene: {},
+    energyPreferenceByScene: {},
+    negativeSignals: {},
+    negativeSignalsByScene: {},
+    requestPatternStats: {},
+    updatedAt: "",
+  } satisfies PreferenceModel;
+  const exploration = buildExplorationMode(preferenceModel, scene);
   const currentBlock = schedule?.blocks.find((block) => block.period === schedule.currentBlockPeriod);
   const recentTrackTitles = topUnique(memory.recentTrackIds, 4);
   const playlistKeywords = topUnique(
@@ -107,6 +165,18 @@ async function buildSeedQueries(input: string) {
     [scene, ...(currentRoutine?.preferredMoods || [])],
     5,
   );
+  const learnedArtist = topSceneModelKey(preferenceModel.artistAffinityByScene, scene) || topModelKey(preferenceModel.artistAffinity);
+  const learnedLanguage = topSceneModelKey(preferenceModel.languageAffinityByScene, scene) || topModelKey(preferenceModel.languageAffinity);
+  const learnedTag = exploration.sceneTag || topModelKey(preferenceModel.tagAffinity);
+  const exploratoryKeywords = exploration.mode !== "focused"
+    ? topUnique(
+        [
+          `${learnedLanguage || taste.favoriteLanguages[0] || "中文"} 小众 ${scene}`,
+          `${learnedLanguage || taste.favoriteLanguages[0] || "中文"} 冷门 ${learnedTag || currentRoutine?.preferredMoods?.[0] || scene}`,
+        ],
+        3,
+      )
+    : [];
   // 把电台现有风格配置压成一组短 seed：
   // 画像 / 时段 / 播单摘要 / 最近反馈 / 当前 block / 最近听过的歌名。
   // 这些只负责“扩大搜歌范围”，真正入队还要经过本地优先和可播校验。
@@ -117,13 +187,22 @@ async function buildSeedQueries(input: string) {
     ...taste.favoriteLanguages.slice(0, 2).map((language) => compactText(`${language} ${scene}`)),
     ...playlistKeywords,
     ...routineKeywords,
+    learnedArtist,
+    learnedLanguage ? compactText(`${learnedLanguage} ${scene}`) : "",
+    learnedTag ? compactText(`${learnedTag} ${scene}`) : "",
+    ...exploratoryKeywords,
     ...ruleKeywords,
     ...memoryKeywords,
     ...scheduleKeywords,
     ...recentTrackTitles,
-  ].filter(Boolean);
+  ].filter((value): value is string => Boolean(value));
 
-  return [...new Set(seeds)];
+  return {
+    queries: [...new Set(seeds)],
+    scene,
+    model: preferenceModel,
+    explorationMode: exploration.mode,
+  };
 }
 
 async function collectHits(
@@ -131,8 +210,11 @@ async function collectHits(
   source: MusicSearchSource,
   excludeKeys: Set<string>,
   wanted: number,
+  scene: string,
+  model: PreferenceModel,
 ) {
   const hits: MusicSearchHit[] = [];
+  const primaryQuery = compactText(queries[0] || "").toLowerCase();
   // 先按多组 seed 拉宽候选池，后面再筛掉重复、不可播和本地未命中的远端坏链。
   for (const query of queries) {
     if (hits.length >= wanted * 3) break;
@@ -145,7 +227,30 @@ async function collectHits(
       if (hits.length >= wanted * 3) break;
     }
   }
-  return hits;
+  const confidence = learningConfidence(model);
+  return hits.sort((left, right) => {
+    const leftHaystack = `${left.title} ${left.artist} ${left.albumName || ""}`.toLowerCase();
+    const rightHaystack = `${right.title} ${right.artist} ${right.albumName || ""}`.toLowerCase();
+    const leftIntentScore = primaryQuery && leftHaystack.includes(primaryQuery) ? 8 : 0;
+    const rightIntentScore = primaryQuery && rightHaystack.includes(primaryQuery) ? 8 : 0;
+    const leftLanguage = inferLanguage(left.title, left.artist);
+    const rightLanguage = inferLanguage(right.title, right.artist);
+    const leftScore =
+      leftIntentScore +
+      (model.artistAffinity[left.artist] || 0) +
+      (model.languageAffinity[leftLanguage] || 0) +
+      scenePreferenceScore(model.artistAffinityByScene, scene, left.artist) * 1.5 +
+      scenePreferenceScore(model.languageAffinityByScene, scene, leftLanguage) +
+      scenePreferenceScore(model.tagAffinityByScene, scene, left.source) * 0.4;
+    const rightScore =
+      rightIntentScore +
+      (model.artistAffinity[right.artist] || 0) +
+      (model.languageAffinity[rightLanguage] || 0) +
+      scenePreferenceScore(model.artistAffinityByScene, scene, right.artist) * 1.5 +
+      scenePreferenceScore(model.languageAffinityByScene, scene, rightLanguage) +
+      scenePreferenceScore(model.tagAffinityByScene, scene, right.source) * 0.4;
+    return rightScore * Math.max(0.2, confidence) - leftScore * Math.max(0.2, confidence);
+  });
 }
 
 async function verifyPlaybackUrl(url: string) {
@@ -202,9 +307,9 @@ export async function buildOnlineClaudioTracks({
 }) {
   const excludeKeys = new Set(exclude.map((item) => buildTrackKey(item)));
   const searchSource = normalizeSource(source);
-  const queries = await buildSeedQueries(input);
+  const { queries, scene, model, explorationMode } = await buildSeedQueries(input);
   const songs = await readSongCatalog().catch(() => []);
-  const hits = await collectHits(queries, searchSource, excludeKeys, count);
+  const hits = await collectHits(queries, searchSource, excludeKeys, count, scene, model);
   const tracks: ClaudioTrack[] = [];
 
   // live 组歌顺序：
@@ -236,6 +341,7 @@ export async function buildOnlineClaudioTracks({
       title: hit.title,
       artist: hit.artist,
       streamUrl,
+      scene,
       lyricUrl,
       sourceSong: localSong,
     });
@@ -245,6 +351,6 @@ export async function buildOnlineClaudioTracks({
     tracks,
     searchSource,
     sessionTitle: compactText(`Live · ${queries[0] || "Online Mix"}`),
-    reason: queries[0] || "online-live",
+    reason: compactText(`${queries[0] || "online-live"} · ${scene || "live"} · ${explorationMode}`),
   };
 }

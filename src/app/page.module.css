@@ -1972,6 +1972,40 @@
   white-space: nowrap;
 }
 
+.queueCardMeta {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #7ae8ba;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueCardMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  min-width: 0;
+}
+
+.queueCardMetaRow .queueCardMeta {
+  margin: 0;
+}
+
+.queueCardSlotBadge {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 232, 186, 0.24);
+  background: rgba(122, 232, 186, 0.08);
+  color: #bff8de;
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+}
+
 .queueCardActive {
   background:
     linear-gradient(180deg, rgba(84, 216, 140, 0.08), rgba(84, 216, 140, 0.02) 78%, rgba(84, 216, 140, 0.14) 100%),
@@ -2013,6 +2047,18 @@
 .panelLight .queueCardArtist,
 .pageLight .queueCardArtist {
   color: rgba(80, 70, 110, 0.6);
+}
+
+.panelLight .queueCardMeta,
+.pageLight .queueCardMeta {
+  color: #2c8a4f;
+}
+
+.panelLight .queueCardSlotBadge,
+.pageLight .queueCardSlotBadge {
+  border-color: rgba(44, 138, 79, 0.22);
+  background: rgba(44, 138, 79, 0.08);
+  color: #22663c;
 }
 
 .panelLight .queueCardIcon,
@@ -2225,6 +2271,8 @@
 
 .utilityGrid {
   margin-top: 12px;
+  display: grid;
+  gap: 12px;
 }
 
 .utilityCard {
@@ -2258,6 +2306,65 @@
   margin-top: 12px;
   padding: 12px 16px;
   border-radius: 10px;
+}
+
+.learningMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.66);
+}
+
+.learningBlock {
+  margin-top: 12px;
+}
+
+.learningBlock strong,
+.learningSceneCard strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #7ae8ba;
+  letter-spacing: 0.06em;
+}
+
+.learningBlock p,
+.learningSceneCard p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(241, 238, 251, 0.8);
+}
+
+.learningSceneList {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.learningSceneCard {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.learningEventList {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.learningEventRow {
+  display: grid;
+  grid-template-columns: 120px 90px 1fr 140px;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+  color: rgba(241, 238, 251, 0.8);
 }
 
 @media (max-width: 720px) {
@@ -2306,5 +2413,14 @@
 
   .libraryForm {
     grid-template-columns: 1fr;
+  }
+
+  .learningMeta,
+  .learningEventRow {
+    grid-template-columns: 1fr;
+  }
+
+  .learningMeta {
+    display: grid;
   }
 }

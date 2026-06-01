@@ -34,6 +34,40 @@ type RadioResponse = {
   schedule?: DailySchedule;
 };
 
+type PreferenceInsights = {
+  updatedAt: string;
+  totalEvents: number;
+  recentEvents: Array<{
+    ts: string;
+    type: string;
+    scene: string;
+    trackLabel: string;
+    action: string;
+    playbackRatio: number | null;
+  }>;
+  topArtists: string[];
+  topLanguages: string[];
+  topTags: string[];
+  topRequestPatterns: string[];
+  sceneProfiles: Array<{
+    scene: string;
+    topArtists: string[];
+    topLanguages: string[];
+    topTags: string[];
+    avoidSignals: string[];
+    preferredEnergy: number | null;
+  }>;
+  recommendationSourceStats: Array<{
+    label: string;
+    generated: number;
+    completed: number;
+    interrupted: number;
+    favorite: number;
+    download: number;
+    completionRate: number;
+  }>;
+};
+
 type FeedbackAction = "skip" | "fresh" | "calmer" | "familiar";
 
 const actionLabels: Record<FeedbackAction, string> = {
@@ -778,6 +812,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    */
   const [showQueueList, setShowQueueList] = useState<boolean>(false);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [preferenceInsights, setPreferenceInsights] = useState<PreferenceInsights | null>(null);
 
   useEffect(() => {
     fetch("/api/favorites")
@@ -785,6 +820,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       .then((ids) => setFavorites(ids as string[]))
       .catch(() => null);
   }, []);
+
+  useEffect(() => {
+    fetch("/api/preference-insights", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (payload?.ok && payload.data) {
+          setPreferenceInsights(payload.data as PreferenceInsights);
+        }
+      })
+      .catch(() => null);
+  }, [program.currentTrack.id]);
   const [showClaudioLivePanel, setShowClaudioLivePanel] = useState<boolean>(false);
   /**
    * 顶部搜索按钮触发的"网络歌曲搜索"弹层。
@@ -2139,7 +2185,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                         style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
                       />
                     </div>
-                    <p className={styles.chatBubbleWithLabel}>
+                    <div className={styles.chatBubbleWithLabel}>
                       <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
                       {message.id === streamingMessageId && message.content && (
@@ -2147,17 +2193,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                           <DotmHex10 dotSize={3} color="#54d88c" size={20} speed={1.2} />
                         </span>
                       )}
-                    </p>
+                    </div>
                   </>
                 ) : (
                   <>
                     <div className={styles.userAvatar}>
                       {renderNeteaseAvatar()}
                     </div>
-                    <p className={`${styles.chatBubbleWithLabel} ${styles.chatBubbleLiric}`}>
+                    <div className={`${styles.chatBubbleWithLabel} ${styles.chatBubbleLiric}`}>
                       <span className={styles.chatBubbleLabelLiric}>LIRIC</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
-                    </p>
+                    </div>
                   </>
                 )}
               </div>
@@ -2187,6 +2233,16 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                     <div className={styles.queueCardText}>
                       <strong className={styles.queueCardTitle}>{track.title}</strong>
                       <p className={styles.queueCardArtist}>{track.artist}</p>
+                      <div className={styles.queueCardMetaRow}>
+                        <p className={styles.queueCardMeta}>
+                          {track.recommendationMeta?.sourceLabel || "未标注来源"}
+                        </p>
+                        {track.recommendationMeta?.slotLabel ? (
+                          <span className={styles.queueCardSlotBadge}>
+                            {track.recommendationMeta.slotLabel}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </button>
                 );
@@ -2254,6 +2310,64 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               <button type="button" className={styles.utilityPrimary} onClick={importLocalLibrary}>
                 从本地目录读取
               </button>
+            </article>
+            <article className={styles.utilityCard}>
+              <p className={styles.utilityTitle}>学习面板</p>
+              <div className={styles.learningMeta}>
+                <span>事件数 {preferenceInsights?.totalEvents ?? 0}</span>
+                <span>{preferenceInsights?.updatedAt ? new Date(preferenceInsights.updatedAt).toLocaleString() : "尚未生成"}</span>
+              </div>
+              <div className={styles.learningBlock}>
+                <strong>Top Artists</strong>
+                <p>{preferenceInsights?.topArtists.join(" · ") || "-"}</p>
+              </div>
+              <div className={styles.learningBlock}>
+                <strong>Top Languages / Tags</strong>
+                <p>{preferenceInsights?.topLanguages.join(" · ") || "-"}</p>
+                <p>{preferenceInsights?.topTags.join(" · ") || "-"}</p>
+              </div>
+              <div className={styles.learningBlock}>
+                <strong>Request Patterns</strong>
+                <p>{preferenceInsights?.topRequestPatterns.join(" · ") || "-"}</p>
+              </div>
+              <div className={styles.learningBlock}>
+                <strong>Recommendation Source Stats</strong>
+                <div className={styles.learningEventList}>
+                  {(preferenceInsights?.recommendationSourceStats || []).map((item) => (
+                    <div key={item.label} className={styles.learningEventRow}>
+                      <span>{item.label}</span>
+                      <span>入队 {item.generated}</span>
+                      <span>完成率 {Math.round(item.completionRate * 100)}%</span>
+                      <span>完播 {item.completed} / 中断 {item.interrupted} / 收藏 {item.favorite} / 下载 {item.download}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.learningSceneList}>
+                {(preferenceInsights?.sceneProfiles || []).map((profile) => (
+                  <div key={profile.scene} className={styles.learningSceneCard}>
+                    <strong>{profile.scene}</strong>
+                    <p>偏好艺人: {profile.topArtists.join(" · ") || "-"}</p>
+                    <p>偏好语言: {profile.topLanguages.join(" · ") || "-"}</p>
+                    <p>偏好标签: {profile.topTags.join(" · ") || "-"}</p>
+                    <p>避让信号: {profile.avoidSignals.join(" · ") || "-"}</p>
+                    <p>目标能量: {typeof profile.preferredEnergy === "number" ? profile.preferredEnergy.toFixed(1) : "-"}</p>
+                  </div>
+                ))}
+              </div>
+              <div className={styles.learningBlock}>
+                <strong>Recent Events</strong>
+                <div className={styles.learningEventList}>
+                  {(preferenceInsights?.recentEvents || []).map((event) => (
+                    <div key={`${event.ts}-${event.type}-${event.trackLabel}`} className={styles.learningEventRow}>
+                      <span>{event.type}</span>
+                      <span>{event.scene}</span>
+                      <span>{event.trackLabel}</span>
+                      <span>{event.playbackRatio == null ? event.action : `${event.action} / ${Math.round(event.playbackRatio * 100)}%`}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </article>
           </div>
         </details>

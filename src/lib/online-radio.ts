@@ -44,6 +44,26 @@ type RequestPreferences = {
   vibes: string[];
 };
 
+type ExplorationPlan = {
+  confidence: number;
+  intensity: number;
+  mode: "wide" | "balanced" | "focused";
+  exploratoryQueries: string[];
+};
+
+type RecommendationSourceMeta = {
+  sourceLabel: string;
+  slotType: Song["recommendationMeta"] extends infer T
+    ? T extends { slotType: infer U } ? U : never
+    : never;
+  slotLabel?: string;
+};
+
+type OnlineTrackCandidate = {
+  track: Song;
+  slotType: NonNullable<Song["recommendationMeta"]>["slotType"];
+};
+
 const MIN_EVENTS_FOR_STRONG_LEARNING = 12;
 
 function getTodayDateKey() {
@@ -86,6 +106,34 @@ function normalizeName(value: string | undefined) {
     .replace(/[()（）\[\]【】\-_.·,，/\\]+/g, "");
 }
 
+function buildRemoteAudioProxyUrl(remoteUrl: string) {
+  return `/api/remote-audio?url=${encodeURIComponent(remoteUrl)}`;
+}
+
+function titlesLookCompatible(left: string, right: string) {
+  const normalizedLeft = normalizeName(left);
+  const normalizedRight = normalizeName(right);
+  return Boolean(
+    normalizedLeft &&
+    normalizedRight &&
+    (normalizedLeft === normalizedRight ||
+      normalizedLeft.includes(normalizedRight) ||
+      normalizedRight.includes(normalizedLeft)),
+  );
+}
+
+function artistsLookCompatible(left: string, right: string) {
+  const normalizedLeft = normalizeName(left);
+  const normalizedRight = normalizeName(right);
+  return Boolean(
+    normalizedLeft &&
+    normalizedRight &&
+    (normalizedLeft === normalizedRight ||
+      normalizedLeft.includes(normalizedRight) ||
+      normalizedRight.includes(normalizedLeft)),
+  );
+}
+
 function findLocalMatch(hit: MusicSearchHit, songs: Song[]) {
   const targetTitle = normalizeName(hit.title);
   const targetArtist = normalizeName(hit.artist);
@@ -124,6 +172,7 @@ function scoreOnlineHit(
   hit: MusicSearchHit,
   taste: UserTasteProfile,
   memory: RadioMemory,
+  model: PreferenceModel,
   routine: RoutineProfile,
   currentSeed: string,
   preferences: RequestPreferences,
@@ -149,6 +198,21 @@ function scoreOnlineHit(
   if (memory.recentTrackIds.some((id) => id === buildTrackLabel(hit.title, hit.artist))) score -= 8;
   if (!hit.downloadable) score -= 2;
   if (normalizedArtist === "unknown artist" || normalizedArtist === "dj") score -= 12;
+
+  score += (model.artistAffinity[hit.artist] || 0) * 0.9;
+  score += scenePreferenceScore(model.artistAffinityByScene, routine.scene, hit.artist) * 1.6;
+
+  const inferredLanguage = preferences.language || inferLanguage(taste, hit.title, hit.artist);
+  score += (model.languageAffinity[inferredLanguage] || 0) * 0.8;
+  score += scenePreferenceScore(model.languageAffinityByScene, routine.scene, inferredLanguage) * 1.2;
+
+  for (const token of [hit.source, routine.scene, ...preferences.vibes, hit.albumName || ""]) {
+    if (!token) continue;
+    score += (model.tagAffinity[token] || 0) * 0.2;
+    score += scenePreferenceScore(model.tagAffinityByScene, routine.scene, token) * 0.35;
+  }
+
+  score -= sceneNegativeScore(model, routine.scene, hit.artist, inferredLanguage) * 1.4;
 
   return score;
 }
@@ -294,8 +358,64 @@ function topModelKey(map: Record<string, number>) {
     .find(Boolean);
 }
 
+function topSceneModelKey(
+  map: Record<string, Record<string, number>>,
+  scene: string,
+) {
+  return topModelKey(map[scene] || {});
+}
+
 function learningConfidence(model: PreferenceModel) {
   return Math.max(0, Math.min(1, model.totalEvents / MIN_EVENTS_FOR_STRONG_LEARNING));
+}
+
+function buildExplorationPlan(
+  model: PreferenceModel,
+  routine: RoutineProfile,
+  taste: UserTasteProfile,
+  preferences: RequestPreferences,
+  action?: BuildOnlineProgramOptions["action"],
+): ExplorationPlan {
+  const confidence = learningConfidence(model);
+  const sceneTag = topSceneModelKey(model.tagAffinityByScene, routine.scene);
+  const globalTag = topModelKey(model.tagAffinity);
+  const sceneLanguage = topSceneModelKey(model.languageAffinityByScene, routine.scene);
+  const preferredLanguage = preferences.language || sceneLanguage || taste.favoriteLanguages[0] || "中文";
+  const exploratoryQueries = [
+    [preferredLanguage, "冷门", routine.scene].filter(Boolean).join(" "),
+    [preferredLanguage, "小众", sceneTag || globalTag || routine.preferredMoods[0], routine.scene].filter(Boolean).join(" "),
+    action === "fresh" ? [preferredLanguage, "新一点", "不同艺人", routine.scene].filter(Boolean).join(" ") : "",
+  ].filter(Boolean);
+
+  if (confidence < 0.35) {
+    return { confidence, intensity: 0.85, mode: "wide", exploratoryQueries };
+  }
+  if (confidence < 0.7) {
+    return { confidence, intensity: 0.45, mode: "balanced", exploratoryQueries };
+  }
+  return { confidence, intensity: action === "fresh" ? 0.35 : 0.18, mode: "focused", exploratoryQueries };
+}
+
+function scenePreferenceScore(
+  map: Record<string, Record<string, number>>,
+  scene: string,
+  key: string | undefined,
+) {
+  const normalized = String(key || "").trim();
+  if (!normalized) return 0;
+  return map[scene]?.[normalized] || 0;
+}
+
+function sceneNegativeScore(
+  model: PreferenceModel,
+  scene: string,
+  ...keys: Array<string | undefined>
+) {
+  return keys.reduce((sum, key) => {
+    const normalized = String(key || "").trim();
+    if (!normalized) return sum;
+    return sum + (model.negativeSignalsByScene[scene]?.[normalized] || 0) + (model.negativeSignals[normalized] || 0);
+  }, 0);
 }
 
 function explicitArtistRequest(messageHint: string | undefined, taste: UserTasteProfile) {
@@ -319,6 +439,13 @@ async function buildRecommendationSeed(
   const messageHints = extractMessageHints(options.messageHint);
   const preferences = parseRequestPreferences(options.messageHint);
   const fallback = buildFallbackSeed(taste, routine, memory, options.action, options.messageHint);
+  const sceneTopArtist = topSceneModelKey(model.artistAffinityByScene, routine.scene);
+  const sceneTopLanguage = topSceneModelKey(model.languageAffinityByScene, routine.scene);
+  const sceneTopTag = topSceneModelKey(model.tagAffinityByScene, routine.scene);
+  const sceneAvoid = Object.entries(model.negativeSignalsByScene[routine.scene] || {})
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 5)
+    .map(([key, value]) => `${key} x${value.toFixed(1)}`);
 
   try {
     const prompt = await buildLiveStartIntentPrompt({ djLanguage: "zh" });
@@ -343,6 +470,10 @@ async function buildRecommendationSeed(
         storedLocalSummary.totalSongs ? `# Stored Local Songs In Taste Profile\nTotal songs: ${storedLocalSummary.totalSongs}` : "",
         storedLocalSummary.topArtists.length ? `Top stored local artists: ${storedLocalSummary.topArtists.join(" | ")}` : "",
         storedLocalSummary.representativeSongs.length ? `Representative stored local songs:\n${storedLocalSummary.representativeSongs.join("\n")}` : "",
+        sceneTopArtist ? `# Learned Scene Artist (${routine.scene})\n${sceneTopArtist}` : "",
+        sceneTopLanguage ? `# Learned Scene Language (${routine.scene})\n${sceneTopLanguage}` : "",
+        sceneTopTag ? `# Learned Scene Tag (${routine.scene})\n${sceneTopTag}` : "",
+        sceneAvoid.length ? `# Avoid Signals (${routine.scene})\n${sceneAvoid.join(" | ")}` : "",
         topModelKey(model.artistAffinity) ? `# Learned Top Artist\n${topModelKey(model.artistAffinity)}` : "",
         topModelKey(model.languageAffinity) ? `# Learned Top Language\n${topModelKey(model.languageAffinity)}` : "",
         Object.keys(model.requestPatternStats).length ? `# Learned Request Patterns\n${Object.entries(model.requestPatternStats).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => `${k} x${v}`).join(" | ")}` : "",
@@ -372,15 +503,26 @@ function buildSearchQueries(
   const messageHints = extractMessageHints(messageHint);
   const preferences = parseRequestPreferences(messageHint);
   const confidence = learningConfidence(model);
-  const preferredLanguage = preferences.language || topModelKey(model.languageAffinity) || taste.favoriteLanguages[0];
+  const exploration = buildExplorationPlan(model, routine, taste, preferences, action);
+  const preferredLanguage =
+    preferences.language ||
+    topSceneModelKey(model.languageAffinityByScene, routine.scene) ||
+    topModelKey(model.languageAffinity) ||
+    taste.favoriteLanguages[0];
   const energyHint =
     preferences.energy === "high"
       ? "劲爆"
       : preferences.energy === "low"
         ? "安静"
         : "";
-  const learnedArtist = confidence >= 0.6 ? topModelKey(model.artistAffinity) : "";
-  const learnedTag = confidence >= 0.4 ? topModelKey(model.tagAffinity) : "";
+  const learnedArtist =
+    confidence >= 0.6
+      ? topSceneModelKey(model.artistAffinityByScene, routine.scene) || topModelKey(model.artistAffinity)
+      : "";
+  const learnedTag =
+    confidence >= 0.4
+      ? topSceneModelKey(model.tagAffinityByScene, routine.scene) || topModelKey(model.tagAffinity)
+      : "";
   const queries = [
     seed.input,
     ...messageHints,
@@ -395,9 +537,123 @@ function buildSearchQueries(
         : action === "familiar"
           ? [preferredLanguage, "熟悉", routine.scene].filter(Boolean).join(" ")
           : "",
+    ...(confidence < 0.8 ? exploration.exploratoryQueries : []),
   ];
 
   return [...new Set(queries.map((item) => item.trim()).filter(Boolean))];
+}
+
+function noveltyBoost(
+  hit: MusicSearchHit,
+  model: PreferenceModel,
+  routine: RoutineProfile,
+  exploration: ExplorationPlan,
+) {
+  const artistScore = model.artistAffinity[hit.artist] || 0;
+  const sceneArtistScore = scenePreferenceScore(model.artistAffinityByScene, routine.scene, hit.artist);
+  const lowerKnownness = Math.max(0, 3 - artistScore - sceneArtistScore);
+  return lowerKnownness * exploration.intensity;
+}
+
+function reservedExplorationSlots(
+  exploration: ExplorationPlan,
+  count: number,
+  action?: BuildOnlineProgramOptions["action"],
+) {
+  if (count <= 1) return 0;
+  if (action === "fresh") return Math.min(2, Math.max(1, count - 1));
+  if (exploration.mode === "wide") return Math.min(2, Math.max(1, count - 1));
+  if (exploration.mode === "balanced") return 1;
+  return 0;
+}
+
+function slotLabelForTrack(
+  slotType: RecommendationSourceMeta["slotType"],
+  stableIndex: number,
+  explorationIndex: number,
+) {
+  if (slotType === "explore") {
+    return explorationIndex === 0 ? "新发现 A" : `新发现 ${explorationIndex + 1}`;
+  }
+  return stableIndex === 0 ? "当前主推" : "为你延续";
+}
+
+function interleaveTrackCandidates(
+  stableCandidates: OnlineTrackCandidate[],
+  exploreCandidates: OnlineTrackCandidate[],
+  count: number,
+  explorationSlots: number,
+) {
+  const selected: Song[] = [];
+  const effectiveExplorationSlots = Math.min(explorationSlots, exploreCandidates.length, Math.max(0, count - 1));
+  const explorePositions = new Set<number>();
+
+  for (let index = 0; index < effectiveExplorationSlots; index += 1) {
+    const position = Math.min(count - 1, 2 + index * 2);
+    explorePositions.add(position);
+  }
+
+  let stableIndex = 0;
+  let explorationIndex = 0;
+  for (let position = 0; position < count; position += 1) {
+    const wantExplore = explorePositions.has(position);
+    const candidate = wantExplore
+      ? exploreCandidates[explorationIndex++] || stableCandidates[stableIndex++]
+      : stableCandidates[stableIndex++] || exploreCandidates[explorationIndex++];
+    if (!candidate) break;
+    selected.push({
+      ...candidate.track,
+      recommendationMeta: candidate.track.recommendationMeta
+        ? {
+            ...candidate.track.recommendationMeta,
+            slotLabel: slotLabelForTrack(
+              candidate.slotType,
+              Math.max(0, stableIndex - 1),
+              Math.max(0, explorationIndex - 1),
+            ),
+          }
+        : candidate.track.recommendationMeta,
+    });
+  }
+
+  return selected;
+}
+
+function classifyRecommendationSource(
+  hit: MusicSearchHit,
+  localMatch: Song | undefined,
+  routine: RoutineProfile,
+  taste: UserTasteProfile,
+  model: PreferenceModel,
+  preferences: RequestPreferences,
+  options: BuildOnlineProgramOptions,
+  exploration: ExplorationPlan,
+) : RecommendationSourceMeta {
+  const explicitArtist = explicitArtistRequest(options.messageHint, taste);
+  const inferredLanguage = preferences.language || inferLanguage(taste, hit.title, hit.artist);
+
+  if (localMatch?.sourcePath) {
+    return { sourceLabel: "本地收藏线", slotType: "local-match" };
+  }
+  if (explicitArtist && hit.artist.includes(explicitArtist)) {
+    return { sourceLabel: "按你点名", slotType: "request" };
+  }
+  if (preferences.vibes.length > 0 && preferences.vibes.some((item) => `${hit.title} ${hit.artist} ${hit.albumName || ""}`.toLowerCase().includes(item.toLowerCase()))) {
+    return { sourceLabel: "按你刚刚的感觉", slotType: "request" };
+  }
+  if (sanitizeAnchorArtists(taste.anchorArtists).some((artist) => hit.artist.includes(artist))) {
+    return { sourceLabel: "你常听的艺人", slotType: "anchor" };
+  }
+  if (
+    scenePreferenceScore(model.artistAffinityByScene, routine.scene, hit.artist) > 0.8 ||
+    scenePreferenceScore(model.languageAffinityByScene, routine.scene, inferredLanguage) > 0.8
+  ) {
+    return { sourceLabel: "顺着你的口味", slotType: "learned" };
+  }
+  if (exploration.mode !== "focused") {
+    return { sourceLabel: "给你换点新的", slotType: "explore" };
+  }
+  return { sourceLabel: "这一轮的自然延续", slotType: "fallback" };
 }
 
 async function verifyPlaybackUrl(url: string) {
@@ -419,6 +675,32 @@ async function verifyPlaybackUrl(url: string) {
   }).catch(() => null);
 
   return probe?.ok || probe?.status === 206;
+}
+
+async function findAlternatePlayableHit(hit: MusicSearchHit) {
+  const sourceOrder: MusicSearchSource[] = [hit.source, "qq", "kugou", "netease"].filter(
+    (value, index, list) => list.indexOf(value) === index,
+  ) as MusicSearchSource[];
+
+  for (const source of sourceOrder) {
+    const candidate =
+      source === hit.source
+        ? hit
+        : (await searchSongsBySource(`${hit.title} ${hit.artist}`, source, 1, 6).catch(() => []))
+            .find((item) => titlesLookCompatible(item.title, hit.title) && artistsLookCompatible(item.artist, hit.artist));
+    if (!candidate) continue;
+
+    const remoteUrl = await resolvePlaybackUrlForHit(candidate).catch(() => null);
+    if (!remoteUrl) continue;
+    const playable = await verifyPlaybackUrl(remoteUrl).catch(() => false);
+    if (!playable) continue;
+    return {
+      hit: candidate,
+      streamUrl: buildRemoteAudioProxyUrl(remoteUrl),
+    };
+  }
+
+  return null;
 }
 
 function buildOnlineTrackId(title: string, artist: string) {
@@ -460,6 +742,12 @@ function toEnergyLabel(energy: number) {
 
 function buildSegmentTitle(scene: string, seed: string) {
   return `${scene}在线电台 · ${seed}`;
+}
+
+function programHasLegacyRemoteUrls(program: RadioProgram) {
+  return [program.currentTrack, ...program.queue].some((track) =>
+    Boolean(track.streamUrl && /^https?:\/\//i.test(track.streamUrl)),
+  );
 }
 
 function sanitizeSeedText(seed: string) {
@@ -545,6 +833,7 @@ async function collectRankedHits(
 ) {
   const hitMap = new Map<string, MusicSearchHit>();
   const excluded = new Set(excludeTrackIds);
+  const exploration = buildExplorationPlan(model, routine, taste, preferences);
 
   for (const query of queries) {
     const hits = await searchSongsBySource(query, source, 1, 10).catch(() => []);
@@ -559,19 +848,28 @@ async function collectRankedHits(
   return [...hitMap.values()].sort(
     (left, right) => {
       const confidence = learningConfidence(model);
+      const rightLanguage = preferences.language || inferLanguage(taste, right.title, right.artist);
+      const leftLanguage = preferences.language || inferLanguage(taste, left.title, left.artist);
       const rightLearned =
         ((model.artistAffinity[right.artist] || 0) +
-          (model.languageAffinity[matchesLanguagePreference(right, "中文") ? "中文" : "英文"] || 0)) *
+          (model.languageAffinity[rightLanguage] || 0) +
+          scenePreferenceScore(model.artistAffinityByScene, routine.scene, right.artist) +
+          scenePreferenceScore(model.languageAffinityByScene, routine.scene, rightLanguage)) *
         confidence;
       const leftLearned =
         ((model.artistAffinity[left.artist] || 0) +
-          (model.languageAffinity[matchesLanguagePreference(left, "中文") ? "中文" : "英文"] || 0)) *
+          (model.languageAffinity[leftLanguage] || 0) +
+          scenePreferenceScore(model.artistAffinityByScene, routine.scene, left.artist) +
+          scenePreferenceScore(model.languageAffinityByScene, routine.scene, leftLanguage)) *
         confidence;
 
       return (
-        scoreOnlineHit(right, taste, memory, routine, seed.input, preferences) +
+        scoreOnlineHit(right, taste, memory, model, routine, seed.input, preferences) +
+        noveltyBoost(right, model, routine, exploration) +
         rightLearned -
-        (scoreOnlineHit(left, taste, memory, routine, seed.input, preferences) + leftLearned)
+        (scoreOnlineHit(left, taste, memory, model, routine, seed.input, preferences) +
+          noveltyBoost(left, model, routine, exploration) +
+          leftLearned)
       );
     },
   );
@@ -586,30 +884,45 @@ async function buildProgramTracks(
   options: BuildOnlineProgramOptions,
 ) {
   const localSongs = await readSongCatalog().catch(() => []);
-  const tracks: Song[] = [];
+  const stableCandidates: OnlineTrackCandidate[] = [];
+  const exploreCandidates: OnlineTrackCandidate[] = [];
   const artistCounts = new Map<string, number>();
   const forcedArtist = explicitArtistRequest(options.messageHint, taste);
   const maxPerArtist = forcedArtist ? count : 2;
+  const model = await readPreferenceModel();
+  const preferences = parseRequestPreferences(options.messageHint);
+  const exploration = buildExplorationPlan(model, routine, taste, preferences, options.action);
+  const explorationSlots = reservedExplorationSlots(exploration, count, options.action);
 
   for (const [index, hit] of hits.entries()) {
-    if (tracks.length >= count) break;
+    if (stableCandidates.length + exploreCandidates.length >= count * 3) break;
     const normalizedArtist = hit.artist.trim().toLowerCase();
     const currentArtistCount = artistCounts.get(normalizedArtist) || 0;
     if (currentArtistCount >= maxPerArtist) continue;
     const localMatch = findLocalMatch(hit, localSongs);
+    const recommendationMeta = classifyRecommendationSource(
+      hit,
+      localMatch,
+      routine,
+      taste,
+      model,
+      preferences,
+      options,
+      exploration,
+    );
     let streamUrl = localMatch?.sourcePath
       ? `/api/audio?path=${encodeURIComponent(localMatch.sourcePath)}&libraryRoot=${encodeURIComponent(localMatch.libraryRoot || "")}`
       : "";
+    let resolvedHit = hit;
 
     if (!streamUrl) {
-      const remoteUrl = await resolvePlaybackUrlForHit(hit).catch(() => null);
-      if (!remoteUrl) continue;
-      const playable = await verifyPlaybackUrl(remoteUrl).catch(() => false);
-      if (!playable) continue;
-      streamUrl = remoteUrl;
+      const remotePlayback = await findAlternatePlayableHit(hit);
+      if (!remotePlayback) continue;
+      streamUrl = remotePlayback.streamUrl;
+      resolvedHit = remotePlayback.hit;
     }
 
-    tracks.push({
+    const track: Song = {
       id: buildOnlineTrackId(hit.title, hit.artist),
       title: hit.title,
       artist: hit.artist,
@@ -622,21 +935,33 @@ async function buildProgramTracks(
       sourcePath: localMatch?.sourcePath,
       libraryRoot: localMatch?.libraryRoot || "",
       streamUrl,
-      source: localMatch?.source || hit.source,
+      source: localMatch?.source || resolvedHit.source,
+      recommendationMeta,
       downloadContext: {
-        source: hit.source,
-        duration: hit.duration,
-        payable: hit.payable,
-        downloadable: hit.downloadable,
-        albumName: hit.albumName,
-        imageUrl: hit.imageUrl,
-        raw: hit.raw,
+        source: resolvedHit.source,
+        duration: resolvedHit.duration,
+        payable: resolvedHit.payable,
+        downloadable: resolvedHit.downloadable,
+        albumName: resolvedHit.albumName,
+        imageUrl: resolvedHit.imageUrl,
+        raw: resolvedHit.raw,
       },
+    };
+
+    const bucket = recommendationMeta.slotType === "explore" ? exploreCandidates : stableCandidates;
+    bucket.push({
+      track: {
+        ...track,
+        recommendationMeta: {
+          ...recommendationMeta,
+        },
+      },
+      slotType: recommendationMeta.slotType,
     });
     artistCounts.set(normalizedArtist, currentArtistCount + 1);
   }
 
-  return tracks;
+  return interleaveTrackCandidates(stableCandidates, exploreCandidates, count, explorationSlots);
 }
 
 async function writeOnlineState(state: OnlineRadioState) {
@@ -664,6 +989,13 @@ async function writeProgramMemory(program: RadioProgram, lastAction: string) {
   return nextMemory;
 }
 
+function createProgramTrack(song: Song, reason?: string) {
+  return {
+    ...song,
+    reason: reason || song.reasonSeed || "这首刚被你明确点名留下，先把它顶到当前。",
+  };
+}
+
 async function buildOnlineProgram(options: BuildOnlineProgramOptions = {}) {
   const source = normalizeSource(options.source || DEFAULT_SOURCE);
   const [taste, playlists, routines, memory] = await Promise.all([
@@ -677,6 +1009,7 @@ async function buildOnlineProgram(options: BuildOnlineProgramOptions = {}) {
   const seed = await buildRecommendationSeed(taste, routines, memory, model, options);
   const queries = buildSearchQueries(seed, taste, model, routine, options.messageHint, options.action);
   const preferences = parseRequestPreferences(options.messageHint);
+  const exploration = buildExplorationPlan(model, routine, taste, preferences, options.action);
   const hits = await collectRankedHits(
     queries,
     source,
@@ -708,6 +1041,8 @@ async function buildOnlineProgram(options: BuildOnlineProgramOptions = {}) {
   });
   const explanation = await buildProgramExplanation(seed, routine, hydratedTracks, source);
   const playlistSummary = playlists[0]?.summary || seed.input;
+  const learnedSceneArtist = topSceneModelKey(model.artistAffinityByScene, routine.scene);
+  const learnedSceneLanguage = topSceneModelKey(model.languageAffinityByScene, routine.scene);
   const program: RadioProgram = {
     stationName: "Claudio FM",
     segmentTitle: buildSegmentTitle(routine.scene, playlistSummary),
@@ -717,8 +1052,8 @@ async function buildOnlineProgram(options: BuildOnlineProgramOptions = {}) {
     currentTrack,
     queue,
     explanation,
-    controlsHint: "这条在线队列会跟着你的反馈、时段和口味继续重组。",
-    memorySummary: `当前直接从在线来源抓歌；最近动作是 ${memory.lastAction}，本轮种子是“${seed.input}”。`,
+    controlsHint: `这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 ${reservedExplorationSlots(exploration, DEFAULT_TRACK_COUNT, options.action)} 首新发现。`,
+    memorySummary: `当前直接从在线来源抓歌；最近动作是 ${memory.lastAction}，本轮种子是“${seed.input}”。${[learnedSceneArtist ? `这时段更偏 ${learnedSceneArtist}` : "", learnedSceneLanguage ? `语言更偏 ${learnedSceneLanguage}` : "", exploration.mode === "wide" ? "当前会多带一点新鲜感" : exploration.mode === "balanced" ? "当前在熟悉和新鲜之间平衡" : "当前以你熟悉的方向为主", reservedExplorationSlots(exploration, DEFAULT_TRACK_COUNT, options.action) > 0 ? `队列里固定留 ${reservedExplorationSlots(exploration, DEFAULT_TRACK_COUNT, options.action)} 首新发现` : "这一轮不额外加新发现"].filter(Boolean).join("，")}`,
   };
 
   await appendPreferenceEvent({
@@ -754,6 +1089,19 @@ async function refillProgramQueue(program: RadioProgram, currentTrack: Song) {
 export async function ensureOnlineRadioProgram() {
   const state = await readOnlineState();
   if (state?.date === getTodayDateKey()) {
+    if (programHasLegacyRemoteUrls(state.program)) {
+      const rebuilt = await buildOnlineProgram({
+        source: state.source,
+        forceNew: true,
+      });
+      await writeOnlineState({
+        date: getTodayDateKey(),
+        seed: rebuilt.seed,
+        source: rebuilt.source,
+        program: rebuilt.program,
+      });
+      return { program: rebuilt.program, schedule: createScheduleFromProgram(rebuilt.program) };
+    }
     if (
       !state.program.hostIntro ||
       state.program.hostIntro.includes("Unknown Artist") ||
@@ -802,6 +1150,44 @@ export async function regenerateOnlineRadioProgram(options: BuildOnlineProgramOp
   });
   await writeProgramMemory(next.program, options.action || "online-regenerate");
   return { program: next.program, schedule: createScheduleFromProgram(next.program) };
+}
+
+export async function promoteSongToOnlineProgram(
+  song: Song,
+  options: { action?: string; messageHint?: string } = {},
+) {
+  const rebuilt = await regenerateOnlineRadioProgram({
+    action: "fresh",
+    messageHint: options.messageHint || `${song.title} ${song.artist}`,
+  });
+  const currentTrack = createProgramTrack(
+    song,
+    song.reasonSeed || "这首刚从搜索结果收进来，现在先放给你听。",
+  );
+  const queue = [
+    rebuilt.program.currentTrack,
+    ...rebuilt.program.queue,
+  ].filter((track) => track.id !== song.id);
+  const nextProgram: RadioProgram = {
+    ...rebuilt.program,
+    currentTrack,
+    queue,
+    energyLabel: toEnergyLabel(currentTrack.energy),
+  };
+  nextProgram.hostIntro = buildOnlineHostIntro({
+    scene: nextProgram.scene,
+    seed: { input: `${song.title} ${song.artist}`, reason: "manual-download-promote" },
+    currentTrack: nextProgram.currentTrack,
+    nextTrack: nextProgram.queue[0] ?? nextProgram.currentTrack,
+  });
+  await writeOnlineState({
+    date: getTodayDateKey(),
+    seed: { input: `${song.title} ${song.artist}`, reason: "manual-download-promote" },
+    source: DEFAULT_SOURCE,
+    program: nextProgram,
+  });
+  await writeProgramMemory(nextProgram, options.action || "manual-download");
+  return { program: nextProgram, schedule: createScheduleFromProgram(nextProgram) };
 }
 
 export async function advanceOnlineRadioProgram() {

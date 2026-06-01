@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
 
   // 本地歌曲：libraryRoot + sourcePath 拼接；网络歌曲：直接用 filePath（已是绝对路径）
   const normalizedPath = libraryRoot
-    ? path.resolve(libraryRoot, filePath)
-    : path.resolve(filePath);
+    ? path.resolve(/* turbopackIgnore: true */ libraryRoot, filePath)
+    : path.resolve(/* turbopackIgnore: true */ filePath);
 
   const allowedRoots = await readAllowedAudioRoots();
   const isAllowed = allowedRoots.some((root) => normalizedPath.startsWith(root));
