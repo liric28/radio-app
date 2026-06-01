@@ -48,6 +48,45 @@ export async function POST(request: NextRequest) {
       history,
     });
 
+    if (agentResult.directReply) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "state",
+                mode: agentResult.state.mode,
+                tool: agentResult.state.tool,
+                intent: agentResult.state.intent,
+                program: agentResult.program,
+                schedule: agentResult.schedule,
+                favorites: agentResult.favorites,
+                weather: agentResult.state.weather ?? null,
+              })}\n\n`,
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                choices: [{ delta: { content: agentResult.directReply } }],
+              })}\n\n`,
+            ),
+          );
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "X-Accel-Buffering": "no",
+        },
+      });
+    }
+
     const llmRequest = buildChatLlmRequest(agentResult.llmMessages);
     const llmRes = await fetch(llmRequest.url, {
       method: "POST",

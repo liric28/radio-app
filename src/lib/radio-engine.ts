@@ -559,6 +559,10 @@ export function resolveChatIntent(message: string, program: RadioProgram): ChatI
   }
 
   if (
+    normalized === "下载" ||
+    normalized === "下下来" ||
+    normalized === "存一下" ||
+    normalized === "保存一下" ||
     normalized.includes("下载这首") ||
     normalized.includes("把这首下下来") ||
     normalized.includes("把当前这首下下来") ||

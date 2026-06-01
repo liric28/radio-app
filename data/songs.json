@@ -3390,5 +3390,22 @@
     "sourcePath": "data/downloads/十年.mp3",
     "source": "qq",
     "libraryRoot": ""
+  },
+  {
+    "id": "qq-00256shB4BZSui",
+    "title": "心做し (心理作用)",
+    "artist": "双笙 (陈元汐)",
+    "year": 2024,
+    "mood": "回忆感",
+    "energy": 5,
+    "language": "中文",
+    "tags": [
+      "个人歌单",
+      "本地音乐库"
+    ],
+    "reasonSeed": "刚从网上抓回来加进你的电台，先放一遍听听看合不合适",
+    "sourcePath": "data/downloads/心做し (心理作用).mp3",
+    "source": "qq",
+    "libraryRoot": ""
   }
 ]

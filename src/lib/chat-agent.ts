@@ -25,9 +25,11 @@ import { applyOnlineChatIntent, ensureOnlineRadioProgram } from "@/lib/online-ra
 import { appendPreferenceEvent, preferenceTrackFromSong } from "@/lib/preference-learning";
 import { downloadAndIngestSong, toMusicSearchHitFromSong } from "@/lib/song-download";
 import {
+  buildRuleBasedDjReply,
   buildChatModelMessages,
   describeAgentState,
 } from "@/lib/providers/llm";
+import { requestChatCompletion } from "@/lib/providers/chat-llm";
 import { isOnlineRadioMode } from "@/lib/radio-mode";
 import { applyChatIntentWithProgram, resolveChatIntent } from "@/lib/radio-engine";
 import { isWeatherQuestion, readWeatherSnapshot } from "@/lib/weather";
@@ -52,100 +54,12 @@ type RunChatAgentResult = {
   schedule: Awaited<ReturnType<typeof ensureDailySchedule>>;
   favorites: string[];
   llmMessages: Array<{ role: string; content: string }>;
+  directReply?: string;
 };
 
-const FREEFORM_MUSIC_REQUEST_VERBS = [
-  "来点",
-  "来首",
-  "来一些",
-  "来一轮",
-  "放点",
-  "播点",
-  "整点",
-  "换点",
-  "切点",
-  "给我点",
-  "推荐点",
-  "上点",
-  "走点",
-  "听点",
-  "想听",
-];
-
-const FREEFORM_MUSIC_STYLE_HINTS = [
-  "抒情",
-  "dj",
-  "上头",
-  "摇滚",
-  "劲爆",
-  "炸",
-  "轻一点",
-  "轻点",
-  "慢一点",
-  "安静",
-  "中文",
-  "华语",
-  "粤语",
-  "英文",
-  "英语",
-  "日语",
-  "韩语",
-  "女声",
-  "男声",
-  "器乐",
-  "电子",
-  "民谣",
-  "说唱",
-  "爵士",
-  "city pop",
-  "通勤",
-  "深夜",
-  "早上",
-  "白天",
-  "专注",
-  "热一点",
-  "有力一点",
-  "有冲劲",
-  "别太炸",
-  "新一点",
-  "熟一点",
-  "老歌",
-];
-
-const MUSIC_OBJECT_HINTS = [
-  "歌",
-  "音乐",
-  "电台",
-  "playlist",
-  "list",
-  "radio",
-  "bgm",
-  "旋律",
-  "歌单",
-];
-
-function normalizeFreeformMusicRequest(message: string) {
-  return message.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function isFreeformMusicRequest(message: string) {
-  const normalized = normalizeFreeformMusicRequest(message);
-  if (!normalized) return false;
-
-  const hasVerb = FREEFORM_MUSIC_REQUEST_VERBS.some((item) => normalized.includes(item));
-  const hasStyleHint = FREEFORM_MUSIC_STYLE_HINTS.some((item) => normalized.includes(item));
-  const hasMusicObject = MUSIC_OBJECT_HINTS.some((item) => normalized.includes(item));
-  const looksLikeForSceneRequest =
-    normalized.includes("适合") &&
-    (normalized.includes("听") || normalized.includes("歌") || normalized.includes("音乐"));
-
-  if (hasVerb && hasStyleHint) return true;
-  if (hasVerb && hasMusicObject) return true;
-  if (hasStyleHint && hasMusicObject) return true;
-  if (looksLikeForSceneRequest && (hasStyleHint || hasMusicObject)) return true;
-
-  return false;
-}
+type IntentResolution = {
+  resolver: "rule" | "llm";
+};
 
 /**
  * 判断这句话更像是在闲聊、控歌还是查外部天气，并收口成统一 agent 状态。
@@ -171,25 +85,69 @@ function resolveAgentState(message: string, program: RadioProgram): ChatAgentSta
     };
   }
 
-  if (isOnlineRadioMode() && isFreeformMusicRequest(message)) {
-    const regenerateIntent: ChatIntent = {
-      action: "regenerate",
-      targetPeriod: intent.targetPeriod,
-    };
-    return {
-      mode: "music-control",
-      tool: "schedule",
-      intent: regenerateIntent,
-      summary: "用户在随口描述想听的方向，默认按这句话重组在线推荐。",
-    };
-  }
-
   return {
     mode: "chat",
     tool: "none",
     intent,
     summary: "用户在随意聊天，先正常接话。",
   };
+}
+
+async function inferOnlineFreeformIntent(message: string, program: RadioProgram): Promise<ChatIntent> {
+  const nextTrack = program.queue[0];
+  const prompt = [
+    "你是音乐电台首页的意图路由器。",
+    "任务：判断用户这句话是不是在要求你改当前推荐 LIST。",
+    "只输出一行 JSON，不要解释，不要 markdown。",
+    '允许的 action 只有：none, regenerate, fresh, calmer, familiar, skip, favorite, download-current, scene-change。',
+    "规则：",
+    "- 用户在随口描述想听什么风格、语言、气氛、艺人、时段、强度时，通常输出 regenerate。",
+    "- 只有明显是“更安静/更轻/更慢”才用 calmer。",
+    "- 只有明显是“更熟/回忆/老歌”才用 familiar。",
+    "- 只有明显是“换新一点/换个感觉/更刺激”才用 fresh。",
+    "- 只有明显是下载当前歌才用 download-current。",
+    "- 只有明显是收藏当前歌才用 favorite。",
+    "- 只有明显是跳过当前歌才用 skip。",
+    "- 只有明显是切到某个时段才用 scene-change，并给 targetPeriod: morning/daytime/evening/late-night。",
+    "- 普通闲聊、吐槽、问候、问你是谁、非音乐问题输出 none。",
+    `当前时段: ${program.scene}`,
+    `当前歌: ${program.currentTrack.artist} - ${program.currentTrack.title}`,
+    `下一首: ${nextTrack ? `${nextTrack.artist} - ${nextTrack.title}` : "暂无"}`,
+    `用户消息: ${message}`,
+    '输出格式示例：{"action":"regenerate","targetPeriod":null}',
+  ].join("\n");
+
+  try {
+    const raw = await requestChatCompletion(
+      [
+        { role: "system", content: "你是一个严格输出 JSON 的音乐意图分类器。" },
+        { role: "user", content: prompt },
+      ],
+      120,
+    );
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { action: "none" };
+    const parsed = JSON.parse(jsonMatch[0]) as Partial<ChatIntent>;
+    const action = parsed.action;
+    if (
+      action === "none" ||
+      action === "regenerate" ||
+      action === "fresh" ||
+      action === "calmer" ||
+      action === "familiar" ||
+      action === "skip" ||
+      action === "favorite" ||
+      action === "download-current" ||
+      action === "scene-change"
+    ) {
+      return {
+        action,
+        targetPeriod: parsed.targetPeriod,
+      };
+    }
+  } catch {}
+
+  return { action: "none" };
 }
 
 /**
@@ -200,7 +158,21 @@ export async function runChatAgent({
   program,
   history,
 }: RunChatAgentInput): Promise<RunChatAgentResult> {
-  const initialState = resolveAgentState(message, program);
+  let initialState = resolveAgentState(message, program);
+  let intentResolution: IntentResolution | null =
+    initialState.mode === "music-control" ? { resolver: "rule" } : null;
+  if (initialState.mode === "chat" && isOnlineRadioMode()) {
+    const inferredIntent = await inferOnlineFreeformIntent(message, program);
+    if (inferredIntent.action !== "none") {
+      initialState = {
+        mode: "music-control",
+        tool: "schedule",
+        intent: inferredIntent,
+        summary: "用户在用自然语言改首页推荐，已转成明确电台动作。",
+      };
+      intentResolution = { resolver: "llm" };
+    }
+  }
   let nextProgram = program;
   let nextState = initialState;
   let nextFavorites = await readFavorites();
@@ -217,6 +189,14 @@ export async function runChatAgent({
   }
 
   if (initialState.mode === "music-control") {
+    await appendPreferenceEvent({
+      type: "intent_resolved",
+      message,
+      action: initialState.intent.action,
+      scene: program.scene,
+      track: preferenceTrackFromSong(program.currentTrack, program.scene),
+      resolver: intentResolution?.resolver || "rule",
+    }).catch(() => null);
     await appendPreferenceEvent({
       type: "chat_request",
       message,
@@ -283,5 +263,16 @@ export async function runChatAgent({
       history,
       state: nextState,
     }),
+    directReply:
+      nextState.mode === "music-control"
+        ? buildRuleBasedDjReply({
+            message,
+            program: nextProgram,
+            memory,
+            intent: nextState.intent,
+            history,
+            state: nextState,
+          })
+        : undefined,
   };
 }

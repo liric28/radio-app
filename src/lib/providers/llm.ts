@@ -195,6 +195,7 @@ export function buildRuleBasedDjReply({
   state,
 }: ComposeDjReplyInput) {
   const normalized = message.trim().toLowerCase();
+  const nextTrack = program.queue[0];
 
   if (!normalized) {
     return "你先说句人话给我，我接着聊。";
@@ -214,6 +215,10 @@ export function buildRuleBasedDjReply({
 
   if (
     intent?.action === "download-current" ||
+    normalized === "下载" ||
+    normalized === "下下来" ||
+    normalized === "存一下" ||
+    normalized === "保存一下" ||
     normalized.includes("下载这首") ||
     normalized.includes("把这首下下来")
   ) {
@@ -228,7 +233,9 @@ export function buildRuleBasedDjReply({
     normalized.includes("换一批") ||
     normalized.includes("重新推荐")
   ) {
-    return "行，我给你整轮翻新，前面这首现在就切，后面也一起换掉。";
+    return nextTrack
+      ? `这轮我重排好了。先上${program.currentTrack.artist}《${program.currentTrack.title}》，后面接${nextTrack.artist}《${nextTrack.title}》。`
+      : `这轮我重排好了。先上${program.currentTrack.artist}《${program.currentTrack.title}》。`;
   }
 
   if (
@@ -238,7 +245,9 @@ export function buildRuleBasedDjReply({
     normalized.includes("轻") ||
     normalized.includes("慢")
   ) {
-    return `行，我收一点，不给你炸耳朵。先把这首稳住，后面那首我也往 softer 那边带。`;
+    return nextTrack
+      ? `行，我收一点。先放${program.currentTrack.artist}《${program.currentTrack.title}》，后面接${nextTrack.artist}《${nextTrack.title}》。`
+      : `行，我收一点。先放${program.currentTrack.artist}《${program.currentTrack.title}》。`;
   }
 
   if (
@@ -248,7 +257,9 @@ export function buildRuleBasedDjReply({
     normalized.includes("老歌") ||
     normalized.includes("familiar")
   ) {
-    return `懂，给你往熟的那边靠，不整陌生的。后面我先留中文线，别一下拐太猛。`;
+    return nextTrack
+      ? `懂，我往熟的那边收了。先是${program.currentTrack.artist}《${program.currentTrack.title}》，后面接${nextTrack.artist}《${nextTrack.title}》。`
+      : `懂，我往熟的那边收了。先是${program.currentTrack.artist}《${program.currentTrack.title}》。`;
   }
 
   if (
@@ -260,10 +271,12 @@ export function buildRuleBasedDjReply({
     normalized.includes("skip")
   ) {
     if (intent?.action === "select-track") {
-      return "行，就这首，我给你顶上来。";
+      return `行，就这首。现在是${program.currentTrack.artist}《${program.currentTrack.title}》。`;
     }
 
-    return `好，切。我不拖，下一首直接上。`;
+    return nextTrack
+      ? `好，切了。现在是${program.currentTrack.artist}《${program.currentTrack.title}》，后面接${nextTrack.artist}《${nextTrack.title}》。`
+      : `好，切了。现在是${program.currentTrack.artist}《${program.currentTrack.title}》。`;
   }
 
   if (

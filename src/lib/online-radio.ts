@@ -39,7 +39,7 @@ type BuildOnlineProgramOptions = {
 };
 
 type RequestPreferences = {
-  language?: "中文" | "英文" | "粤语" | "日语" | "韩语";
+  language?: "中文" | "英文" | "粤语" | "日语" | "韩语" | "日韩";
   energy?: "high" | "low";
   vibes: string[];
 };
@@ -164,8 +164,13 @@ function matchesLanguagePreference(hit: MusicSearchHit, language: RequestPrefere
   if (language === "中文" || language === "粤语") return /[\u4e00-\u9fff]/.test(text);
   if (language === "日语") return /[\u3040-\u30ff]/.test(text);
   if (language === "韩语") return /[\uac00-\ud7af]/.test(text);
+  if (language === "日韩") return /[\u3040-\u30ff\uac00-\ud7af]/.test(text);
   if (language === "英文") return /[a-z]/i.test(text) && !/[\u4e00-\u9fff]/.test(text);
   return false;
+}
+
+function hasExplicitLanguageConstraint(preferences: RequestPreferences) {
+  return Boolean(preferences.language);
 }
 
 function scoreOnlineHit(
@@ -310,7 +315,7 @@ function extractMessageHints(messageHint: string | undefined) {
     .replace(/\s+/g, " ")
     .trim();
   const directPhrases = [
-    "华语", "中文", "粤语", "英文", "英语", "日语", "韩语",
+    "华语", "中文", "粤语", "英文", "英语", "日语", "韩语", "日韩", "k-pop", "j-pop", "女团", "男团", "组合",
     "女声", "男声", "器乐", "电子", "摇滚", "民谣", "说唱", "爵士", "city pop",
     "安静", "轻一点", "慢一点", "深夜", "早上", "通勤", "熟悉", "新一点", "别太炸",
     "劲爆", "炸一点", "炸", "推起来", "有冲劲", "有力一点", "热一点",
@@ -323,7 +328,8 @@ function parseRequestPreferences(messageHint: string | undefined): RequestPrefer
   const text = (messageHint || "").trim().toLowerCase();
   const preferences: RequestPreferences = { vibes: extractMessageHints(messageHint).slice(0, 5) };
 
-  if (text.includes("华语") || text.includes("中文")) preferences.language = "中文";
+  if (text.includes("日韩") || text.includes("k-pop") || text.includes("j-pop")) preferences.language = "日韩";
+  else if (text.includes("华语") || text.includes("中文")) preferences.language = "中文";
   else if (text.includes("粤语")) preferences.language = "粤语";
   else if (text.includes("英文") || text.includes("英语")) preferences.language = "英文";
   else if (text.includes("日语")) preferences.language = "日语";
@@ -526,6 +532,7 @@ function buildSearchQueries(
   const queries = [
     seed.input,
     ...messageHints,
+    [preferences.language, textIncludesGirlGroupHint(messageHint) ? "女团" : "", textIncludesGroupHint(messageHint) ? "组合" : ""].filter(Boolean).join(" "),
     [routine.scene, taste.favoriteMoods[0], preferredLanguage, energyHint].filter(Boolean).join(" "),
     [sanitizeAnchorArtists(taste.anchorArtists)[0], routine.scene].filter(Boolean).join(" "),
     [learnedArtist, routine.scene].filter(Boolean).join(" "),
@@ -541,6 +548,16 @@ function buildSearchQueries(
   ];
 
   return [...new Set(queries.map((item) => item.trim()).filter(Boolean))];
+}
+
+function textIncludesGirlGroupHint(messageHint: string | undefined) {
+  const text = String(messageHint || "").toLowerCase();
+  return text.includes("女团");
+}
+
+function textIncludesGroupHint(messageHint: string | undefined) {
+  const text = String(messageHint || "").toLowerCase();
+  return text.includes("组合") || text.includes("团");
 }
 
 function noveltyBoost(
@@ -573,9 +590,9 @@ function slotLabelForTrack(
   explorationIndex: number,
 ) {
   if (slotType === "explore") {
-    return explorationIndex === 0 ? "新发现 A" : `新发现 ${explorationIndex + 1}`;
+    return explorationIndex === 0 ? "新发现" : `新发现 ${explorationIndex + 1}`;
   }
-  return stableIndex === 0 ? "当前主推" : "为你延续";
+  return stableIndex === 0 ? "主推" : "延续";
 }
 
 function interleaveTrackCandidates(
@@ -633,27 +650,27 @@ function classifyRecommendationSource(
   const inferredLanguage = preferences.language || inferLanguage(taste, hit.title, hit.artist);
 
   if (localMatch?.sourcePath) {
-    return { sourceLabel: "本地收藏线", slotType: "local-match" };
+    return { sourceLabel: "本地", slotType: "local-match" };
   }
   if (explicitArtist && hit.artist.includes(explicitArtist)) {
-    return { sourceLabel: "按你点名", slotType: "request" };
+    return { sourceLabel: "点名", slotType: "request" };
   }
   if (preferences.vibes.length > 0 && preferences.vibes.some((item) => `${hit.title} ${hit.artist} ${hit.albumName || ""}`.toLowerCase().includes(item.toLowerCase()))) {
-    return { sourceLabel: "按你刚刚的感觉", slotType: "request" };
+    return { sourceLabel: "此刻", slotType: "request" };
   }
   if (sanitizeAnchorArtists(taste.anchorArtists).some((artist) => hit.artist.includes(artist))) {
-    return { sourceLabel: "你常听的艺人", slotType: "anchor" };
+    return { sourceLabel: "常听", slotType: "anchor" };
   }
   if (
     scenePreferenceScore(model.artistAffinityByScene, routine.scene, hit.artist) > 0.8 ||
     scenePreferenceScore(model.languageAffinityByScene, routine.scene, inferredLanguage) > 0.8
   ) {
-    return { sourceLabel: "顺着你的口味", slotType: "learned" };
+    return { sourceLabel: "口味", slotType: "learned" };
   }
   if (exploration.mode !== "focused") {
-    return { sourceLabel: "给你换点新的", slotType: "explore" };
+    return { sourceLabel: "新鲜", slotType: "explore" };
   }
-  return { sourceLabel: "这一轮的自然延续", slotType: "fallback" };
+  return { sourceLabel: "顺推", slotType: "fallback" };
 }
 
 async function verifyPlaybackUrl(url: string) {
@@ -896,6 +913,7 @@ async function buildProgramTracks(
 
   for (const [index, hit] of hits.entries()) {
     if (stableCandidates.length + exploreCandidates.length >= count * 3) break;
+    if (hasExplicitLanguageConstraint(preferences) && !matchesLanguagePreference(hit, preferences.language)) continue;
     const normalizedArtist = hit.artist.trim().toLowerCase();
     const currentArtistCount = artistCounts.get(normalizedArtist) || 0;
     if (currentArtistCount >= maxPerArtist) continue;

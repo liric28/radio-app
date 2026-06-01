@@ -23,6 +23,7 @@ export type PreferenceEvent = {
   type:
     | "recommendation_generated"
     | "chat_request"
+    | "intent_resolved"
     | "favorite"
     | "download"
     | "replay"
@@ -37,6 +38,7 @@ export type PreferenceEvent = {
   queue?: PreferenceTrackSnapshot[];
   playbackSeconds?: number;
   playbackRatio?: number;
+  resolver?: "rule" | "llm";
 };
 
 export type PreferenceModel = {
@@ -85,6 +87,13 @@ export type PreferenceInsights = {
     favorite: number;
     download: number;
     completionRate: number;
+  }>;
+  recentIntentResolutions: Array<{
+    ts: string;
+    message: string;
+    action: string;
+    resolver: string;
+    scene: string;
   }>;
 };
 
@@ -360,6 +369,17 @@ export async function readPreferenceInsights(): Promise<PreferenceInsights> {
             : 0,
       }))
       .sort((left, right) => right.generated - left.generated),
+    recentIntentResolutions: events
+      .filter((event) => event.type === "intent_resolved")
+      .slice(-12)
+      .reverse()
+      .map((event) => ({
+        ts: event.ts,
+        message: event.message || "-",
+        action: event.action || "none",
+        resolver: event.resolver || "-",
+        scene: event.scene || event.track?.scene || "-",
+      })),
   };
 }
 

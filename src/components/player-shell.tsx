@@ -66,6 +66,13 @@ type PreferenceInsights = {
     download: number;
     completionRate: number;
   }>;
+  recentIntentResolutions: Array<{
+    ts: string;
+    message: string;
+    action: string;
+    resolver: string;
+    scene: string;
+  }>;
 };
 
 type FeedbackAction = "skip" | "fresh" | "calmer" | "familiar";
@@ -2339,6 +2346,19 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                       <span>入队 {item.generated}</span>
                       <span>完成率 {Math.round(item.completionRate * 100)}%</span>
                       <span>完播 {item.completed} / 中断 {item.interrupted} / 收藏 {item.favorite} / 下载 {item.download}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.learningBlock}>
+                <strong>Intent Resolution Log</strong>
+                <div className={styles.learningEventList}>
+                  {(preferenceInsights?.recentIntentResolutions || []).map((item) => (
+                    <div key={`${item.ts}-${item.message}`} className={styles.learningEventRow}>
+                      <span>{item.resolver}</span>
+                      <span>{item.action}</span>
+                      <span>{item.scene}</span>
+                      <span>{item.message}</span>
                     </div>
                   ))}
                 </div>
