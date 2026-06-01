@@ -2011,12 +2011,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
         <section className={styles.clockStage}>
           <div className={styles.clockWrap}>
-            <button
-              type="button"
-              className={styles.clockDisplayButton}
-              aria-label={`切换时间显示样式，当前为${clockDisplayMode === "pixel" ? "像素字" : "点阵字"}`}
-              onClick={() => setClockDisplayMode(mode => mode === "pixel" ? "dot" : "pixel")}
-            >
+            <div className={styles.clockDisplayButton}>
               {clockDisplayMode === "pixel"
                 ? (
                     <div className={`${styles.pixelClock} ${claudioPixelFont.className}`} aria-hidden="true" suppressHydrationWarning>
@@ -2030,7 +2025,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                       cellClassName={styles.clockDot}
                     />
                   )}
-            </button>
+            </div>
             <div className={styles.clockMeta} onClick={() => setLoaderVariant(v => v === "hex1" ? "hex10" : v === "hex10" ? "square15" : v === "square15" ? "square18" : v === "square18" ? "circular8" : "hex1")}>
               <strong>{dayLabel}</strong>
               <span>{dateLabel}</span>

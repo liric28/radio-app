@@ -95,6 +95,11 @@ function normalizeSource(source: string | undefined): MusicSearchSource {
   return "kugou";
 }
 
+function sourceFallbackOrder(preferred: MusicSearchSource) {
+  const allSources: MusicSearchSource[] = ["qq", "kugou", "netease"];
+  return [preferred, ...allSources.filter((item) => item !== preferred)];
+}
+
 function buildTrackKey(track: { title?: string; artist?: string }) {
   return `${track.title || ""}__${track.artist || ""}`.toLowerCase();
 }
@@ -144,6 +149,19 @@ function findLocalMatch(hit: MusicSearchHit, songs: Song[]) {
     const songArtist = normalizeName(song.artist);
     return Boolean(songTitle && songArtist && songTitle === targetTitle && songArtist === targetArtist);
   });
+}
+
+async function localSongFileExists(song: Song | undefined) {
+  if (!song?.sourcePath) return false;
+  const absolutePath = song.libraryRoot
+    ? path.resolve(song.libraryRoot, song.sourcePath)
+    : path.resolve(song.sourcePath);
+  try {
+    await fs.access(absolutePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function sanitizeAnchorArtists(artists: string[]) {
@@ -917,7 +935,8 @@ async function buildProgramTracks(
     const normalizedArtist = hit.artist.trim().toLowerCase();
     const currentArtistCount = artistCounts.get(normalizedArtist) || 0;
     if (currentArtistCount >= maxPerArtist) continue;
-    const localMatch = findLocalMatch(hit, localSongs);
+    const localCandidate = findLocalMatch(hit, localSongs);
+    const localMatch = (await localSongFileExists(localCandidate)) ? localCandidate : undefined;
     const recommendationMeta = classifyRecommendationSource(
       hit,
       localMatch,
@@ -1015,6 +1034,35 @@ function createProgramTrack(song: Song, reason?: string) {
 }
 
 async function buildOnlineProgram(options: BuildOnlineProgramOptions = {}) {
+  const preferredSource = normalizeSource(options.source || DEFAULT_SOURCE);
+  const attemptOptionsList: BuildOnlineProgramOptions[] = sourceFallbackOrder(preferredSource).map((source) => ({
+    ...options,
+    source,
+  }));
+
+  if (options.messageHint) {
+    attemptOptionsList.push(
+      ...sourceFallbackOrder(preferredSource).map((source) => ({
+        ...options,
+        source,
+        messageHint: undefined,
+      })),
+    );
+  }
+
+  let lastError: Error | null = null;
+  for (const attemptOptions of attemptOptionsList) {
+    try {
+      return await buildOnlineProgramAttempt(attemptOptions);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  throw lastError || new Error("在线推荐没有找到可播放歌曲");
+}
+
+async function buildOnlineProgramAttempt(options: BuildOnlineProgramOptions = {}) {
   const source = normalizeSource(options.source || DEFAULT_SOURCE);
   const [taste, playlists, routines, memory] = await Promise.all([
     readTasteProfile(),
@@ -1155,19 +1203,30 @@ export async function ensureOnlineRadioProgram() {
 }
 
 export async function regenerateOnlineRadioProgram(options: BuildOnlineProgramOptions = {}) {
-  const next = await buildOnlineProgram({
-    ...options,
-    forceNew: true,
-    action: options.action || "regenerate",
-  });
-  await writeOnlineState({
-    date: getTodayDateKey(),
-    seed: next.seed,
-    source: next.source,
-    program: next.program,
-  });
-  await writeProgramMemory(next.program, options.action || "online-regenerate");
-  return { program: next.program, schedule: createScheduleFromProgram(next.program) };
+  try {
+    const next = await buildOnlineProgram({
+      ...options,
+      forceNew: true,
+      action: options.action || "regenerate",
+    });
+    await writeOnlineState({
+      date: getTodayDateKey(),
+      seed: next.seed,
+      source: next.source,
+      program: next.program,
+    });
+    await writeProgramMemory(next.program, options.action || "online-regenerate");
+    return { program: next.program, schedule: createScheduleFromProgram(next.program) };
+  } catch (error) {
+    const currentState = await readOnlineState();
+    if (currentState?.program) {
+      return {
+        program: currentState.program,
+        schedule: createScheduleFromProgram(currentState.program),
+      };
+    }
+    throw error;
+  }
 }
 
 export async function promoteSongToOnlineProgram(

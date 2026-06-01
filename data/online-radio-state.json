@@ -1,8 +1,8 @@
 {
   "date": "2026-06-01",
   "seed": {
-    "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "reason": "queue-advance"
+    "input": "白天通勤时段，用华语经典旋律唤醒回忆感，在熟悉歌单和在线推荐里找几首能呼应周杰伦、BEYOND气质的中文流行摇滚",
+    "reason": "本地音乐库以周杰伦和BEYOND的华语摇滚为核心锚点，回忆感标签占比最高，近期Maroon 5播放显示英文摇滚偏好但语言请求明确指向中文，需将两者结合生成既能承接熟悉感又具备通勤激励属性的在线搜索意图"
   },
   "source": "qq",
   "program": {
@@ -10,67 +10,67 @@
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "先别急着认歌，这一轮我想先把气口放稳。前面偏轻推力，后面会慢慢亮一点。",
+    "hostIntro": "先别急着认歌，这一轮我想先把气口放稳。前面偏专注，后面会慢慢亮一点。",
     "currentTrack": {
-      "id": "online-9d24cb82f0f2",
-      "title": "一輪花 (一朵花)",
-      "artist": "塩ノ谷早耶香",
+      "id": "online-85991d5d8e20",
+      "title": "낮 (Day off) (白天)",
+      "artist": "脸红的思春期",
       "year": 2026,
-      "mood": "轻推力",
-      "energy": 9,
-      "language": "日语",
+      "mood": "专注",
+      "energy": 7,
+      "language": "韩语",
       "tags": [
         "在线推荐",
         "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 塩ノ谷早耶香 / 一輪花 (一朵花)”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。",
       "libraryRoot": "",
-      "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D001FUjUE0PZcez%26level%3Dexhigh",
+      "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D00045fv91egfYd%26level%3Dexhigh",
       "source": "qq",
       "recommendationMeta": {
         "sourceLabel": "口味",
         "slotType": "learned",
-        "slotLabel": "延续"
+        "slotLabel": "主推"
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 227,
+        "duration": 192,
         "payable": false,
         "downloadable": true,
-        "albumName": "Snow Flakes Love/一輪花 (DVD付A)",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002h5FdI2Mx6Ta.jpg",
+        "albumName": "Two Five",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg",
         "raw": {
           "source": "qq",
-          "songId": 5066702,
-          "songmid": "001FUjUE0PZcez",
-          "mediaMid": "000Ds9Ng41c1jq",
-          "title": "一輪花 (一朵花)",
-          "artist": "塩ノ谷早耶香",
-          "albumName": "Snow Flakes Love/一輪花 (DVD付A)",
-          "duration": 227,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002h5FdI2Mx6Ta.jpg"
+          "songId": 237776459,
+          "songmid": "00045fv91egfYd",
+          "mediaMid": "000C6adX259x6U",
+          "title": "낮 (Day off) (白天)",
+          "artist": "脸红的思春期",
+          "albumName": "Two Five",
+          "duration": 192,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg"
         }
       },
-      "reason": "这首歌是按“白天工作流 / 塩ノ谷早耶香 / 一輪花 (一朵花)”这条在线推荐线索命中的。"
+      "reason": "这首歌来自脸红的思春期，带你找回白天工作的专注节奏，韩国小清新的魔力真的绝了。"
     },
     "queue": [
       {
-        "id": "online-85991d5d8e20",
-        "title": "낮 (Day off) (白天)",
-        "artist": "脸红的思春期",
+        "id": "online-b964c3f0105a",
+        "title": "Daylight",
+        "artist": "Maroon 5",
         "year": 2026,
-        "mood": "专注",
-        "energy": 9,
-        "language": "韩语",
+        "mood": "克制",
+        "energy": 8,
+        "language": "英语",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
         "libraryRoot": "",
-        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D00045fv91egfYd%26level%3Dexhigh",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D001DwtBl2gdXYN%26level%3Dexhigh",
         "source": "qq",
         "recommendationMeta": {
           "sourceLabel": "口味",
@@ -79,67 +79,24 @@
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 192,
+          "duration": 226,
           "payable": false,
           "downloadable": true,
-          "albumName": "Two Five",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg",
+          "albumName": "Singles (Explicit)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
           "raw": {
             "source": "qq",
-            "songId": 237776459,
-            "songmid": "00045fv91egfYd",
-            "mediaMid": "000C6adX259x6U",
-            "title": "낮 (Day off) (白天)",
-            "artist": "脸红的思春期",
-            "albumName": "Two Five",
-            "duration": 192,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg"
+            "songId": 104357077,
+            "songmid": "001DwtBl2gdXYN",
+            "mediaMid": "000XzVwY1T07TK",
+            "title": "Daylight",
+            "artist": "Maroon 5",
+            "albumName": "Singles (Explicit)",
+            "duration": 226,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
           }
         },
-        "reason": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-fad0c8bed034",
-        "title": "快乐的刀盾狗",
-        "artist": "哦吼逗你玩",
-        "year": 2026,
-        "mood": "克制",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 哦吼逗你玩 / 快乐的刀盾狗”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D000pTNmu3vK8HQ%26level%3Dexhigh",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "此刻",
-          "slotType": "request",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 154,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "人物摇滚-摇滚",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M00000225p0F0x1Co2.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 651875501,
-            "songmid": "000pTNmu3vK8HQ",
-            "mediaMid": "000pTNmu3vK8HQ",
-            "title": "快乐的刀盾狗",
-            "artist": "哦吼逗你玩",
-            "albumName": "人物摇滚-摇滚",
-            "duration": 154,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M00000225p0F0x1Co2.jpg"
-          }
-        },
-        "reason": "这首歌是按“白天工作流 / 哦吼逗你玩 / 快乐的刀盾狗”这条在线推荐线索命中的。"
+        "reason": "Maroon 5 送上 Daylight，阳光男声陪着你，克制不闹腾，工作日里刚刚好。"
       },
       {
         "id": "online-06fe23b436e5",
@@ -182,15 +139,144 @@
             "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg"
           }
         },
-        "reason": "这首歌是按“白天工作流 / 白天 / 百战成诗”这条在线推荐线索命中的。"
+        "reason": "百战成诗来啦，前进的力量已经准备好了，听完这首今天绝对满血复活。"
+      },
+      {
+        "id": "online-6d638b08f27a",
+        "title": "连名带姓",
+        "artist": "曹杨",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 曹杨 / 连名带姓”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D001vmuVt2FpRSI%26level%3Dexhigh",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 311,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "连名带姓",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003T0RQZ03Ss2m.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 652890346,
+            "songmid": "001vmuVt2FpRSI",
+            "mediaMid": "002d8UFl1cEGF9",
+            "title": "连名带姓",
+            "artist": "曹杨",
+            "albumName": "连名带姓",
+            "duration": 311,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003T0RQZ03Ss2m.jpg"
+          }
+        },
+        "reason": "曹杨的连名带姓送给你们，专注模式下就听这样的歌，温柔地陪你搞定一切。"
+      },
+      {
+        "id": "online-e8d2ecb1b585",
+        "title": "北斗星",
+        "artist": "温岚",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 温岚 / 北斗星”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D003IRHY530hRuN%26level%3Dexhigh",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 288,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "有点野",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003koQ8f2ugWIh.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 102808,
+            "songmid": "003IRHY530hRuN",
+            "mediaMid": "004TAZnF2wOzPw",
+            "title": "北斗星",
+            "artist": "温岚",
+            "albumName": "有点野",
+            "duration": 288,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003koQ8f2ugWIh.jpg"
+          }
+        },
+        "reason": "温岚的北斗星闪耀着，克制又深情，安静的午后让这首歌陪你度过吧。"
+      },
+      {
+        "id": "online-a4f4093a663b",
+        "title": "交换余生",
+        "artist": "白天",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "/api/remote-audio?url=http%3A%2F%2F175.27.166.236%2Fkgqq1%2Fqq.php%3Ftype%3Dmp3%26id%3D003Mr8HR2HksC8%26level%3Dexhigh",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 277,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "治愈男生版",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 495254237,
+            "songmid": "003Mr8HR2HksC8",
+            "mediaMid": "003Mr8HR2HksC8",
+            "title": "交换余生",
+            "artist": "白天",
+            "albumName": "治愈男生版",
+            "duration": 277,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
+          }
+        },
+        "reason": "交换余生响起来了，旋律轻轻推着你往前走，今天的工作效率要起飞啦。"
       }
     ],
     "explanation": [
       "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
-      "推荐线索是“切到摇滚模式，从本地歌单的BEYOND摇滚基因里找几首有力量感的在线摇滚曲目”，实际落地优先保留 Maroon 5、LMFAO、Lauren Bennett、GoonRock、塩ノ谷早耶香 这些锚点。",
+      "推荐线索是“白天通勤时段，用华语经典旋律唤醒回忆感，在熟悉歌单和在线推荐里找几首能呼应周杰伦、BEYOND气质的中文流行摇滚”，实际落地优先保留 脸红的思春期、Maroon 5、白天 这些锚点。",
       "当前来源是 qq，本轮确认了 6 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 manual-pick，本轮种子是“切到摇滚模式，从本地歌单的BEYOND摇滚基因里找几首有力量感的在线摇滚曲目”。这时段更偏 BIGBANG，语言更偏 英语，当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 online-regenerate，本轮种子是“白天通勤时段，用华语经典旋律唤醒回忆感，在熟悉歌单和在线推荐里找几首能呼应周杰伦、BEYOND气质的中文流行摇滚”。这时段更偏 Maroon 5，语言更偏 韩语，当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

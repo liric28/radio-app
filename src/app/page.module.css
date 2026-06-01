@@ -3,23 +3,23 @@
   padding: 18px 12px 28px;
   transition: background 180ms ease, color 180ms ease;
   /*
-   * 自定义蓝色光标。SVG 内联编码，避免额外请求。
-   * 16x24 箭头，#5db8ff 蓝色填充 + 白色描边（在深色背景上对比清晰）。
-   * 热点 (hotspot) 设在 1,1 接近箭头尖端。
-   * 默认 cursor 在按钮/输入框上仍会被覆盖（看 .sendButton / input 的 cursor 设置）。
+   * 自定义蓝色光标，使用内联 SVG，避免额外请求。
+   * 16x24 箭头，#5db8ff 蓝色填充，外加白色描边，方便在深色背景上保持清晰对比。
+   * 热点坐标设在 1,1，接近箭头尖端。
+   * 默认光标仍会被按钮和输入框自身的 cursor 设置覆盖，见 .sendButton / input。
    */
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M3 2 L3 22 L9 17 L13 25 L17 23 L13 15 L21 15 Z' fill='%235db8ff' stroke='%23ffffff' stroke-width='1.2' stroke-linejoin='round'/></svg>") 2 2, auto;
 }
 
 .page button,
 .page a {
-  /* 交互元素上换成 pointer 版本：稍微高亮的蓝色 + 表示可点击 */
+  /* 交互元素改用 pointer 版光标：颜色更亮一点，同时明确表示可点击。 */
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M3 2 L3 22 L9 17 L13 25 L17 23 L13 15 L21 15 Z' fill='%237ec8ff' stroke='%23ffffff' stroke-width='1.4' stroke-linejoin='round'/></svg>") 2 2, pointer;
 }
 
 /*
- * 紫色呼吸光晕：用独立伪元素做外层雾光，效果更接近截图里
- * “面板外圈包着一层发散的紫蓝 haze”，而不是普通阴影。
+ * 紫色呼吸光晕：使用独立伪元素绘制外层雾光，
+ * 效果更接近截图里“面板外圈包着一层发散紫蓝雾”的感觉，而不是普通阴影。
  */
 @keyframes breathe-glow {
   0%, 100% {
@@ -206,7 +206,7 @@
   z-index: 5;
 }
 
-/* 点阵底纹现在统一由 .panelLight / .panelDark 的 background-image 全铺，无需各 section 重复 ::before。 */
+/* 点阵底纹统一由 .panelLight / .panelDark 的 background-image 整体铺满，各区块不再重复写 ::before。 */
 
 .topbar {
   display: flex;
@@ -280,26 +280,27 @@
 }
 
 /*
- * Claudio 像素字外层容器。
+ * Claudio 像素字的外层容器。
  *
- * 调整像素字大小的唯一入口：改这里的 --dot-size 和 --dot-gap。
+ * 调整像素字大小的唯一入口就是这里的 --dot-size 和 --dot-gap。
  *
- * 为什么必须写在这里（而不是叶子 .brandDot 上）：
- *   .dotGlyph（grid 容器，控制格子尺寸）和 .brandDot（叶子 <i>，控制圆点大小）
- *   都读这两个 CSS 变量。变量只能从父继承到子，写在叶子上 grid 容器拿不到
- *   → 你单独缩圆点，但格子尺寸不变，结果字形塌陷或重叠。
+ * 为什么必须写在这里，而不是写在叶子节点 .brandDot 上：
+ *   .dotGlyph 是网格容器，负责控制格子尺寸；.brandDot 是叶子 <i>，负责控制圆点大小。
+ *   这两个节点都会读取这两个 CSS 变量。变量只能从父级往子级继承，写在叶子上时，
+ *   网格容器拿不到变量值。
+ *   结果就是你单独缩小了圆点，但格子尺寸不变，字形会塌陷或重叠。
  *   写在共同祖先 .dotWord 上，圆点和格子才能同步缩放。
  *
- * 视觉高度估算公式（用于判断要不要再调）：
- *   字符整体高度 ≈ 7 * dot-size + 6 * dot-gap   （字形是 7 行点阵）
- *   单字符宽度  ≈ 5 * dot-size + 4 * dot-gap   （多数字形 5 列）
+ * 视觉高度估算公式，用来判断是否还要继续调：
+ *   字符整体高度约等于 7 * dot-size + 6 * dot-gap，因为字形本身是 7 行点阵。
+ *   单字符宽度约等于 5 * dot-size + 4 * dot-gap，因为多数形状是 5 列。
  *
- * 参考尺寸（旁边 logo .avatar 高度 34px）：
- *   3px / 1px → 整体高 27px（当前桌面默认，比 logo 矮一点）
- *   4px / 1px → 整体高 34px（与 logo 齐高）
- *   2px / 1px → 整体高 20px（明显比 logo 矮）
+ * 参考尺寸，旁边 logo 的 .avatar 高度是 34px：
+ *   3px / 1px 时，整体高度约 27px，是当前桌面默认值，比 logo 矮一点。
+ *   4px / 1px 时，整体高度约 34px，可以和 logo 齐高。
+ *   2px / 1px 时，整体高度约 20px，会明显比 logo 矮。
  *
- * 移动断点（≤720px）的覆盖在文件末尾 @media 里，结构一样。
+ * 移动端断点（≤720px）的覆盖写在文件末尾的 @media 里，结构保持一致。
  */
 .dotWord {
   --dot-size: 3px;
@@ -335,9 +336,9 @@
 }
 
 /*
- * .brandDot / .clockDot 单点。
- * --dot-size / --dot-gap 都统一由各自的外层容器（.dotWord / .dotClock）控制，
- * 叶子上不要定义——见 .dotWord 注释的"为什么必须写在这里"。
+ * .brandDot / .clockDot 表示单个点。
+ * --dot-size / --dot-gap 统一由各自的外层容器（.dotWord / .dotClock）控制，
+ * 不要在叶子节点上重新定义，原因见 .dotWord 上面的注释。
  */
 
 .dotOn {
@@ -724,11 +725,11 @@
 }
 
 /*
- * 直接子选择器（>）很重要：
- * .liveTitle 和 .onAir 里现在嵌着 DotMatrixText，里面每个像素点也是 <i>。
- * 不加 > 的话，这条规则会把像素字的每个点都强制成 10px 绿色圆点
- * → Claudio 字会变又大又绿。
- * 只想接管"指示灯"那一颗直接子 <i />，所以必须 > i。
+ * 这里必须用直接子选择器（>）。
+ * .liveTitle 和 .onAir 里现在嵌着 DotMatrixText，里面每个像素点本身也是 <i>。
+ * 如果不加 >，这条规则会把像素字里的每个点都强行改成 10px 的绿色圆点，
+ * Claudio 的字就会又大又绿。
+ * 我们只想控制“指示灯”那一颗直接子级的 <i />，所以必须写成 > i。
  */
 .onAir > i,
 .liveTitle > i {
@@ -762,7 +763,7 @@
   }
 }
 
-/* 播放器背景色 */
+/* 播放器区域背景。 */
 .controlDeck {
   display: grid;
   grid-template-columns: 1.1fr minmax(0, 1.9fr);
@@ -1018,13 +1019,13 @@
   font-weight: 600;
 }
 
-/* today 背景色 */
+/* TODAY 标题条背景。 */
 .queueHeader {
   background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* 直播条背景色 */
+/* Live 条背景。 */
 .liveStrip {
   background: #000000;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
@@ -1097,10 +1098,11 @@
 }
 
 /*
- * 聊天区。背景透出全 panel 的点阵底纹，不再独立加卡片层。
- * z-index 仅用于让点击 ripple/输入框可正常交互，不再用于抬升挡底纹。
- * handlePanelPointerMove 仍会在鼠标进入此区域时关闭鼠标跟随透镜的 active 态，
- * 防止亮色透镜盖在文字上影响阅读。
+ * 聊天区。
+ * 背景直接透出整个 panel 的点阵底纹，不再额外加独立卡片层。
+ * z-index 这里只用于保证点击波纹和输入框可以正常交互，不再拿来抬升遮住底纹。
+ * handlePanelPointerMove 依然会在鼠标进入这里时关闭跟随透镜的激活状态，
+ * 避免亮色透镜盖到文字上影响阅读。
  */
 .djPanel {
   padding: 0 20px 20px;
@@ -1108,9 +1110,10 @@
 }
 
 /*
- * 点击光圈：handlePanelClick 动态 spawn 一个 span.clickRipple 到 panel 内，
- * 600ms 后 remove。蓝色描边圈从小到大扩散 + 淡出，**仅边线没有填充**。
- * 用 transform: scale 走 GPU 合成层，不触发布局。
+ * 点击光圈：
+ * handlePanelClick 会在 panel 内动态生成一个 span.clickRipple，
+ * 600ms 后移除。蓝色描边圆圈会从小到大扩散并逐渐淡出，只保留边线，没有填充。
+ * 使用 transform: scale 走 GPU 合成层，避免触发布局。
  */
 .clickRipple {
   position: absolute;
@@ -1260,11 +1263,12 @@
   padding-right: 4px;
   scroll-behavior: smooth;
   /*
-   * 隐藏滚动条但保留滚动功能。三套写法兼容三大引擎：
-   * - WebKit (Chrome/Safari/Edge)：::-webkit-scrollbar 设 display none
-   * - Firefox：scrollbar-width: none
-   * - 旧 IE/Edge：-ms-overflow-style: none
-   * 用户仍能滚轮 / 触屏滚动，只是看不到那条灰色指示器。
+   * 隐藏滚动条，但保留滚动能力。
+   * 这里用三套写法兼容三大内核：
+   * - WebKit（Chrome / Safari / Edge）：把 ::-webkit-scrollbar 设为 display: none
+   * - Firefox：使用 scrollbar-width: none
+   * - 旧版 IE / Edge：使用 -ms-overflow-style: none
+   * 用户依然可以用滚轮或触屏滚动，只是看不到那条灰色滚动条。
    */
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1275,10 +1279,10 @@
 }
 
 /*
- * 聊天行：用 flex 而非 grid 是为了支持 row-reverse 左右翻转。
- * Claudio（assistant）默认 row：头像左 + 气泡靠左，自然贴边。
- * 用户（user）走 row-reverse：头像变到右侧 + 气泡靠右。
- * 气泡 max-width 78% 留点缝隙避免单边贴到对侧；多行文本会自动换行。
+ * 聊天行使用 flex，而不是 grid，是为了支持 row-reverse 的左右翻转。
+ * Claudio（assistant）默认用 row：头像在左，气泡靠左，更自然地贴边。
+ * 用户（user）使用 row-reverse：头像到右边，气泡也靠右。
+ * 气泡 max-width 设为 78%，留出一点空隙，避免单边直接贴到对侧；多行文本会自动换行。
  */
 .chatLine {
   display: flex;
@@ -1339,13 +1343,13 @@
   font-size: 14px;
 }
 
-/* Claudio 气泡背景色 */
+/* Claudio 气泡背景。 */
 .chatLineAssistant .chatBubbleWithLabel {
   background: rgba(255, 255, 255, 0.05);
   color: #f3f0ff;
 }
 
-/* 用户气泡背景色 */
+/* 用户气泡背景。 */
 .chatLineUser .chatBubbleWithLabel {
   background: rgba(84, 216, 140, 0.12);
   color: #c9ffd8;
@@ -1384,16 +1388,16 @@
 }
 
 /*
- * LIST 按钮弹出的"当前段歌单"卡片容器。
- * 位置：chatLog 之后、inputDock 之前——视觉上像聊天流里插播的一组歌曲消息。
- * 触发：顶部 LIST 按钮 toggle showQueueList state（player-shell.tsx）。
- * 每个 .queueCard 是按钮，点击 selectQueueTrack 跳到该曲。
- * 当前曲（.queueCardActive）绿色描边 + 浅绿背景 + 星标，对应截图视觉。
+ * LIST 按钮弹出的“当前时段歌单”卡片容器。
+ * 位置在 chatLog 之后、inputDock 之前，视觉上像插入聊天流中的一组歌曲消息。
+ * 触发方式是顶部 LIST 按钮切换 showQueueList state，见 player-shell.tsx。
+ * 每个 .queueCard 都是按钮，点击后通过 selectQueueTrack 跳到对应歌曲。
+ * 当前歌曲（.queueCardActive）使用绿色描边、浅绿背景和星标，对齐截图里的视觉效果。
  */
 /*
- * 容器：靠左缩进 44px（约等于 .avatar 34px + chatLine 内 10px gap），
- * 视觉上跟 Claudio 气泡左边缘对齐，像是 assistant 连续插播的一组卡片。
- * 宽度由内层 .queueCard 的 max-width 控制，整体不全铺。
+ * 容器左侧缩进 44px，约等于 .avatar 的 34px 加上 chatLine 内 10px 的间距。
+ * 视觉上会和 Claudio 气泡的左边缘对齐，看起来像 assistant 连续插播的一组卡片。
+ * 整体宽度由内层 .queueCard 的 max-width 控制，不会整行铺满。
  */
 .queueOverlay {
   display: grid;
@@ -1402,11 +1406,11 @@
 }
 
 /*
- * ============ Modal 弹层标准模式（项目通用，不只 dayList 用）============
+ * ============ Modal 弹层标准模式（项目通用，不只给 dayList 使用）============
  *
- * 后续所有"弹出框 / alert / dialog"都按这个模板做，复制改名即可。
+ * 后续所有“弹出框 / alert / dialog”都按这个模板做，复制后改名即可。
  *
- * JSX 结构（在 PlayerShell return 的 </section> 之后、</main> 之前渲染）：
+ * JSX 结构，渲染位置在 PlayerShell return 的 </section> 之后、</main> 之前：
  *
  *   {showXxx && (
  *     <div className={styles.xxxBackdrop} role="dialog" aria-modal="true"
@@ -1421,43 +1425,48 @@
  *     </div>
  *   )}
  *
- * 关键约束（违反就会出 bug）：
+ * 关键约束，违反就会出问题：
  *
- * 1. **必须渲染在 .panel 外** — .panel 有 overflow: hidden，
- *    fixed modal 虽然脱离正常流，但浏览器仍可能因为 ancestor stacking context
- *    把 modal 限制在 panel 区域。放到 main 直接子级最稳。
+ * 1. **必须渲染在 .panel 外面**。
+ *    .panel 带有 overflow: hidden。
+ *    fixed modal 虽然脱离正常文档流，但浏览器仍可能因为祖先层叠上下文，
+ *    把 modal 限制在 panel 区域内。放到 main 的直接子级最稳。
  *
- * 2. **Backdrop + Modal 双层** — 不要把 onClick 关闭绑在 modal 本身，
- *    否则点 modal 内任何地方都会关。一定用 backdrop onClick 关闭，
- *    modal 内 stopPropagation 切断冒泡。
+ * 2. **必须使用 Backdrop + Modal 双层结构**。
+ *    不要把 onClick 关闭逻辑绑在 modal 本体上，
+ *    否则点击 modal 内任何位置都会关闭。
+ *    正确做法是 backdrop 负责 onClick 关闭，modal 内用 stopPropagation 截断冒泡。
  *
- * 3. **亮色主题覆盖用 .pageLight 不是 .panelLight** — modal 在 main 内、panel 外，
- *    祖先链上只有 .pageLight/.pageDark，没有 .panelLight/.panelDark。
- *    搞错了亮色模式 modal 就不会变白。
+ * 3. **亮色主题覆盖要用 .pageLight，而不是 .panelLight**。
+ *    modal 在 main 里面、panel 外面，
+ *    祖先链上只有 .pageLight / .pageDark，没有 .panelLight / .panelDark。
+ *    如果写错，亮色模式下 modal 就不会变白。
  *
- * 4. **z-index ≥ 100** — 高于 .clickRipple(20)、.panel::before/::after 等所有 panel 内层。
+ * 4. **z-index 必须大于等于 100**。
+ *    需要高于 .clickRipple(20)、.panel::before / ::after 等所有 panel 内层。
  *
- * 5. **触发用独立 state** — 不要复用其他 toggle，比如 dayList 跟 LIST 列表共用 state
- *    会导致打开 LIST 时 modal 也莫名其妙弹出来。
+ * 5. **触发必须用独立 state**。
+ *    不要复用别的 toggle，比如让 dayList 和 LIST 共用同一个 state，
+ *    否则打开 LIST 时 modal 也可能莫名弹出。
  *
- * 视觉规范（保持各 modal 一致）：
- * - backdrop: rgba(8,6,14,0.72) + backdrop-filter: blur(6px)，180ms 淡入
- * - modal: 圆角 18px、点阵底纹 + 紫色 inset glow、pop 220ms（scale 0.96→1 + translateY 8px→0）
- * - header padding 16px 18px，关闭按钮 28px 圆形 ✕
+ * 视觉规范，用来保持所有 modal 风格一致：
+ * - backdrop 使用 rgba(8,6,14,0.72) + backdrop-filter: blur(6px)，180ms 淡入
+ * - modal 使用 18px 圆角、点阵底纹、紫色内发光，220ms 弹出动画（scale 0.96→1，translateY 8px→0）
+ * - header 内边距是 16px 18px，关闭按钮为 28px 圆形 ✕
  *
- * 现存实例：.dayListBackdrop / .dayListModal（TODAY 行触发，下方）
+ * 现有实例：.dayListBackdrop / .dayListModal，也就是下面由 TODAY 行触发的那套。
  *
- * ============ /Modal 标准模式 ============
- */
+ * ============ /Modal 标准模式结束 ============
+*/
 /*
- * "全天 4 段歌单" modal 弹层（TODAY 行触发）。
- * 与内联的 .queueOverlay（LIST 按钮触发）完全独立——这是覆盖式 alert/dialog 风格。
+ * “全天 4 段歌单” modal 弹层，由 TODAY 行触发。
+ * 它和内联的 .queueOverlay（LIST 按钮触发）完全独立，属于覆盖式 alert / dialog 风格。
  *
  * 结构：
- *   .dayListBackdrop  ← position:fixed 全屏遮罩，点击关闭（onClick → setShowDayList(false)）
- *     └─ .dayListModal  ← 居中卡片容器，stopPropagation 防止穿透
- *          ├─ .dayListHeader  ← 标题 + ✕
- *          └─ .dayListBody    ← 滚动区，4 段 .queueBlock
+ *   .dayListBackdrop  ← position: fixed 的全屏遮罩，点击关闭（onClick → setShowDayList(false)）
+ *     └─ .dayListModal  ← 居中卡片容器，使用 stopPropagation 防止点击穿透
+ *          ├─ .dayListHeader  ← 标题 + 关闭按钮
+ *          └─ .dayListBody    ← 滚动区，里面是 4 段 .queueBlock
  */
 .dayListBackdrop {
   position: fixed;
@@ -1555,8 +1564,8 @@
 }
 
 /*
- * 段（时段）容器：场景标题 + 该段所有歌曲卡片。
- * 用于全天歌单 modal 内每个时段，按 schedule.blocks 渲染一次。
+ * 时段容器：包含场景标题，以及该时段下的所有歌曲卡片。
+ * 用在全天歌单 modal 里，每个 schedule.blocks 都会渲染一个。
  */
 .queueBlock {
   display: grid;
@@ -1579,7 +1588,7 @@
   color: #f6f2ff;
 }
 
-/* 亮色主题覆盖 */
+/* 亮色主题下的覆盖样式。 */
 .pageLight .dayListBackdrop {
   background: rgba(220, 215, 240, 0.6);
 }
@@ -1597,7 +1606,7 @@
   color: #15131c;
 }
 
-/* dayList modal 在 .panel 外，亮色覆盖必须用 .pageLight。 */
+/* dayList modal 在 .panel 外面，所以亮色覆盖必须挂在 .pageLight 上。 */
 .pageLight .dayListHeader {
   color: rgba(50, 40, 80, 0.7);
   border-bottom-color: rgba(20, 18, 28, 0.08);
@@ -2016,9 +2025,9 @@
 
 /*
  * 单张歌曲卡片。
- * - width: fit-content 让卡片按"标题最长那条"自动收缩，不全铺
- * - max-width 280px 防止超长标题让卡片过宽，超出会 ellipsis（见 .queueCardTitle）
- * - min-width 200px 防止标题特别短的曲名让卡片太窄不协调
+ * - width: fit-content 会让卡片按照“标题里最长那一条”自动收缩，而不是整行铺满。
+ * - max-width: 280px 可以防止超长标题把卡片撑得过宽，超出部分会省略，见 .queueCardTitle。
+ * - min-width: 200px 可以避免标题太短时卡片过窄，视觉上不协调。
  */
 .page .queueCard {
   display: grid;
@@ -2143,10 +2152,11 @@
 }
 
 /*
- * queueCard 亮色覆盖。
- * 同时挂 .panelLight 和 .pageLight 两个祖先选择器——
- * LIST 弹出的内联 .queueOverlay 在 .panel 内（祖先有 .panelLight），
- * TODAY modal 在 .panel 外（祖先只有 .pageLight）。两边都覆盖才能在亮色模式下都生效。
+ * queueCard 的亮色覆盖。
+ * 这里需要同时挂 .panelLight 和 .pageLight 两个祖先选择器：
+ * LIST 弹出的内联 .queueOverlay 在 .panel 里面，祖先链上有 .panelLight；
+ * TODAY modal 在 .panel 外面，祖先链上只有 .pageLight。
+ * 两边都写上，亮色模式下才能同时生效。
  */
 .panelLight .queueCard,
 .pageLight .queueCard {
@@ -2206,23 +2216,21 @@
   border-color: rgba(44, 138, 79, 0.6);
 }
 
-/*
- * LIST 按钮激活态：用绿色描边表示"当前正在显示"。
- */
+/* LIST 按钮激活态，使用绿色描边表示“当前正在显示”。 */
 .chipButtonActive {
   border-color: rgba(84, 216, 140, 0.55);
   color: #d8ffe8;
   background: rgba(84, 216, 140, 0.08);
 }
 
-/* 亮色模式下，激活态 chipButton 需要深绿文字，否则浅绿在浅底上看不清。 */
+/* 亮色模式下，激活态 chipButton 需要用深绿色文字，否则浅绿放在浅底上会看不清。 */
 .panelLight .chipButtonActive {
   border-color: rgba(44, 138, 79, 0.6);
   color: #18532f;
   background: rgba(44, 138, 79, 0.12);
 }
 
-/* legacy queueList—暂留以防其他地方引用，新 UI 用 .queueOverlay。 */
+/* 旧版 queueList，先保留，避免其他地方还有引用；新界面已经改用 .queueOverlay。 */
 .queueList {
   display: grid;
   gap: 0;
