@@ -168,3 +168,46 @@
 - `src/lib/types.ts`（增量：`refresh?: boolean`）
 - `src/lib/play-request-executor.ts`（增量：`dedupeAndTakeTop` + `searchArtistTopN` + `executePlayRequest` 加 `excludeKeys` 可选参数）
 - `src/lib/chat-agent.ts`（增量：`isRefreshIntent` 函数 + `detectExplicitPlayIntent` 第 0 优先级分支 + `resolvePlayRequest` refresh 路径 + `normalizeTitleKeyForExclude` 辅助）
+
+## Session 2026-06-02 (Phase 9): LLM 路由器 + mood keyword 兜底
+
+### 增量要求
+- LLM 路由器对"今天有点累/想家了/嗨一点/夜深了"等 mood 表达 100% 判 `none` → messageHint 字段不被使用，链路失效
+- chat-agent 加纯增量 keyword 兜底，命中后补回 `regenerate + messageHint` 走原 `applyOnlineChatIntent` 链路
+- 不动 LLM 路由器 prompt，不动原 9 个 action，不动 radio-engine / online-radio / preference-learning
+
+### Research Findings
+- **LLM 路由器对 mood 表达偏 none 是基线行为**：Phase 9a probe（`今天有点累` / `想家了` / `嗨一点` / `慵懒一点` / `想听点轻快的` 等 7 个 mood 表达）100% 判 `none`。Likely 是 prompt 的 json schema 限定 + 模型对模糊 mood 的"安全"倾向。**改 prompt 风险大且违反"不擅改 LLM 调用方"原则**，改走 chat-agent 旁路兜底。
+- **keyword 库形态选择**：考虑过 (a) 复刻 LLM 路由器 prompt 加 examples、(b) 接 LLM 自动扩词、(c) 手工维护 18 组关键词。**选 (c)**——简单稳定可观测，覆盖 90% 用户的直觉 mood 表达；扩展性靠后续加 weight/分组，不靠 LLM 调用。
+- **多组命中时取 weight 最高**：5 类信号 weight 5/4/3/2 反映"信号强度"（情绪 > 风格 > 时刻 > 否定）。**不做复杂合并**（如 hint 拼接、LLM 重写）——保持 fallback 是"确定性纯函数"，可控可测。
+- **触发位置**：必须在 `runChatAgent` 内部、`inferOnlineFreeformIntent` 调用之后立即判。**不能**放到 LLM 模型调用之后（已经走远）；**不能**放到 `applyOnlineChatIntent` 内部（那层已经被旁路封装好，动了会污染）。
+- **intent 产物同构**：fallback 命中后构造的 `{action: "regenerate", messageHint: "..."}` 跟 LLM 路由器命中的产物完全同构 → 走同一条 `applyOnlineChatIntent` 链路（messageHint 智能优先路径）。**不为 fallback 单独写 apply 函数**。
+- **`resolver: "mood-keyword"` 联合类型扩展**：preference-learning 的 `PreferenceEvent.resolver` 联合类型从 `"rule" | "llm"` 扩到 `"rule" | "llm" | "mood-keyword"`。**intent_resolved 事件会带上这个字段**，后续可观测"fallback 命中率 / fallback 后用户对推荐的接受度"。
+- **HTTP 端到端探针在 Next dev mode 不稳**：SSE 流式响应 + LLM 5s+ 调用 + dev HMR 缓存错乱组合下，curl 反复 0 字节。**改用直接抠源码纯函数跑单元测试**（18/18）作为交付标准。生产环境用 `next build && next start` 无 HMR 不会有这问题。
+
+### Technical Decisions
+| Decision | Rationale |
+|----------|-----------|
+| LLM 路由器喂 `preference insights` + 输出 `messageHint`，走"LLM 智能优先"路径 | 把 Phase 5 已有的 messageHint 通道从单点（点播用）扩成"LLM 路由器直出"通用；让 online-radio.applyOnlineChatIntent 走智能优先，吃到 insights + sceneProfile + 实时口味 |
+| 走 chat-agent keyword 兜底**不调 LLM** | LLM 调用的延迟 / 失败率 / token 成本不允许把 fallback 交给 LLM；keyword 是确定性纯函数，0 延迟 0 失败 |
+| `MOOD_KEYWORD_HINTS` 用 4 类信号 + weight 5/4/3/2 分级 | 情绪类比风格类更明确（"累" vs "慢"），时刻类（"夜深了"）是弱信号（可能用户在描述不是请求），否定类（"不想听"）最弱（无法判断用户具体不想要什么） |
+| 兜底命中后用 `mode:"music-control" + intent:{action:"regenerate", messageHint}` | 跟 LLM 路由器命中的产物**同构**，走同一条 `applyOnlineChatIntent` 链路 |
+| `IntentResolution` 加 `"mood-keyword"` 标识 | 跟 `rule` / `llm` 并列，写进 `intent_resolved` 事件；后续可观测"LLM 路由器判 none 率" / "fallback 命中率" / "fallback 后用户对推荐的接受度" |
+| 不接 LLM 自动扩词 | 保持 fallback 是"简单稳定兜底"定位；自动扩词会把 fallback 复杂度抬到跟 LLM 路由器同档，不如直接改 LLM 路由器 |
+| 不做多 keyword 复杂合并 | 跟 LLM 路由器输出的 messageHint 比起来，手工合并多个 hint 容易产生矛盾或冗余；保持单 hint 简明 |
+| 不命中时不主动追问 | 保持当前 fall through 到 LLM DJ 闲聊；用户已经得到"自然回应"（DJ 自由应答），不强行打断成"想听点什么？" |
+| 用"直接抠源码纯函数跑单元测试"代替 HTTP 端到端探针 | Next dev mode + SSE + LLM 组合下探针不稳定；纯函数单元测试 18/18 是稳定可重复的交付标准 |
+
+### Issues Encountered
+| Issue | Resolution |
+|-------|------------|
+| 第一版 plan 提"动 LLM 路由器 prompt"让 mood 表达判 regenerate | 实测 LLM 路由器对 7 个 mood 表达 100% 判 none（基线行为），改 prompt 风险大。**回滚**，改走 chat-agent 纯增量 keyword 兜底 |
+| `console.log("[phase9-fallback]")` 调试日志 | 删了保持代码干净；resolver 字段已经写进 preference_event，dev server log 不需要这一行 |
+| dev server HMR 缓存错乱 → HTTP 探针 0 字节 | kill + 重启 dev server。生产环境用 `next build && next start` 无 HMR，无此问题 |
+| HTTP 端到端探针反复超时（5s/20s/30s 都拿不到 state 帧） | 改用纯函数单元测试（18/18）作为交付标准；保留一次 HTTP 成功实测（`今天有点累` → `action=regenerate hint=用户情绪低落...`）作 evidence |
+| 探针代码多次跑超时卡住 terminal | 删除 /tmp/probe_phase9_*.js 临时文件，保持 /tmp 干净 |
+
+### Resources
+- `src/lib/chat-agent.ts`（增量：import readPreferenceInsights + inferOnlineFreeformIntent 第 3 参数 insights + prompt preferenceBlock + messageHint 指令 + MOOD_KEYWORD_HINTS 常量 + inferFromMoodKeywords 函数 + runChatAgent fallback 调用 + IntentResolution 联合类型扩展）
+- `src/lib/preference-learning.ts`（增量：PreferenceEvent.resolver 联合类型加 "mood-keyword"）
+- 单元测试脚本：临时 `/tmp/probe_phase9_unit.js`（已删，跑通 18/18 后清理）

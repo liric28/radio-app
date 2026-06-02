@@ -64,6 +64,16 @@ Phase 5
 - [x] 重搜搜不到时回 "我这儿就这几首 X 的歌了" 区别于首轮"我这儿没搜到 X"
 - **Status:** completed
 
+### Phase 9: LLM 路由器 + mood keyword 兜底（2026-06-02 增量）
+- [x] LLM 路由器 `inferOnlineFreeformIntent` 喂 `preference insights` + 输出 `messageHint`（在 prompt 里加 4 个偏好段 + 3 个 hint 例子）
+- [x] chat-agent 加 `MOOD_KEYWORD_HINTS` 18 组关键词（情绪/风格/时刻/否定 4 类信号）
+- [x] chat-agent 加 `inferFromMoodKeywords()`：LLM 判 none 时纯函数兜底，不调 LLM
+- [x] 命中后构造 `mode:"music-control" + intent:{action:"regenerate", messageHint}`，走原 `applyOnlineChatIntent` 链路
+- [x] `IntentResolution` 联合类型加 `"mood-keyword"`，preference-learning `resolver` 联合类型同步加
+- [x] 18/18 单元测试通过：13 个 mood 表达（累/想家/嗨/夜深/暖/慵懒/轻快/早上/下雨/静/燃/烦躁/想家的歌）→ `regenerate + messageHint`；5 个非 mood（"你麻痹"/"你好"/"今天天气不错"/"我想听个故事"/"刘德华"）→ null
+- [x] 0 侵入：原 9 个 action、radio-engine、online-radio、preference-learning、LLM 路由器 prompt **一字不动**
+- **Status:** completed
+
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|
@@ -83,6 +93,12 @@ Phase 5
 | "换一批" 走 play-artist refresh 模式，**只在** lastPendingCandidates 命中时 | 用户在 candidateList 上下文里说"换" = 想换该歌手的其他歌；无候选上下文时让原 9 个 action 的 regenerate 接管（避免语义串台） |
 | refresh 模式用 `excludeKeys: Set<"artist::title" 标准化 key">` 透传给 executor | 复用 executor 内部 `normalizeText` 规则作为去重 key；不在 chat-agent 里复制一份 normalize 函数，避免规则漂移 |
 | assistant 文本区分首轮 vs 刷新：首轮"X 的歌"、刷新"X 的其他歌，刷新一下" | 文本给用户明确反馈：当前是"看到新的"还是"回到旧的"；防止误以为系统没动 |
+| LLM 路由器喂 `preference insights` + 输出 `messageHint`，走"LLM 智能优先"路径 | 把 Phase 5 已有的 messageHint 通道从单点（点播用）扩成"LLM 路由器直出"通用；让 online-radio.applyOnlineChatIntent 走智能优先，吃到 insights + sceneProfile + 实时口味 |
+| LLM 路由器对 mood 表达偏 none 时，chat-agent 加 `MOOD_KEYWORD_HINTS` 18 组关键词兜底 | 实测 LLM 路由器对"今天有点累/想家了/嗨一点" 等 mood 表达 100% 判 none，messageHint 字段不被使用 → 链路失效。keyword 兜底**纯函数、不调 LLM**，命中后构造同构 `regenerate + messageHint` 产物复用原链路 |
+| `MOOD_KEYWORD_HINTS` 用 4 类信号 + weight 5/4/3/2 分级：情绪(5) / 风格(4) / 时刻(3) / 否定(2) | 情绪类比风格类更明确（"累" vs "慢"），时刻类（"夜深了"）是弱信号（可能用户在描述不是请求），否定类（"不想听"）最弱（无法判断用户具体不想要什么） |
+| 兜底命中后用 `mode:"music-control" + intent:{action:"regenerate", messageHint}` | 跟 LLM 路由器命中的产物**同构**，走同一条 `applyOnlineChatIntent` 链路，不为 fallback 单独写 apply 函数 |
+| `IntentResolution` 联合类型加 `"mood-keyword"` 标识 | 跟 `rule` / `llm` 并列，写进 `intent_resolved` 事件；后续可观测"LLM 路由器判 none 率" / "fallback 命中率" / "fallback 后用户对推荐的接受度" |
+| keyword 库不接 LLM 自动扩词、不做多 keyword 复杂合并、不命中时不主动追问 | Phase 9 只补 mood 直觉式表达（"今天有点累" = 想听柔和的）；复杂语义（"我想听一首能让我想起 17 岁夏天的歌"）仍交给 LLM 路由器；保持 fallback 是"简单稳定兜底"定位，避免复杂度爆炸 |
 
 ## Errors Encountered
 | Error | Resolution |

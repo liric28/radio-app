@@ -23,7 +23,7 @@ import { readFavorites, updateFavorite } from "@/lib/favorites";
 import { readMemory } from "@/lib/memory";
 import { applyOnlineChatIntent, ensureOnlineRadioProgram } from "@/lib/online-radio";
 import { executePlayRequest } from "@/lib/play-request-executor";
-import { appendPreferenceEvent, preferenceTrackFromSong } from "@/lib/preference-learning";
+import { appendPreferenceEvent, preferenceTrackFromSong, readPreferenceInsights, type PreferenceInsights } from "@/lib/preference-learning";
 import { downloadAndIngestSong, toMusicSearchHitFromSong } from "@/lib/song-download";
 import {
   buildRuleBasedDjReply,
@@ -76,7 +76,7 @@ type RunChatAgentResult = {
 };
 
 type IntentResolution = {
-  resolver: "rule" | "llm";
+  resolver: "rule" | "llm" | "mood-keyword";
 };
 
 /**
@@ -111,8 +111,30 @@ function resolveAgentState(message: string, program: RadioProgram): ChatAgentSta
   };
 }
 
-async function inferOnlineFreeformIntent(message: string, program: RadioProgram): Promise<ChatIntent> {
+async function inferOnlineFreeformIntent(
+  message: string,
+  program: RadioProgram,
+  insights: PreferenceInsights,
+): Promise<ChatIntent> {
   const nextTrack = program.queue[0];
+
+  // 把 preference insights 浓缩成给 LLM 看的文本段落。
+  // 关键：让 LLM 知道"用户在当前 scene 已经标黑什么 / 偏好什么 / 能量倾向"，
+  // 这样 regenerate 不会傻乎乎地推用户已经标黑的标签。
+  const currentSceneProfile = insights.sceneProfiles.find((p) => p.scene === program.scene);
+  const avoidList = currentSceneProfile?.avoidSignals?.length
+    ? currentSceneProfile.avoidSignals
+    : insights.topTags.slice(0, 5); // 兜底：没 scene profile 时给全局 topTags
+  const preferenceBlock = [
+    `用户口味画像（基于 ${insights.totalEvents} 条学习事件）：`,
+    `- 高频艺人: ${insights.topArtists.slice(0, 5).join("、") || "暂无"}`,
+    `- 高频语言: ${insights.topLanguages.slice(0, 3).join("、") || "暂无"}`,
+    `- 高频标签: ${insights.topTags.slice(0, 5).join("、") || "暂无"}`,
+    `- 高频需求模式: ${insights.topRequestPatterns.slice(0, 5).join("、") || "暂无"}`,
+    `- 当前时段(${program.scene})优先能量: ${currentSceneProfile?.preferredEnergy ?? "未知"}`,
+    `- 应当避免: ${avoidList.slice(0, 5).join("、") || "暂无"}`,
+  ].join("\n");
+
   const prompt = [
     "你是音乐电台首页的意图路由器。",
     "任务：判断用户这句话是不是在要求你改当前推荐 LIST。",
@@ -120,19 +142,24 @@ async function inferOnlineFreeformIntent(message: string, program: RadioProgram)
     '允许的 action 只有：none, regenerate, fresh, calmer, familiar, skip, favorite, download-current, scene-change。',
     "规则：",
     "- 用户在随口描述想听什么风格、语言、气氛、艺人、时段、强度时，通常输出 regenerate。",
-    "- 只有明显是“更安静/更轻/更慢”才用 calmer。",
-    "- 只有明显是“更熟/回忆/老歌”才用 familiar。",
-    "- 只有明显是“换新一点/换个感觉/更刺激”才用 fresh。",
+    "- 只有明显是『更安静/更轻/更慢』才用 calmer。",
+    "- 只有明显是『更熟/回忆/老歌』才用 familiar。",
+    "- 只有明显是『换新一点/换个感觉/更刺激』才用 fresh。",
     "- 只有明显是下载当前歌才用 download-current。",
     "- 只有明显是收藏当前歌才用 favorite。",
     "- 只有明显是跳过当前歌才用 skip。",
     "- 只有明显是切到某个时段才用 scene-change，并给 targetPeriod: morning/daytime/evening/late-night。",
     "- 普通闲聊、吐槽、问候、问你是谁、非音乐问题输出 none。",
+    "- **关键**：输出 regenerate/fresh/calmer/familiar/scene-change 时，**必须**根据用户口味画像 + 当前消息生成 `messageHint` 字段（10-30 字中文），描述应该匹配的艺人/标签/能量/情绪倾向，避开『应当避免』列表。messageHint 会传给搜索端做种子。",
+    "- 例子：用户说『今天有点累』 + avoidSignals=[『电子』] → regenerate, messageHint: 『安静、低能量、避开电子』",
+    "- 例子：用户说『想家了』 + topTags=[『民谣』,『老歌』] → regenerate, messageHint: 『民谣、怀旧、慢节奏』",
+    "- 例子：用户说『换点歌』 + 什么都没标 → regenerate, messageHint: null（或省略）",
+    preferenceBlock,
     `当前时段: ${program.scene}`,
     `当前歌: ${program.currentTrack.artist} - ${program.currentTrack.title}`,
     `下一首: ${nextTrack ? `${nextTrack.artist} - ${nextTrack.title}` : "暂无"}`,
     `用户消息: ${message}`,
-    '输出格式示例：{"action":"regenerate","targetPeriod":null}',
+    '输出格式示例：{"action":"regenerate","targetPeriod":null,"messageHint":"安静、低能量、避开电子"}',
   ].join("\n");
 
   try {
@@ -161,6 +188,10 @@ async function inferOnlineFreeformIntent(message: string, program: RadioProgram)
       return {
         action,
         targetPeriod: parsed.targetPeriod,
+        messageHint:
+          typeof parsed.messageHint === "string" && parsed.messageHint.trim()
+            ? parsed.messageHint.trim()
+            : undefined,
       };
     }
   } catch {}
@@ -218,7 +249,27 @@ export async function runChatAgent({
   let intentResolution: IntentResolution | null =
     initialState.mode === "music-control" ? { resolver: "rule" } : null;
   if (initialState.mode === "chat" && isOnlineRadioMode()) {
-    const inferredIntent = await inferOnlineFreeformIntent(message, program);
+    // Phase 9: 把 preference insights 喂给 LLM 路由器，让它能基于用户口味
+    // 画像 + 当前 sceneProfile 输出精准的 messageHint。
+    // 读失败时 fallback 到空 insights（initState 仍然是空对象，全是"暂无"）。
+    let insights: PreferenceInsights;
+    try {
+      insights = await readPreferenceInsights();
+    } catch {
+      insights = {
+        updatedAt: "",
+        totalEvents: 0,
+        topArtists: [],
+        topLanguages: [],
+        topTags: [],
+        topRequestPatterns: [],
+        sceneProfiles: [],
+        recommendationSourceStats: [],
+        recentIntentResolutions: [],
+        recentEvents: [],
+      };
+    }
+    const inferredIntent = await inferOnlineFreeformIntent(message, program, insights);
     if (inferredIntent.action !== "none") {
       initialState = {
         mode: "music-control",
@@ -227,6 +278,19 @@ export async function runChatAgent({
         summary: "用户在用自然语言改首页推荐，已转成明确电台动作。",
       };
       intentResolution = { resolver: "llm" };
+    } else {
+      // Phase 9 兜底：LLM 路由器对 mood 表达偏 none，用 keyword fallback 补回 regenerate + messageHint。
+      // 不命中继续走 none → 真 none 路径（chat 闲聊，DJ 自由应答）。
+      const moodIntent = inferFromMoodKeywords(message, insights);
+      if (moodIntent) {
+        initialState = {
+          mode: "music-control",
+          tool: "schedule",
+          intent: moodIntent,
+          summary: "用户表达心情 / 风格偏好，keyword 兜底转成首页换一批。",
+        };
+        intentResolution = { resolver: "mood-keyword" };
+      }
     }
   }
   let nextProgram = program;
@@ -359,7 +423,13 @@ export async function runChatAgent({
     }
 
     nextProgram = isOnlineRadioMode()
-      ? (await applyOnlineChatIntent(initialState.intent, program, message)).program
+      ? (await applyOnlineChatIntent(
+          initialState.intent,
+          program,
+          // Phase 9: LLM 路由器的智能 messageHint 优先于 user 原文。
+          // 原文依然作为兜底——LLM 没填或填了空时回退到 user 原始消息。
+          initialState.intent.messageHint?.trim() || message,
+        )).program
       : (await applyChatIntentWithProgram(initialState.intent, program)) ?? program;
     nextState = {
       ...initialState,
@@ -402,6 +472,142 @@ export async function runChatAgent({
             state: nextState,
           })
         : undefined,
+  };
+}
+
+/* ============================================================
+ * 心情 / 风格 keyword 兜底（Phase 9，LLM 路由器判 none 时的纯增量 fallback）
+ * ============================================================
+ * 触发场景：LLM 路由器对"今天有点累"/"想家了"/"嗨一点" 这种 mood 表达偏 none，
+ * 但这正是用户要"换首页推荐" 的明确信号。keyword 命中就转成 regenerate + messageHint，
+ * 让 online-radio.ts 的 messageHint 智能优先路径生效。
+ *
+ * 纯增量：不动 LLM 路由器 prompt，不动 9 个 action，不动 radio-engine / online-radio。
+ * ============================================================ */
+
+const MOOD_KEYWORD_HINTS: Array<{
+  keywords: string[]; // 任意一个命中即触发
+  hint: string; // 喂给 online-radio.applyOnlineChatIntent 的 messageHint
+  weight: number; // 多组同时命中时，weight 高者胜
+}> = [
+  // —— 情绪低落 / 疲惫 ——
+  {
+    keywords: ["累", "疲惫", "没精神", "提不起劲", "丧"],
+    hint: "用户情绪低落、疲惫，需要柔和、不打扰、稍带治愈感的歌",
+    weight: 5,
+  },
+  {
+    keywords: ["想家", "思乡", "怀念", "回忆", "孤独", "寂寞", "一个人"],
+    hint: "用户想家、孤独、怀旧，需要走心、有温度的中文慢歌",
+    weight: 5,
+  },
+  {
+    keywords: ["烦躁", "焦虑", "烦", "烦闷", "抑郁", "不开心", "难受"],
+    hint: "用户烦躁、焦虑，需要舒缓、平静、不激昂的歌",
+    weight: 5,
+  },
+  // —— 情绪上扬 / 燃 ——
+  {
+    keywords: ["嗨", "兴奋", "开心", "得劲", "起劲", "带劲", "躁起来", "燃起来"],
+    hint: "用户情绪上扬，要嗨一点，需要节奏强、有推力的歌",
+    weight: 5,
+  },
+  {
+    keywords: ["燃", "燃一点", "推起来", "推上来", "上头"],
+    hint: "用户想更燃、更有推力，需要节奏更快、能量更密集的歌",
+    weight: 5,
+  },
+  // —— 风格 / 速度 ——
+  {
+    keywords: ["慵懒", "慢", "慢一点", "慢节奏", "慢歌"],
+    hint: "用户想要慵懒、慢节奏的歌，BPM 偏低",
+    weight: 4,
+  },
+  {
+    keywords: ["轻快", "轻盈", "清新", "明快", "舒服"],
+    hint: "用户想要轻快、清新、舒服的歌",
+    weight: 4,
+  },
+  {
+    keywords: ["温柔", "软", "柔软的", "暖", "温暖", "治愈", "惬意"],
+    hint: "用户想要温柔、治愈、暖的歌，节奏柔和",
+    weight: 4,
+  },
+  {
+    keywords: ["重一点", "厚重", "沉稳", "深沉", "有分量"],
+    hint: "用户想要厚重、深沉、有分量的歌",
+    weight: 4,
+  },
+  {
+    keywords: ["安静", "静一点", "静一下", "静一静"],
+    hint: "用户想要安静、平静的歌，弱打击感、人声为主",
+    weight: 4,
+  },
+  // —— 时刻 / 场景 ——
+  {
+    keywords: ["夜深了", "深夜", "凌晨", "睡不着", "失眠"],
+    hint: "深夜 / 失眠，需要低能量、安静、适合入眠的歌",
+    weight: 3,
+  },
+  {
+    keywords: ["早上", "早晨", "刚醒", "起床"],
+    hint: "清晨 / 刚醒，需要清新、明亮、慢启发的歌",
+    weight: 3,
+  },
+  {
+    keywords: ["下班", "收工", "回家", "路上"],
+    hint: "通勤 / 下班路上，需要舒缓、解压的歌",
+    weight: 3,
+  },
+  {
+    keywords: ["下雨", "雨天", "窗外在下雨"],
+    hint: "下雨天，需要安静、走心、有氛围感的歌",
+    weight: 3,
+  },
+  {
+    keywords: ["开车", "自驾", "高速"],
+    hint: "开车 / 路上，需要有节奏感、不能太安静的歌",
+    weight: 3,
+  },
+  // —— 否定 / 喜好倾向（弱信号，主要是兜底）——
+  {
+    keywords: ["不想听"],
+    hint: "用户对某类风格 / 标签 / 歌手明确排斥，需要避开",
+    weight: 2,
+  },
+  {
+    keywords: ["不要", "别放"],
+    hint: "用户想避开某种风格 / 节奏 / 情绪",
+    weight: 2,
+  },
+];
+
+/**
+ * 心情 / 风格 keyword 兜底。返回 ChatIntent 形如 {action: "regenerate", messageHint: "..."}
+ * 供 online-radio.applyOnlineChatIntent 走"LLM 智能优先"路径。
+ * 不命中返回 null（调用方继续走 LLM 判 none → 真 none 路径）。
+ */
+function inferFromMoodKeywords(
+  message: string,
+  _insights: PreferenceInsights,
+): ChatIntent | null {
+  const normalized = message.toLowerCase().trim();
+  if (!normalized) return null;
+
+  // 多组同时命中：取 weight 最高的一组 hint
+  let best: { hint: string; weight: number } | null = null;
+  for (const group of MOOD_KEYWORD_HINTS) {
+    if (group.keywords.some((kw) => normalized.includes(kw))) {
+      if (!best || group.weight > best.weight) {
+        best = { hint: group.hint, weight: group.weight };
+      }
+    }
+  }
+  if (!best) return null;
+
+  return {
+    action: "regenerate",
+    messageHint: best.hint,
   };
 }
 

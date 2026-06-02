@@ -38,7 +38,7 @@ export type PreferenceEvent = {
   queue?: PreferenceTrackSnapshot[];
   playbackSeconds?: number;
   playbackRatio?: number;
-  resolver?: "rule" | "llm";
+  resolver?: "rule" | "llm" | "mood-keyword";
 };
 
 export type PreferenceModel = {

@@ -9,22 +9,22 @@
     "stationName": "Claudio FM",
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
-    "energyLabel": "熟悉暖调",
-    "hostIntro": "这一轮我按“白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律”往外抓了几首。先听《说爱你》，后面那首会把节奏接得更顺。",
+    "energyLabel": "轻推力上行",
+    "hostIntro": "今天先不急着解释，先让《失眠 (情绪版)》把气口定住。后面那首我也给你连好了。",
     "currentTrack": {
-      "id": "online-c1a2ed7f9501",
-      "title": "说爱你",
-      "artist": "刘至佳",
+      "id": "online-841a7483daee",
+      "title": "失眠 (情绪版)",
+      "artist": "林凡",
       "year": 2026,
-      "mood": "专注",
-      "energy": 5,
+      "mood": "轻推力",
+      "energy": 9,
       "language": "中文",
       "tags": [
         "在线推荐",
         "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 刘至佳 / 说爱你”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 林凡 / 失眠 (情绪版)”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "qq",
@@ -35,40 +35,40 @@
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 202,
+        "duration": 182,
         "payable": false,
         "downloadable": true,
-        "albumName": "说爱你",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000016lk1t0LgKw6.jpg",
+        "albumName": "失眠 (情绪版)",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000DqKzd1cIiYW.jpg",
         "raw": {
           "source": "qq",
-          "songId": 224928243,
-          "songmid": "0022fsjW39a0zG",
-          "mediaMid": "0034nd1G3d8oOp",
-          "title": "说爱你",
-          "artist": "刘至佳",
-          "albumName": "说爱你",
-          "duration": 202,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000016lk1t0LgKw6.jpg"
+          "songId": 639643809,
+          "songmid": "003FW03Y0IZ5qv",
+          "mediaMid": "003FW03Y0IZ5qv",
+          "title": "失眠 (情绪版)",
+          "artist": "林凡",
+          "albumName": "失眠 (情绪版)",
+          "duration": 182,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000DqKzd1cIiYW.jpg"
         }
       },
-      "reason": "刘至佳说爱你说得直接，专注时刻最适合听"
+      "reason": "林凡的失眠轻轻推你一把，适合不想太嗨的工作间隙。"
     },
     "queue": [
       {
-        "id": "online-58864803fd15",
-        "title": "倒带 (释怀版)",
-        "artist": "Zkaaai",
+        "id": "online-a6fe624df491",
+        "title": "情绪·蓝",
+        "artist": "菲菲公主（陆绮菲）",
         "year": 2026,
-        "mood": "克制",
-        "energy": 5,
+        "mood": "专注",
+        "energy": 9,
         "language": "中文",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / Zkaaai / 倒带 (释怀版)”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 菲菲公主（陆绮菲） / 情绪·蓝”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
@@ -79,125 +79,125 @@
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 214,
+          "duration": 154,
           "payable": false,
           "downloadable": true,
-          "albumName": "倒带 (释怀版)",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002RvcmB2kfO8Q.jpg",
+          "albumName": "情绪·蓝",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003ndI6R2YUmZI.jpg",
           "raw": {
             "source": "qq",
-            "songId": 446078974,
-            "songmid": "0010lpW70QaGMG",
-            "mediaMid": "000WDRRO0Coz9O",
-            "title": "倒带 (释怀版)",
-            "artist": "Zkaaai",
-            "albumName": "倒带 (释怀版)",
-            "duration": 214,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002RvcmB2kfO8Q.jpg"
+            "songId": 652888474,
+            "songmid": "000suxZn0u7IUN",
+            "mediaMid": "000suxZn0u7IUN",
+            "title": "情绪·蓝",
+            "artist": "菲菲公主（陆绮菲）",
+            "albumName": "情绪·蓝",
+            "duration": 154,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003ndI6R2YUmZI.jpg"
           }
         },
-        "reason": "Zkaaai 释怀版倒带，克制情绪在耳机里慢慢散开"
+        "reason": "情绪·蓝让你专注又清醒，白天效率翻倍的秘诀。"
       },
       {
-        "id": "online-9fef652c317a",
-        "title": "Baby",
-        "artist": "Justin Bieber、Ludacris",
+        "id": "online-9b4584085f5c",
+        "title": "情绪",
+        "artist": "Minos米诺斯",
         "year": 2026,
         "mood": "克制",
-        "energy": 8,
-        "language": "英语",
+        "energy": 9,
+        "language": "中文",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / Justin Bieber、Ludacris / Baby”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / Minos米诺斯 / 情绪”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
         "recommendationMeta": {
-          "sourceLabel": "口味",
-          "slotType": "learned",
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 216,
+          "duration": 141,
           "payable": false,
           "downloadable": true,
-          "albumName": "Baby",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002TfnxG2yN1na.jpg",
+          "albumName": "情绪 (Emotion)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001YePdN4FB2tk.jpg",
           "raw": {
             "source": "qq",
-            "songId": 203644381,
-            "songmid": "0033qH7G0B1UER",
-            "mediaMid": "002nGT1F2A3YC4",
-            "title": "Baby",
-            "artist": "Justin Bieber、Ludacris",
-            "albumName": "Baby",
-            "duration": 216,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002TfnxG2yN1na.jpg"
+            "songId": 288767719,
+            "songmid": "000pDp6R2g3wNU",
+            "mediaMid": "003mZJPy0ELqwP",
+            "title": "情绪",
+            "artist": "Minos米诺斯",
+            "albumName": "情绪 (Emotion)",
+            "duration": 141,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001YePdN4FB2tk.jpg"
           }
         },
-        "reason": "听着挺顺耳的，不抢你的注意力，就安安静静陪你干活儿。"
+        "reason": "Minos的《情绪》收敛有力，克制中带点力量感很舒服。"
       },
       {
-        "id": "online-972bda67ba30",
-        "title": "Booty Music",
-        "artist": "Git Fresh",
+        "id": "online-d09ec93be88a",
+        "title": "方言",
+        "artist": "周俊辉",
         "year": 2026,
         "mood": "轻推力",
         "energy": 9,
-        "language": "英语",
+        "language": "中文",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / Git Fresh / Booty Music”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周俊辉 / 方言”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
         "recommendationMeta": {
-          "sourceLabel": "口味",
-          "slotType": "learned",
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 181,
+          "duration": 92,
           "payable": false,
           "downloadable": true,
-          "albumName": "Git Fresh",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003RB7Lk0Uues1.jpg",
+          "albumName": "情绪",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003WOySk2Xyb4i.jpg",
           "raw": {
             "source": "qq",
-            "songId": 103824181,
-            "songmid": "001gip3A1SpQc2",
-            "mediaMid": "002eE8MJ2PjsUP",
-            "title": "Booty Music",
-            "artist": "Git Fresh",
-            "albumName": "Git Fresh",
-            "duration": 181,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003RB7Lk0Uues1.jpg"
+            "songId": 581141628,
+            "songmid": "004Y1ZN01vCJWh",
+            "mediaMid": "004Y1ZN01vCJWh",
+            "title": "方言",
+            "artist": "周俊辉",
+            "albumName": "情绪",
+            "duration": 92,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003WOySk2Xyb4i.jpg"
           }
         },
-        "reason": "鼓点听着挺带劲的，让你的手指在键盘上敲得更利索。"
+        "reason": "周俊辉的方言轻轻推动你，口音里藏着轻推力。"
       },
       {
-        "id": "online-1d46e275c249",
-        "title": "Beauty And A Beat",
-        "artist": "Justin Bieber、Nicki Minaj",
+        "id": "online-7f4929e14f9b",
+        "title": "越打越年轻",
+        "artist": "情绪",
         "year": 2026,
         "mood": "专注",
         "energy": 9,
-        "language": "英语",
+        "language": "中文",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / Justin Bieber、Nicki Minaj / Beauty And A Beat”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 情绪 / 越打越年轻”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
@@ -208,39 +208,39 @@
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 227,
+          "duration": 82,
           "payable": false,
           "downloadable": true,
-          "albumName": "Believe (Deluxe Edition)",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002XddZv4cGsXb.jpg",
+          "albumName": "少爷",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000031vID70j4lh1.jpg",
           "raw": {
             "source": "qq",
-            "songId": 1473252,
-            "songmid": "002ZGist4UyZoU",
-            "mediaMid": "003FFvMu0tMeku",
-            "title": "Beauty And A Beat",
-            "artist": "Justin Bieber、Nicki Minaj",
-            "albumName": "Believe (Deluxe Edition)",
-            "duration": 227,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002XddZv4cGsXb.jpg"
+            "songId": 507687913,
+            "songmid": "000dXtVJ2Nx8DM",
+            "mediaMid": "000dXtVJ2Nx8DM",
+            "title": "越打越年轻",
+            "artist": "情绪",
+            "albumName": "少爷",
+            "duration": 82,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000031vID70j4lh1.jpg"
           }
         },
-        "reason": "Nicki Minaj一开口精神就来了，这节奏工作刚刚好不困。"
+        "reason": "越打越年轻不是梦，这首让你专注力max状态拉满。"
       },
       {
-        "id": "online-6b0ac1b4e694",
-        "title": "We Don't Talk Anymore",
-        "artist": "Charlie Puth、Selena Gomez",
+        "id": "online-6dd23b886e13",
+        "title": "恋与和平 (DJ版)",
+        "artist": "情绪",
         "year": 2026,
         "mood": "克制",
         "energy": 9,
-        "language": "英语",
+        "language": "中文",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / Charlie Puth、Selena Gomez / We Don't Talk Anymore”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 情绪 / 恋与和平 (DJ版)”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
@@ -251,118 +251,32 @@
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 217,
+          "duration": 82,
           "payable": false,
           "downloadable": true,
-          "albumName": "Nine Track Mind",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg",
+          "albumName": "少爷",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000031vID70j4lh1.jpg",
           "raw": {
             "source": "qq",
-            "songId": 105539541,
-            "songmid": "003uNk7n3Fpu7R",
-            "mediaMid": "001o13Y50H28Za",
-            "title": "We Don't Talk Anymore",
-            "artist": "Charlie Puth、Selena Gomez",
-            "albumName": "Nine Track Mind",
-            "duration": 217,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg"
+            "songId": 507696571,
+            "songmid": "003zmqHU3ZvW04",
+            "mediaMid": "003zmqHU3ZvW04",
+            "title": "恋与和平 (DJ版)",
+            "artist": "情绪",
+            "albumName": "少爷",
+            "duration": 82,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000031vID70j4lh1.jpg"
           }
         },
-        "reason": "有点小情绪的歌，但不会打扰你思考，就这么放着刚刚好。"
-      },
-      {
-        "id": "online-9fb384ec1f3e",
-        "title": "You Suffer",
-        "artist": "Mommy's lil Monsterz",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 9,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / Mommy's lil Monsterz / You Suffer”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 2,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Grinding Up the Hits",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Z18dJ0gLZ89.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 272785500,
-            "songmid": "000cecPq0z65cv",
-            "mediaMid": "0042ZvGI4CZ10J",
-            "title": "You Suffer",
-            "artist": "Mommy's lil Monsterz",
-            "albumName": "Grinding Up the Hits",
-            "duration": 2,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Z18dJ0gLZ89.jpg"
-          }
-        },
-        "reason": "这首够猛，让你专注力拉满，处理那些烧脑的活儿正好。"
-      },
-      {
-        "id": "online-2696ba6042f3",
-        "title": "Love Story",
-        "artist": "Taylor Swift",
-        "year": 2026,
-        "mood": "克制",
-        "energy": 9,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / Taylor Swift / Love Story”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "口味",
-          "slotType": "learned",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 236,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Fearless (Platinum Edition)",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 639141,
-            "songmid": "004GK4aP4TGbbG",
-            "mediaMid": "001EqijX2A3asI",
-            "title": "Love Story",
-            "artist": "Taylor Swift",
-            "albumName": "Fearless (Platinum Edition)",
-            "duration": 236,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg"
-          }
-        },
-        "reason": "甜甜的情歌，节奏不急不躁，适合慢慢悠悠边干活边听。"
+        "reason": "恋与和平DJ版克制又有节奏感，工作流里的小确幸。"
       }
     ],
     "explanation": [
       "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
-      "推荐线索是“在午后把本地音乐库里熟悉且柔和的旧歌（如《Faded》《真的爱你》）调出来，用回忆感的慢歌给工作时段一份安静的陪伴”，实际落地优先保留 张杰、张碧晨、Maroon 5、南拳妈妈 这些锚点。",
+      "推荐线索是“搜索熟悉的轻柔中文抒情，抚慰情绪低落”，实际落地优先保留 Alex Skrindo、Verdial、郭静、林凡 这些锚点。",
       "当前来源是 qq，本轮确认了 8 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 calmer，本轮种子是“在午后把本地音乐库里熟悉且柔和的旧歌（如《Faded》《真的爱你》）调出来，用回忆感的慢歌给工作时段一份安静的陪伴”。这时段更偏 张杰、张碧晨，语言更偏 英语，当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 regenerate，本轮种子是“搜索熟悉的轻柔中文抒情，抚慰情绪低落”。这时段更偏 张杰、张碧晨，语言更偏 英语，当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

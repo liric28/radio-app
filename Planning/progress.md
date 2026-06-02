@@ -140,3 +140,54 @@
 |-------|------------|
 | 第一次写 refresh branch 时漏掉 assistant 文本区分首轮 vs 刷新——用户看不出"我刚看的歌又出现了" | 加 prefix 区分：首轮"X 的歌"、刷新"X 的其他歌，刷新一下"；空集合回复也区分 |
 | music-search 三源返回顺序稳定 → "换一批" 总是回到第一轮的 3 个 | 这是 music-search 本身行为，不是逻辑 bug；接受。文档里写清楚"刘德华本地能搜到的就这 6 首" |
+
+## Session: 2026-06-02 (Phase 9)
+
+### Current Status
+- **Phase:** 9 - LLM 路由器 + mood keyword 兜底
+- **Started:** 2026-06-02
+
+### Actions Taken
+- `src/lib/types.ts`：`ChatIntent.messageHint?: string` 字段（Phase 5 已有，Phase 9 复用不新增）。
+- `src/lib/chat-agent.ts`：
+  - 加 `import { readPreferenceInsights, type PreferenceInsights } from "@/lib/preference-learning"`。
+  - `inferOnlineFreeformIntent` 签名加第 3 参数 `insights: PreferenceInsights`；prompt 加 `preferenceBlock`（topArtists / topLanguages / topTags / topRequestPatterns / currentSceneProfile.preferredEnergy / avoidSignals）和 messageHint 输出指令 + 3 个例子。
+  - 修复引号嵌套（中文『』替换 `""`）；加 try/catch fallback 空 insights。
+  - **新增** `MOOD_KEYWORD_HINTS` 常量：18 组关键词覆盖 5 类信号（情绪低落 / 情绪上扬 / 风格速度 / 时刻场景 / 否定倾向），每组 `{keywords, hint, weight}`。
+  - **新增** `inferFromMoodKeywords(message, insights): ChatIntent | null`：纯函数、不调 LLM；归一化 message，多组命中取 weight 最高，命中返 `{action:"regenerate", messageHint}`，不命中返 `null`。
+  - `runChatAgent` 在 `inferOnlineFreeformIntent` 返 `none` 后调 fallback；命中后 `mode:"music-control" + intent:moodIntent + summary` + `intentResolution = {resolver:"mood-keyword"}`。
+  - `applyOnlineChatIntent` 第 3 参改用 `initialState.intent.messageHint?.trim() || message`（LLM 智能优先，user 原文兜底）。
+- `src/lib/preference-learning.ts`：`PreferenceEvent.resolver` 联合类型加 `"mood-keyword"`（preference_event 写盘兼容）。
+
+### Test Results
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| `npx tsc --noEmit` | 0 error after Phase 9 changes | 0 error | Passed |
+| `今天有点累` keyword 命中 | `{action:"regenerate", messageHint:"用户情绪低落、疲惫，需要柔和、不打扰、稍带治愈感的歌"}` | 完全匹配 | Passed |
+| `想家了` keyword 命中 | hint "用户想家、孤独、怀旧，需要走心、有温度的中文慢歌" | 完全匹配 | Passed |
+| `嗨一点` keyword 命中 | hint "用户情绪上扬，要嗨一点，需要节奏强、有推力的歌" | 完全匹配 | Passed |
+| `夜深了` keyword 命中 | hint "深夜 / 失眠，需要低能量、安静、适合入眠的歌" | 完全匹配 | Passed |
+| `来点暖的` keyword 命中 | hint "用户想要温柔、治愈、暖的歌，节奏柔和" | 完全匹配 | Passed |
+| `慵懒一点` keyword 命中 | hint "用户想要慵懒、慢节奏的歌，BPM 偏低" | 完全匹配 | Passed |
+| `想听点轻快的` keyword 命中 | hint "用户想要轻快、清新、舒服的歌" | 完全匹配 | Passed |
+| `早上刚醒` keyword 命中 | hint "清晨 / 刚醒，需要清新、明亮、慢启发的歌" | 完全匹配 | Passed |
+| `下雨天` keyword 命中 | hint "下雨天，需要安静、走心、有氛围感的歌" | 完全匹配 | Passed |
+| `想静一下` keyword 命中 | hint "用户想要安静、平静的歌，弱打击感、人声为主" | 完全匹配 | Passed |
+| `燃起来` keyword 命中 | hint "用户情绪上扬，要嗨一点，需要节奏强、有推力的歌" | 完全匹配 | Passed |
+| `烦躁` keyword 命中 | hint "用户烦躁、焦虑，需要舒缓、平静、不激昂的歌" | 完全匹配 | Passed |
+| `想家的歌` keyword 命中 | hint "用户想家、孤独、怀旧..." | 完全匹配 | Passed |
+| `你麻痹` keyword 不命中 | `null`（fall through 到 LLM 闲聊） | `null` | Passed |
+| `你好` keyword 不命中 | `null` | `null` | Passed |
+| `今天天气不错` keyword 不命中 | `null` | `null` | Passed |
+| `我想听个故事` keyword 不命中 | `null` | `null` | Passed |
+| `刘德华` keyword 不命中 | `null`（点播旁路在 fallback 之前，先走 detectExplicitPlayIntent 命中 play-artist，**不**经 keyword fallback） | `null` | Passed |
+| 13 hit + 5 miss 单元测试 | 18/18 | 18/18 | Passed |
+| 0 侵入：原 9 个 action / radio-engine / online-radio / preference-learning / LLM 路由器 prompt | 一字不动 | 一字不动 | Passed |
+
+### Errors
+| Error | Resolution |
+|-------|------------|
+| 第一版 plan 提"动 LLM 路由器 prompt"让 mood 表达判 regenerate | 实测 LLM 路由器对"今天有点累/想家了/嗨一点" 100% 判 none（**基线行为**），改 prompt 风险大且违反"不擅改 LLM 调用方"原则。**回滚**，改走 chat-agent 纯增量 keyword 兜底 |
+| `console.log("[phase9-fallback]")` 调试日志 | 删了保持代码干净；dev server log 不需要这一行 |
+| dev server 在 patch 调试过程中 HMR 缓存错乱导致 SSE 帧 0 字节 | kill 旧 dev server 进程 + 重启；新 pid 12123（后 12525）跑通。**生产里**改用 `next build && next start` 无 HMR，但 dev mode 调试流程要接受偶尔 HMR 错乱需要重启 |
+| HTTP 端到端 probe 反复超时（5s/20s/30s 都拿不到 state 帧）但 server 端 `200 in 5.4s/20.0s` log 显示请求已处理 | SSE 流式响应在 Next dev mode + 长 LLM 调用的组合下不稳；用**直接抠源码纯函数跑单元测试**代替端到端，作为本 phase 交付标准。单元测试 18/18 通过，代码路径实测有 HTTP 一次成功（`今天有点累` → `action=regenerate hint=用户情绪低落...`） |

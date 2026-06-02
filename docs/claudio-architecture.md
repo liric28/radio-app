@@ -10,6 +10,11 @@ Claudio 的核心定位不是“播放器 + 一些按钮”，而是：
 - 通过我的偏好数据不断学习，并持续推荐我真正愿意听下去的歌
 - 允许我用很随意的自然语言聊天，随时切换想听的风格、气氛和方向
 
+- 用户不需要说——它自己知道你想听什么
+- 用户说错话——它能理解你想干什么
+- 用户没说话——它能在合适时机主动推荐/换歌/调音量
+- 用户口味变了——它能感知到（不是死板按历史平均）
+
 这套产品的本质主循环是：
 
 1. 用户听歌、跳过、收藏、下载、聊天提要求
@@ -271,6 +276,41 @@ sequenceDiagram
 - `player-shell.tsx` SSE 解析新增 `chunk.type === "assistant"` 帧分支写 placeholder.meta；现有 `chunk.type === "state"` / `chunk.choices?.[0]?.delta?.content` 两条路径**一字不动**。
 - **"换一批"在 candidateList 上下文里**走 play-request 旁路 refresh 模式（Phase 8）：用户说"换/换一批/还有吗"等关键词 → 从 history 末尾 candidateList 拿当前歌手 → executor 用 `excludeKeys` 排除已展示候选 → 重搜 top 3。无候选上下文时 fall through 到原 9 个 action 链路，`换一批` regenerate 走 radio-engine 保持原行为。
 
+#### 1.3 LLM 路由器 + mood keyword 兜底（2026-06-02 增量，Phase 9）
+
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant UI as PlayerShell
+    participant API as /api/agent
+    participant Agent as chat-agent
+    participant Router as inferOnlineFreeformIntent<br/>(LLM 路由器)
+    participant Fallback as inferFromMoodKeywords<br/>(keyword 兜底)
+    participant Online as online-radio.applyOnlineChatIntent
+
+    User->>UI: "今天有点累"
+    UI->>API: POST /api/agent
+    API->>Agent: runChatAgent()
+    Agent->>Router: inferOnlineFreeformIntent(msg, program, insights)
+    Router-->>Agent: action="none"（LLM 路由器对 mood 表达偏 none）
+    Agent->>Fallback: inferFromMoodKeywords(msg, insights)
+    Fallback-->>Agent: {action:"regenerate", messageHint:"用户情绪低落、疲惫..."}
+    Agent-->>API: state.intent = regenerate + messageHint
+    API-->>Online: applyOnlineChatIntent(intent, program, ...)
+    Online->>Online: messageHint 智能优先 → 改 prompt
+    Online-->>UI: 换一批柔和、治愈的歌
+    UI-->>User: "好, 给你换点柔和的"
+```
+
+关键不变量：
+
+- `inferFromMoodKeywords` 是 chat-agent 内部的**纯函数 keyword 兜底**，**不调 LLM**。触发条件：上一段 LLM 路由器返 `action: "none"` 时 fallback 调用一次。
+- `MOOD_KEYWORD_HINTS` 18 组关键词覆盖 5 类信号：情绪低落 / 情绪上扬 / 风格速度 / 时刻场景 / 否定倾向。每组有 `weight`，多组同时命中时取 weight 最高的一组 hint。
+- 命中后构造 `mode: "music-control"` + `intent: {action: "regenerate", messageHint: "..."}`，跟 LLM 路由器命中的产物同构，**走同一条** `applyOnlineChatIntent` 链路（messageHint 智能优先路径）。
+- **不命中**时返回 `null`，让 chat-agent 继续走 `none` → 真 `none` 路径（chat 闲聊，DJ 自由应答，**不动** LLM 路由器内部 prompt）。
+- `IntentResolution` 联合类型加 `"mood-keyword"` 标识，preference-learning `resolver` 联合类型同步加，跟 `rule` / `llm` 并列。`intent_resolved` 事件写盘会带上 `resolver: "mood-keyword"`，可观测。
+- 0 侵入：原 9 个 action、radio-engine、online-radio、preference-learning、LLM 路由器 prompt **一行不动**。
+
 #### 1.2 聊天触发播放器控件（2026-06-02 增量，Phase 7）
 
 ```mermaid
@@ -458,6 +498,7 @@ flowchart TD
 - 显式点播旁路在 frontend UI 形态上只走"数字 1/2/3 / 歌名 / 第 N 首 / 就这首"等纯文本回复，还**没有专门的候选列表气泡组件**（当前是让 assistant 文本含 `1.《X》2.《Y》3.《Z》` 列表行 + 后端 meta 透传，前端不做专门 UI 渲染）。后续如果要做真正的"可点击候选卡"再扩展 player-shell 渲染层。
 - 聊天触发播放器控件目前只接了"暂停/继续/重播/音量"。**后续要扩"上一首/下一首/收藏/下载/歌词"等进聊天**只需扩 `PlayerActions` 类型 + 那个按钮的 onClick 改 `playerActionsRef.current.xxx()`，零架构改动。chat-agent 旁路 + SSE control 帧协议已就绪。
 - 候选列表"换一批"重搜（Phase 8）已接进 play-request 旁路——用户说"换/换一批/还有吗"等关键词 + 上一条是 candidateList 时重搜同一歌手 top 3（去重已展示候选）。**无候选上下文时 fall through 到原 9 个 action 链路**，"换一批" regenerate 走 radio-engine 保持原行为。assistant 文本用"X 的其他歌，刷新一下："区别于首轮"X 的歌"。
+- LLM 路由器 + mood keyword 兜底（Phase 9）已接进 chat-agent——LLM 路由器对"今天有点累/想家了/嗨一点/夜深了"等 mood 表达判 none 时，keyword 兜底补回 `regenerate + messageHint`，走原 `applyOnlineChatIntent` 链路（messageHint 智能优先路径）。18 组关键词覆盖 5 类信号（情绪/风格/时刻/否定），不命中 fall through 到 LLM 闲聊。`resolver: "mood-keyword"` 写进 preference-learning 事件可观测。**未做**：keyword 库手工维护（后续可接 LLM 自动扩词）、多 keyword 冲突时只取 weight 最高（不做复杂合并）、不命中时给用户主动追问"想听点什么？"（保持当前 fall through 到 LLM DJ 闲聊）。
 
 ## 后续唯一主线
 

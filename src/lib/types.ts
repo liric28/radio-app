@@ -161,6 +161,16 @@ export type ChatIntent = {
    * lastPendingCandidates(history) 命中时设置。
    */
   refresh?: boolean;
+  /**
+   * LLM 路由器智能 messageHint：基于 user message + preference insights
+   * （avoidSignals / topTags / sceneProfile）浓缩出来的"搜索意图"，
+   * 传给 applyOnlineChatIntent 作为 messageHint 参数。
+   * 比直接用 user 原文更精准——能把"今天有点累"映射成
+   * "深夜感、低能量、避开已标黑标签"。
+   * Phase 9 引入，仅在 regenerate / fresh / calmer / familiar / scene-change
+   * 等需要触发新一轮搜索的 action 上填。
+   */
+  messageHint?: string;
 };
 
 export type ChatRole = "user" | "assistant";
