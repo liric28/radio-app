@@ -140,12 +140,51 @@ function bumpNested(
   bump(map[normalizedBucket], key, value);
 }
 
+// 7 天半衰期 — 老污染 14 天基本归零（30 天半衰期太长，老错误信号持续在线）
+const DECAY_HALF_LIFE_DAYS = 7;
+
+// scene 归一化：把 4 套并存的中文 scene 标签合并到 4 桶
+// 写入 preference event 时统一调用，scene 桶才不会分裂
+const SCENE_NORMALIZATION: Record<string, string> = {
+  "白天工作流": "daytime",
+  "白天": "daytime",
+  "工作流": "daytime",
+  "下午茶": "daytime",
+  "morning": "morning",
+  "早高峰": "morning",
+  "晨间出门": "morning",
+  "早上": "morning",
+  "通勤": "morning",
+  "evening": "evening",
+  "晚间": "evening",
+  "晚高峰": "evening",
+  "下班": "evening",
+  "晚高峰路上": "evening",
+  "late-night": "late-night",
+  "深夜降速": "late-night",
+  "深夜": "late-night",
+  "凌晨": "late-night",
+  "失眠": "late-night",
+};
+
+export function normalizeScene(rawScene: string | undefined): string {
+  if (!rawScene) return "daytime";
+  if (SCENE_NORMALIZATION[rawScene]) return SCENE_NORMALIZATION[rawScene];
+  const lower = rawScene.toLowerCase();
+  for (const [key, value] of Object.entries(SCENE_NORMALIZATION)) {
+    if (key.toLowerCase() === lower) return value;
+  }
+  // 兜底：morning / daytime / evening / late-night 直接放行；其他映射到 daytime
+  if (["morning", "daytime", "evening", "late-night"].includes(lower)) return lower;
+  return "daytime";
+}
+
 function getEventDecay(ts: string | undefined) {
   if (!ts) return 1;
   const eventTime = new Date(ts).getTime();
   if (Number.isNaN(eventTime)) return 1;
   const ageDays = Math.max(0, (Date.now() - eventTime) / (1000 * 60 * 60 * 24));
-  return Number(Math.pow(0.5, ageDays / 30).toFixed(4));
+  return Number(Math.pow(0.5, ageDays / DECAY_HALF_LIFE_DAYS).toFixed(4));
 }
 
 function scoreEvent(event: PreferenceEvent) {
@@ -158,8 +197,16 @@ function scoreEvent(event: PreferenceEvent) {
       return 2;
     case "playback_completed":
       return 1.5;
-    case "playback_interrupted":
-      return (event.playbackRatio || 0) < 0.2 ? -2 : -0.5;
+    case "playback_interrupted": {
+      // 隐式负信号必须先做"可信度过滤"：
+      //   - 播放 < 30%：太短，分不清"试听"还是"被打断"，不写负信号
+      //   - 30%-80%：可疑信号，弱负
+      //   - > 80% 几乎不会到 interrupted（应该走 completed）
+      const ratio = event.playbackRatio || 0;
+      if (ratio < 0.3) return 0;
+      if (ratio < 0.8) return -0.5;
+      return -1;
+    }
     case "similar_request":
       // 用户主动说"再来点这种"，正向信号 — 比 favorite 弱，但比纯浏览强
       return 1.2;
@@ -169,6 +216,29 @@ function scoreEvent(event: PreferenceEvent) {
     default:
       return 0;
   }
+}
+
+/**
+ * 把负信号写入白名单：完播 + 收藏 + 显式说喜欢的 artist/tag/language
+ * 永不进 negativeSignals / negativeSignalsByScene。
+ *
+ * 调用时机：buildPreferenceModel 聚合 negativeSignals 时，event 转 signal 之前判。
+ */
+function isPositiveTrackSignal(
+  event: PreferenceEvent,
+  track: PreferenceTrackSnapshot | null | undefined,
+): boolean {
+  if (!track) return false;
+  if (
+    event.type === "playback_completed" ||
+    event.type === "favorite" ||
+    event.type === "download" ||
+    event.type === "replay" ||
+    event.type === "similar_request"
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function summarizeTrack(song: Song, scene?: string): PreferenceTrackSnapshot {
@@ -224,7 +294,7 @@ export async function buildPreferenceModel(events?: PreferenceEvent[]) {
     const decay = getEventDecay(event.ts);
     const weight = Number((scoreEvent(event) * decay).toFixed(3));
     const track = event.track;
-    const scene = track?.scene || event.scene;
+    const scene = normalizeScene(track?.scene || event.scene);
 
     if (event.type === "chat_request") {
       for (const pattern of extractRequestPatterns(event.message)) {
@@ -249,7 +319,9 @@ export async function buildPreferenceModel(events?: PreferenceEvent[]) {
         energySums.set(scene, current);
       }
 
-      if (weight < 0) {
+      if (weight < 0 && !isPositiveTrackSignal(event, track)) {
+        // 负信号白名单：完播 / 收藏 / 下载 / replay / similar_request
+        // 这 5 类的 track 永不进 negativeSignals — 学过的歌不能被自己标黑
         bump(model.negativeSignals, track.artist, Math.abs(weight));
         bump(model.negativeSignals, track.language, Math.abs(weight) * 0.5);
         for (const tag of track.tags || []) bump(model.negativeSignals, tag, Math.abs(weight) * 0.4);
@@ -393,10 +465,15 @@ export async function readPreferenceInsights(): Promise<PreferenceInsights> {
 }
 
 export async function appendPreferenceEvent(event: Omit<PreferenceEvent, "ts"> & { ts?: string }) {
+  // 数据源头统一：scene 字段在写入时就归一化，老数据回填也走同一函数
   const payload: PreferenceEvent = {
     ts: event.ts || new Date().toISOString(),
     ...event,
+    scene: normalizeScene(event.scene),
   };
+  if (payload.track) {
+    payload.track = { ...payload.track, scene: normalizeScene(payload.track.scene) };
+  }
   await fs.mkdir(path.dirname(eventsPath), { recursive: true });
   await fs.appendFile(eventsPath, `${JSON.stringify(payload)}\n`, "utf8");
   await buildPreferenceModel();
