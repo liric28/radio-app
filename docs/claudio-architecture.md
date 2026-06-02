@@ -50,8 +50,12 @@ flowchart LR
     CLS --> AUDIO[/GET /api/audio/]
 
     AGENT --> CHATAGENT[chat-agent<br/>src/lib/chat-agent.ts]
+    CHATAGENT --> PLAYEX[play-request-executor<br/>src/lib/play-request-executor.ts]
+    PLAYEX --> MUSICSEARCH[music-search<br/>src/lib/music-search.ts]
+    PLAYEX --> SONGDOWNLOAD[song-download<br/>src/lib/song-download.ts]
     CHATAGENT --> CHATLLM[chat-llm provider<br/>src/lib/providers/chat-llm.ts]
     CHATLLM --> MODEL[MiniMax / DeepSeek]
+    CHATAGENT -.SSE type:"control".-> PLAYERACTIONS[playerActionsRef<br/>player-shell.tsx]
     PREF --> LEARN[preference-learning<br/>src/lib/preference-learning.ts]
 
     START --> PROGRAM[program-adapter<br/>src/lib/claudio/program-adapter.ts]
@@ -103,6 +107,7 @@ flowchart TB
 
     subgraph L3["运行时层"]
         CHATAGENT[chat-agent]
+        PLAYEX[play-request-executor]
         PROGRAMADAPTER[program-adapter]
         RUNTIMECORE[station-runtime]
         JOBWORKER[jobs worker]
@@ -148,6 +153,9 @@ flowchart TB
     STREAMAPI --> RUNTIMECORE
 
     CHATAGENT --> CHATLLM
+    CHATAGENT --> PLAYEX
+    PLAYEX --> MUSICSEARCH
+    PLAYEX --> SONGDOWNLOAD
     PROGRAMADAPTER --> RADIOENGINE
     PROGRAMADAPTER --> LIVEMUSIC
     PROGRAMADAPTER --> CLLM
@@ -210,6 +218,88 @@ sequenceDiagram
 - 在在线推荐模式下，聊天不只是“回复一句话”，而是首页推荐的重要控制入口。
 - 用户可以很随意地说“来点抒情的 / 来点 DJ 上头的 / 摇滚劲爆一点 / 中文女声轻一点”，系统应默认把这类自由音乐请求转成一次新的推荐重组，而不是要求用户学习固定命令。
 - 首页在线推荐对象本身只应该承载推荐内容，例如 `title / artist / source / raw`，不应该直接承担最终播放直链。
+- **显式点播走 chat-agent 旁路**（见下），“播 刘德华 / 播 刘德华 中国人”不再被解析为 `regenerate` 或 `scene-change`，而是直接落到 `play-request-executor` 触发真点播或候选提问。点播是“切到指定歌”语义，跟推荐重排正交，不进原 9 个 action 列表。
+- **聊天触发播放器控件走 chat-agent 旁路**（见 1.2），“暂停 / 继续 / 重播 / 音量”这些纯 audio 元素操作也不进原 9 个 action 列表，跟“改推荐 LIST”完全正交。
+
+#### 1.1 显式点播旁路（2026-06-02 增量）
+
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant UI as PlayerShell
+    participant API as /api/agent
+    participant Agent as chat-agent
+    participant Router as inferOnlineFreeformIntent<br/>(LLM 路由器)
+    participant Exec as play-request-executor
+    participant Search as music-search
+    participant LLM as minimax/deepseek
+
+    User->>UI: "播 刘德华"
+    UI->>API: POST /api/agent
+    API->>Agent: runChatAgent()
+    Agent->>Agent: detectExplicitPlayIntent()<br/>命中 play-artist
+    Agent->>Exec: executePlayRequest(intent)
+    Exec->>Search: 搜"刘德华"三源合并
+    Search-->>Exec: top 3 hits
+    Exec-->>Agent: kind="candidate-list"<br/>candidateList=[...]
+    Agent-->>API: directReply + assistantMeta<br/>(SSE type:"assistant" 帧)
+    API-->>UI: SSE state 帧 + assistant 帧
+    UI->>UI: 把 meta.pendingCandidates<br/>写进 placeholder.meta
+    UI-->>User: 气泡显示 "刘德华 的歌，你想听哪首？1.《练习》2.《暗里着迷(粤)》3.《17岁》"
+
+    User->>UI: "1"
+    UI->>API: POST /api/agent (history 末尾带 meta)
+    API->>Agent: runChatAgent()
+    Agent->>Agent: lastPendingCandidates(history)<br/>找到 candidates
+    Agent->>Agent: matchPendingCandidate("1")<br/>→ candidates[0] = {刘德华, 练习}
+    Agent->>Exec: executePlayRequest(play-song-by-artist)
+    Exec->>Search: 搜"刘德华 练习"
+    Search-->>Exec: top hits
+    Exec->>Search: resolveVerifiedPlaybackUrl
+    Exec-->>Agent: kind="play-now"<br/>nextProgram 已替换 currentTrack
+    Agent-->>API: directReply + state 帧<br/>(currentTrack = 刘德华《练习》)
+    API-->>UI: SSE state 帧触发 setProgram<br/>+ shouldResumePlaybackRef 自动续播
+    UI-->>User: 切歌开播
+```
+
+关键不变量：
+
+- `play-request-executor` 是**纯增量模块**，不 import `radio-engine` / `online-radio` / `preference-learning`，原 9 个 action 链路**任何一行都没动**。
+- 点播只挂 `play-*` 三个新 action（`play-artist` / `play-song` / `play-song-by-artist`），不进入 `applyChatIntentWithProgram` / `applyOnlineChatIntent` / feedback 累加 / schedule 重排。
+- 候选数据走 SSE `meta.pendingCandidates` 透传到前端 `chatHistory[].meta`，下一轮 user 选歌时原样发回后端，**不需要 anchor store / 服务端 chat session**。
+- `route.ts` directReply 帧加 `type: "assistant"` 标识与 `meta` 字段；现有 `type: "state"` 帧、模型流式 token 透传、`[DONE]` 终止帧**一行不动**。
+- `player-shell.tsx` SSE 解析新增 `chunk.type === "assistant"` 帧分支写 placeholder.meta；现有 `chunk.type === "state"` / `chunk.choices?.[0]?.delta?.content` 两条路径**一字不动**。
+- **"换一批"在 candidateList 上下文里**走 play-request 旁路 refresh 模式（Phase 8）：用户说"换/换一批/还有吗"等关键词 → 从 history 末尾 candidateList 拿当前歌手 → executor 用 `excludeKeys` 排除已展示候选 → 重搜 top 3。无候选上下文时 fall through 到原 9 个 action 链路，`换一批` regenerate 走 radio-engine 保持原行为。
+
+#### 1.2 聊天触发播放器控件（2026-06-02 增量，Phase 7）
+
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant UI as PlayerShell
+    participant API as /api/agent
+    participant Agent as chat-agent
+    participant Actions as playerActionsRef<br/>(统一动作层)
+    participant Audio as audio 元素
+
+    User->>UI: "暂停"
+    UI->>API: POST /api/agent
+    API->>Agent: runChatAgent()
+    Agent->>Agent: resolveControlIntent()<br/>命中 pause
+    Agent-->>API: controlAction="pause"<br/>(SSE type:"control" 帧)
+    API-->>UI: SSE state 帧 + control 帧 + assistant 帧
+    UI->>Actions: actions.pause()
+    Actions->>Audio: audio.pause() + setIsPlaying(false)<br/>+ setActiveLabel("PAUSED")
+    UI-->>User: 暂停了。
+```
+
+关键不变量：
+
+- `playerActionsRef = useRef<PlayerActions>` 是 `PlayerShell` 内部**统一动作层**，暴露 6 个独立函数（`pause / resume / replay / volumeUp / volumeDown / setVolumeTo`）。
+- **按钮 onClick 跟聊天 SSE control 帧走完全同一份实现**：`togglePlayback` 内部已重构成调 `resumeAudio / pauseAudio`。
+- chat-agent 头部**最优先**旁路（`resolveControlIntent`）在 `resolveAgentState` 之前判，命中后**不写** preference_event、**不动** program、**不调** LLM / radio-engine / online-radio。
+- `volume-up` / `volume-down` 是**相对调整**（前端按 step 0.1 累加，clamp 0-1）；`set-volume N` 是**绝对值**（前端 `setVolume(N/100)`）。音量完全前端管，后端零状态同步。
+- 60+ 个其他按钮 onClick **没动**（A 方案：未来扩"上一首/下一首/收藏/下载"时按需把那个按钮的 onClick 改成 `playerActionsRef.current.xxx()`，渐进式收口）。
 
 ### 2. Claudio 开台与播放
 
@@ -307,6 +397,9 @@ flowchart TD
   Claudio live 在线搜歌入口，负责搜索 seed、可播校验、学习偏好反哺和探索模式。
 - `src/lib/claudio/segment-normalizer.ts`
   统一 bridge/cold open/intro segment 的结构。
+- `src/lib/play-request-executor.ts`
+  显式点播执行器（2026-06-02 增量）。纯增量模块：play-artist 走"只搜不切"返回 top 3 候选，play-song-by-artist 走"搜 → 评分 → 拿可播 URL → 替换 currentTrack"。不 import `radio-engine` / `online-radio` / `preference-learning`，不写 preference_event，不动 daily-schedule。
+- **统一播放器动作层（2026-06-02 增量，Phase 7）**：在 `src/components/player-shell.tsx` 内部新增 `playerActionsRef = useRef<PlayerActions>`，暴露 6 个独立函数（`pause / resume / replay / volumeUp / volumeDown / setVolumeTo`）。`togglePlayback` 内部已重构成调 `resumeAudio / pauseAudio`，按钮 onClick 和聊天 SSE control 帧走完全同一份实现。后续扩"上一首/下一首/收藏/下载"进聊天控制时，扩 `PlayerActions` 类型 + 那个按钮的 onClick 改 `playerActionsRef.current.xxx()` 即可。
 
 ### 模型与 TTS 层
 
@@ -362,6 +455,9 @@ flowchart TD
 - Claudio live 侧还没有收藏/跳过/显式反馈按钮，因此 live 的偏好回流还主要依赖自然播放完成/中断。
 - 自学习层虽已具备时间衰减、探索策略、scene 分层和轻量面板，但还没有独立调试页，也没有更强的策略评估。
 - 外部对照页 `src/app/claudio-live/external/route.ts` 仍保留，仅用于对照。
+- 显式点播旁路在 frontend UI 形态上只走"数字 1/2/3 / 歌名 / 第 N 首 / 就这首"等纯文本回复，还**没有专门的候选列表气泡组件**（当前是让 assistant 文本含 `1.《X》2.《Y》3.《Z》` 列表行 + 后端 meta 透传，前端不做专门 UI 渲染）。后续如果要做真正的"可点击候选卡"再扩展 player-shell 渲染层。
+- 聊天触发播放器控件目前只接了"暂停/继续/重播/音量"。**后续要扩"上一首/下一首/收藏/下载/歌词"等进聊天**只需扩 `PlayerActions` 类型 + 那个按钮的 onClick 改 `playerActionsRef.current.xxx()`，零架构改动。chat-agent 旁路 + SSE control 帧协议已就绪。
+- 候选列表"换一批"重搜（Phase 8）已接进 play-request 旁路——用户说"换/换一批/还有吗"等关键词 + 上一条是 candidateList 时重搜同一歌手 top 3（去重已展示候选）。**无候选上下文时 fall through 到原 9 个 action 链路**，"换一批" regenerate 走 radio-engine 保持原行为。assistant 文本用"X 的其他歌，刷新一下："区别于首轮"X 的歌"。
 
 ## 后续唯一主线
 

@@ -1410,14 +1410,70 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     }
   }
 
+  // ===== 统一播放器动作层 =====
+  // 聊天 SSE control 帧 + 后续要加的"上一首/下一首/收藏/下载"按钮全部走这一层。
+  // 现在这一层只暴露 pause / resume / replay / 音量 4 组给聊天；
+  // 现有按钮 onClick 暂不重构，等后续扩展时一并把 onClick 改成 playerActionsRef.current.xxx()。
+  // togglePlayback 内部改为调 pause / resume，确保按钮行为和聊天行为走完全同一份代码。
+  async function pauseAudio() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    shouldResumePlaybackRef.current = false;
+    setIsPlaying(false);
+    setActiveLabel("PAUSED");
+  }
+  async function resumeAudio() {
+    const audio = audioRef.current;
+    if (!audioSource || !audio) {
+      setError("当前歌曲还在解析播放地址，请稍后再试。");
+      return;
+    }
+    setError(null);
+    try {
+      shouldResumePlaybackRef.current = false;
+      await audio.play();
+      setIsPlaying(true);
+      setActiveLabel("ON AIR");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`播放失败：${msg}`);
+    }
+  }
+  function replayAudio() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    if (audio.paused) void audio.play().catch(() => null);
+  }
+  function volumeUp() {
+    setVolume((v) => Math.min(1, v + 0.1));
+  }
+  function volumeDown() {
+    setVolume((v) => Math.max(0, v - 0.1));
+  }
+  function setVolumeTo(value01: number) {
+    setVolume(Math.max(0, Math.min(1, value01)));
+  }
+  const playerActionsRef = useRef({
+    pause: pauseAudio,
+    resume: resumeAudio,
+    replay: replayAudio,
+    volumeUp,
+    volumeDown,
+    setVolumeTo,
+  });
+  playerActionsRef.current = {
+    pause: pauseAudio,
+    resume: resumeAudio,
+    replay: replayAudio,
+    volumeUp,
+    volumeDown,
+    setVolumeTo,
+  };
+
   /**
-   * 播放 / 暂停切换（中间那个 ▶ 圆按钮）。
-   *
-   * 关键差异 vs 其它播放路径：
-   *   - 不切歌，纯操作当前 audio 元素
-   *   - 主动把 shouldResumePlaybackRef 设回 false——
-   *     用户手动 pause 后，即使下一次 audioSource 变化（比如自动 next）也不要偷偷续播
-   *   - 没本地曲库（audioSource 为空）时直接报错，不能空播
+   * 统一执行页内 agent：先判断意图，再调用对应工具，最后把回复上下文交给文案层。
    */
   async function togglePlayback() {
     const audio = audioRef.current;
@@ -1425,43 +1481,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       setError("当前歌曲还在解析播放地址，请稍后再试。");
       return;
     }
-    setError(null);
-
     if (audio.paused) {
-      try {
-        shouldResumePlaybackRef.current = false;
-        console.info("[Audio] play.attempt", {
-          trackId: program.currentTrack.id,
-          title: program.currentTrack.title,
-          artist: program.currentTrack.artist,
-          audioSource,
-          readyState: audio.readyState,
-          networkState: audio.networkState,
-        });
-        await audio.play();
-        setIsPlaying(true);
-        setActiveLabel("ON AIR");
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error("[Audio] play() failed:", {
-          message: msg,
-          trackId: program.currentTrack.id,
-          title: program.currentTrack.title,
-          artist: program.currentTrack.artist,
-          audioSource,
-          readyState: audio.readyState,
-          networkState: audio.networkState,
-          currentSrc: audio.currentSrc,
-        });
-        setError(`播放失败：${msg}`);
-      }
-      return;
+      await resumeAudio();
+    } else {
+      pauseAudio();
     }
-
-    audio.pause();
-    shouldResumePlaybackRef.current = false;
-    setIsPlaying(false);
-    setActiveLabel("PAUSED");
   }
 
   /**
@@ -1913,6 +1937,52 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               if (chunk.schedule) setSchedule(chunk.schedule);
               if (Array.isArray(chunk.favorites)) setFavorites(chunk.favorites as string[]);
               if ("weather" in chunk) setWeather(chunk.weather);
+              continue;
+            }
+            // 新增：directReply 整段（点播候选提问/真点播等不走 LLM 的场景）
+            // 一次性把 content 和 meta 都写进 placeholder。
+            // 原 LLM 流式 token 透传路径不带 type:"assistant"，继续走下面 choices 解析。
+            if (chunk.type === "assistant" && chunk.meta) {
+              setChatHistory((prev) =>
+                prev.map((m) =>
+                  m.id === placeholderId
+                    ? {
+                        ...m,
+                        meta: {
+                          ...(m.meta ?? {}),
+                          pendingCandidates: chunk.meta?.pendingCandidates ?? m.meta?.pendingCandidates,
+                        },
+                      }
+                    : m,
+                ),
+              );
+            }
+            // 新增：聊天触发的控件指令（暂停 / 继续 / 音量 / 重播）。
+            // 走 playerActionsRef 统一动作层，跟按钮 onClick 完全同一份实现。
+            if (chunk.type === "control" && chunk.action) {
+              const actions = playerActionsRef.current;
+              switch (chunk.action) {
+                case "pause":
+                  void actions.pause();
+                  break;
+                case "resume":
+                  void actions.resume();
+                  break;
+                case "replay":
+                  actions.replay();
+                  break;
+                case "volume-up":
+                  actions.volumeUp();
+                  break;
+                case "volume-down":
+                  actions.volumeDown();
+                  break;
+                case "set-volume":
+                  if (typeof chunk.value === "number") {
+                    actions.setVolumeTo(chunk.value / 100);
+                  }
+                  break;
+              }
               continue;
             }
             let content = chunk.choices?.[0]?.delta?.content;

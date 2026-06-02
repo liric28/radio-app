@@ -110,14 +110,6 @@ export type RadioProgram = {
   memorySummary: string;
 };
 
-export type ChatRole = "user" | "assistant";
-
-export type ChatMessage = {
-  id: string;
-  role: ChatRole;
-  content: string;
-};
-
 export type ChatIntentAction =
   | "none"
   | "skip"
@@ -128,12 +120,56 @@ export type ChatIntentAction =
   | "favorite"
   | "download-current"
   | "select-track"
-  | "scene-change";
+  | "scene-change"
+  | "play-artist"
+  | "play-song"
+  | "play-song-by-artist"
+  | "pause"
+  | "resume"
+  | "replay"
+  | "volume-up"
+  | "volume-down"
+  | "set-volume";
+
+/**
+ * 聊天助手消息的元信息。仅"候选提问"这种 assistant 消息会带 pendingCandidates，
+ * 其它消息的 meta 留空。pendingCandidates 是上一轮播 X 搜出来的 top 3，
+ * 下一轮 user 选歌时直接匹配，结构化数据比 LLM 读 history 文本猜歌名稳。
+ */
+export type ChatMessageMeta = {
+  pendingCandidates?: Array<{ artist: string; title: string }>;
+};
 
 export type ChatIntent = {
   action: ChatIntentAction;
   trackId?: string;
   targetPeriod?: string;
+  artist?: string;
+  title?: string;
+  language?: string;
+  versionHint?: string;
+  mustPlayNow?: boolean;
+  /**
+   * 数值型意图的负载，目前仅 set-volume 使用（0-100 整数）。
+   * 不进 online-radio / radio-engine / preference-learning，纯粹给前端
+   * 解析 SSE control 帧时使用。
+   */
+  value?: number;
+  /**
+   * play-artist 重搜标记：true 表示"换一批"——executor 重新搜同一歌手的 top N，
+   * 排除上一轮已展示的候选。仅在 chat-agent 旁路里识别"换"类关键词 +
+   * lastPendingCandidates(history) 命中时设置。
+   */
+  refresh?: boolean;
+};
+
+export type ChatRole = "user" | "assistant";
+
+export type ChatMessage = {
+  id: string;
+  role: ChatRole;
+  content: string;
+  meta?: ChatMessageMeta;
 };
 
 export type ChatAgentMode = "chat" | "weather" | "music-control";

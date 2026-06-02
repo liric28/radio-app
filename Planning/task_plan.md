@@ -38,15 +38,51 @@ Phase 5
 - [ ] Deliver to user
 - **Status:** in_progress
 
+### Phase 6: 显式点播旁路（2026-06-02 增量，兼容原主线）
+- [x] 识别"播/放/来首/想听/切到 + 歌手"形态走 play-artist 候选提问
+- [x] 识别"X 的 Y / 《Y》- X"形态走 play-song-by-artist 真点播
+- [x] 候选候选匹配（"1/2/3" 序号、歌名、第 N 首、就这首、中间那首、最后一个）
+- [x] 候选数据通过 SSE type:"assistant" 帧 + meta.pendingCandidates 透传前端 chatHistory
+- [x] 不动原 9 个 action 链路（radio-engine / online-radio / preference-learning 全 0 改动）
+- **Status:** completed
+
+### Phase 7: 聊天触发播放器控件（2026-06-02 增量）
+- [x] 暂停 / 继续 / 重播 / 音量（绝对值 + 相对调整）4 个 action
+- [x] chat-agent 头部最优先旁路（先于 resolveAgentState / play-request 旁路 / LLM 路由器）
+- [x] radio-engine.resolveChatIntent 加 4 个新分支（pause / resume / replay / set-volume 绝对值）
+- [x] player-shell.tsx 统一动作层（playerActionsRef）— 聊天 SSE control 帧和按钮 onClick 走同一份 pauseAudio / resumeAudio 实现
+- [x] SSE type:"control" 帧透传（route.ts + 前端 player-shell.tsx 解析）
+- [x] 不动原 9 个 action 链路（favorite / skip / regenerate / ...），不写 preference_event，不动 program
+- **Status:** completed
+
+### Phase 8: 候选列表"换一批"重搜（2026-06-02 增量）
+- [x] `换` / `换一批` / `换一下` / `再来点` / `还有吗` / `别的` 等关键词 + 上一条是 candidateList → 旁路接管
+- [x] play-artist 模式下重搜同一歌手 top 3，excludeKeys 排除上一轮已展示候选
+- [x] 无候选上下文时"换"fall through 到 LLM 路由器 / 原 9 个 action 链路
+- [x] 不动原 9 个 action（regenerate 关键词仍由 radio-engine.resolveChatIntent 命中）
+- [x] assistant 文本用"X 的其他歌，刷新一下："区别于首轮"X 的歌，你想听哪首？"
+- [x] 重搜搜不到时回 "我这儿就这几首 X 的歌了" 区别于首轮"我这儿没搜到 X"
+- **Status:** completed
+
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|
-| 首页是当前第一主战场 | “懂我的音乐 Agent”最先要在首页推荐与聊天闭环里成立 |
+| 首页是当前第一主战场 | "懂我的音乐 Agent"最先要在首页推荐与聊天闭环里成立 |
 | 先强化数据闭环，不先堆零散功能 | 没有稳定采样、建模、反哺，再多按钮也不会更懂用户 |
-| 聊天必须成为自由切风格入口 | 用户应该随口一句“来点抒情的”就能触发新一轮 LIST，而不是记命令 |
+| 聊天必须成为自由切风格入口 | 用户应该随口一句"来点抒情的"就能触发新一轮 LIST，而不是记命令 |
 | 采用时间衰减 + 场景分层 + 负反馈反哺 | 这是当前代码结构里性价比最高、最接近真实口味变化的路径 |
 | 首页学习核心做稳后，再逐步迁 Claudio live | 避免在 live 侧重复发明一套独立偏好逻辑 |
 | 推荐和播放必须拆职责 | 推荐只产出歌曲内容，在线播放统一通过 `/api/song-playback` 解析真实可播地址 |
+| 显式点播走 chat-agent 旁路，**不进入** 9 个 action 列表 | 点播是"切到指定歌"语义，跟推荐重排/偏好反馈正交，混进原 action 会污染 preference_event 流和 radio-engine feedback 链 |
+| 候选数据走 SSE `meta.pendingCandidates` 透传 | 比 LLM 读 history 文本猜歌名准 100 倍；前端 placeholder 收到 assistant 帧后写进 chatHistory，下一轮 user 选歌时原样发回后端匹配 |
+| 裸 query "1/2/3" 走 `lastPendingCandidates` 匹配 | 避免给 LLM 路由器引入"上一条是候选列表"这种语义识别，前端 ChatMessage 已有结构化 meta 可用 |
+| 真点播 top vs second 差 ≤ 2 时**仅在 title 完全不 match** 才 fallback 候选 | 用户明确说"刘德华 练习"时被同名版本"练习 (Live)"顶回候选列表等于无响应；title 已精确匹配时直接切 |
+| 控件类动作（暂停/继续/重播/音量）走 chat-agent 头部**最优先**旁路，不进 9 个 action 列表 | 这些动作是"操作 audio 元素"，跟"改推荐 LIST"语义完全正交；混进 9 个 action 会污染 preference_event 和 feedbackBias 累加链 |
+| 聊天 control 帧和按钮 onClick 走 player-shell.tsx 内部**统一动作层**（playerActionsRef） | 一处实现两处入口，未来扩"上一首/下一首/收藏/下载"进聊天控制时直接加进 PlayerActions 类型，零额外分散代码 |
+| 音量 step = 0.1（10%），clamp 0-1；"音量 N" 绝对值走 setVolumeTo(N/100) | 跟现有 audio 元素 volume API 一致；前端 audioRef.current.volume 已是 0-1 范围 |
+| "换一批" 走 play-artist refresh 模式，**只在** lastPendingCandidates 命中时 | 用户在 candidateList 上下文里说"换" = 想换该歌手的其他歌；无候选上下文时让原 9 个 action 的 regenerate 接管（避免语义串台） |
+| refresh 模式用 `excludeKeys: Set<"artist::title" 标准化 key">` 透传给 executor | 复用 executor 内部 `normalizeText` 规则作为去重 key；不在 chat-agent 里复制一份 normalize 函数，避免规则漂移 |
+| assistant 文本区分首轮 vs 刷新：首轮"X 的歌"、刷新"X 的其他歌，刷新一下" | 文本给用户明确反馈：当前是"看到新的"还是"回到旧的"；防止误以为系统没动 |
 
 ## Errors Encountered
 | Error | Resolution |

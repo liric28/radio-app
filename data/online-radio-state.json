@@ -1,5 +1,5 @@
 {
-  "date": "2026-06-01",
+  "date": "2026-06-02",
   "seed": {
     "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "reason": "queue-advance"
@@ -9,22 +9,22 @@
     "stationName": "Claudio FM",
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
-    "energyLabel": "轻推力上行",
-    "hostIntro": "这一轮不从本地记忆里翻旧歌，直接按你现在的口味去外面抓。先听前面这首，后面我把线接顺。",
+    "energyLabel": "熟悉暖调",
+    "hostIntro": "这一轮我按“白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律”往外抓了几首。先听《说爱你》，后面那首会把节奏接得更顺。",
     "currentTrack": {
-      "id": "online-e7fc07e85188",
-      "title": "一卷万寿",
-      "artist": "张碧晨",
+      "id": "online-c1a2ed7f9501",
+      "title": "说爱你",
+      "artist": "刘至佳",
       "year": 2026,
-      "mood": "克制",
-      "energy": 9,
+      "mood": "专注",
+      "energy": 5,
       "language": "中文",
       "tags": [
         "在线推荐",
         "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 张碧晨 / 一卷万寿”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 刘至佳 / 说爱你”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "qq",
@@ -35,83 +35,169 @@
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 250,
+        "duration": 202,
         "payable": false,
         "downloadable": true,
-        "albumName": "北京卫视 博物馆之城 兰天奇作品原声大碟",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002FklIT1RbOkY.jpg",
+        "albumName": "说爱你",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000016lk1t0LgKw6.jpg",
         "raw": {
           "source": "qq",
-          "songId": 388627995,
-          "songmid": "003VSvcP2kzzSW",
-          "mediaMid": "002v1ghd3zbaDJ",
-          "title": "一卷万寿",
-          "artist": "张碧晨",
-          "albumName": "北京卫视 博物馆之城 兰天奇作品原声大碟",
-          "duration": 250,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002FklIT1RbOkY.jpg"
+          "songId": 224928243,
+          "songmid": "0022fsjW39a0zG",
+          "mediaMid": "0034nd1G3d8oOp",
+          "title": "说爱你",
+          "artist": "刘至佳",
+          "albumName": "说爱你",
+          "duration": 202,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000016lk1t0LgKw6.jpg"
         }
       },
-      "reason": "这首歌是按“白天工作流 / 张碧晨 / 一卷万寿”这条在线推荐线索命中的。"
+      "reason": "刘至佳说爱你说得直接，专注时刻最适合听"
     },
     "queue": [
       {
-        "id": "online-a4f4093a663b",
-        "title": "交换余生",
-        "artist": "白天",
+        "id": "online-58864803fd15",
+        "title": "倒带 (释怀版)",
+        "artist": "Zkaaai",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 5,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Zkaaai / 倒带 (释怀版)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 214,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "倒带 (释怀版)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002RvcmB2kfO8Q.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 446078974,
+            "songmid": "0010lpW70QaGMG",
+            "mediaMid": "000WDRRO0Coz9O",
+            "title": "倒带 (释怀版)",
+            "artist": "Zkaaai",
+            "albumName": "倒带 (释怀版)",
+            "duration": 214,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002RvcmB2kfO8Q.jpg"
+          }
+        },
+        "reason": "Zkaaai 释怀版倒带，克制情绪在耳机里慢慢散开"
+      },
+      {
+        "id": "online-9fef652c317a",
+        "title": "Baby",
+        "artist": "Justin Bieber、Ludacris",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 8,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Justin Bieber、Ludacris / Baby”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "口味",
+          "slotType": "learned",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 216,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Baby",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002TfnxG2yN1na.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 203644381,
+            "songmid": "0033qH7G0B1UER",
+            "mediaMid": "002nGT1F2A3YC4",
+            "title": "Baby",
+            "artist": "Justin Bieber、Ludacris",
+            "albumName": "Baby",
+            "duration": 216,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002TfnxG2yN1na.jpg"
+          }
+        },
+        "reason": "听着挺顺耳的，不抢你的注意力，就安安静静陪你干活儿。"
+      },
+      {
+        "id": "online-972bda67ba30",
+        "title": "Booty Music",
+        "artist": "Git Fresh",
         "year": 2026,
         "mood": "轻推力",
         "energy": 9,
-        "language": "中文",
+        "language": "英语",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / Git Fresh / Booty Music”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
         "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
+          "sourceLabel": "口味",
+          "slotType": "learned",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 277,
+          "duration": 181,
           "payable": false,
           "downloadable": true,
-          "albumName": "治愈男生版",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
+          "albumName": "Git Fresh",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003RB7Lk0Uues1.jpg",
           "raw": {
             "source": "qq",
-            "songId": 495254237,
-            "songmid": "003Mr8HR2HksC8",
-            "mediaMid": "003Mr8HR2HksC8",
-            "title": "交换余生",
-            "artist": "白天",
-            "albumName": "治愈男生版",
-            "duration": 277,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
+            "songId": 103824181,
+            "songmid": "001gip3A1SpQc2",
+            "mediaMid": "002eE8MJ2PjsUP",
+            "title": "Booty Music",
+            "artist": "Git Fresh",
+            "albumName": "Git Fresh",
+            "duration": 181,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003RB7Lk0Uues1.jpg"
           }
         },
-        "reason": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。"
+        "reason": "鼓点听着挺带劲的，让你的手指在键盘上敲得更利索。"
       },
       {
-        "id": "online-be107040983b",
-        "title": "茉莉雨 (COVER版)",
-        "artist": "白天",
+        "id": "online-1d46e275c249",
+        "title": "Beauty And A Beat",
+        "artist": "Justin Bieber、Nicki Minaj",
         "year": 2026,
         "mood": "专注",
         "energy": 9,
-        "language": "中文",
+        "language": "英语",
         "tags": [
           "在线推荐",
           "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 茉莉雨 (COVER版)”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / Justin Bieber、Nicki Minaj / Beauty And A Beat”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
@@ -122,32 +208,161 @@
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 256,
+          "duration": 227,
           "payable": false,
           "downloadable": true,
-          "albumName": "治愈男生版",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
+          "albumName": "Believe (Deluxe Edition)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002XddZv4cGsXb.jpg",
           "raw": {
             "source": "qq",
-            "songId": 540899719,
-            "songmid": "004KtX162owd7j",
-            "mediaMid": "004KtX162owd7j",
-            "title": "茉莉雨 (COVER版)",
-            "artist": "白天",
-            "albumName": "治愈男生版",
-            "duration": 256,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
+            "songId": 1473252,
+            "songmid": "002ZGist4UyZoU",
+            "mediaMid": "003FFvMu0tMeku",
+            "title": "Beauty And A Beat",
+            "artist": "Justin Bieber、Nicki Minaj",
+            "albumName": "Believe (Deluxe Edition)",
+            "duration": 227,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002XddZv4cGsXb.jpg"
           }
         },
-        "reason": "这首歌是按“白天工作流 / 白天 / 茉莉雨 (COVER版)”这条在线推荐线索命中的。"
+        "reason": "Nicki Minaj一开口精神就来了，这节奏工作刚刚好不困。"
+      },
+      {
+        "id": "online-6b0ac1b4e694",
+        "title": "We Don't Talk Anymore",
+        "artist": "Charlie Puth、Selena Gomez",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Charlie Puth、Selena Gomez / We Don't Talk Anymore”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 217,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Nine Track Mind",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 105539541,
+            "songmid": "003uNk7n3Fpu7R",
+            "mediaMid": "001o13Y50H28Za",
+            "title": "We Don't Talk Anymore",
+            "artist": "Charlie Puth、Selena Gomez",
+            "albumName": "Nine Track Mind",
+            "duration": 217,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg"
+          }
+        },
+        "reason": "有点小情绪的歌，但不会打扰你思考，就这么放着刚刚好。"
+      },
+      {
+        "id": "online-9fb384ec1f3e",
+        "title": "You Suffer",
+        "artist": "Mommy's lil Monsterz",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Mommy's lil Monsterz / You Suffer”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 2,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Grinding Up the Hits",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Z18dJ0gLZ89.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 272785500,
+            "songmid": "000cecPq0z65cv",
+            "mediaMid": "0042ZvGI4CZ10J",
+            "title": "You Suffer",
+            "artist": "Mommy's lil Monsterz",
+            "albumName": "Grinding Up the Hits",
+            "duration": 2,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Z18dJ0gLZ89.jpg"
+          }
+        },
+        "reason": "这首够猛，让你专注力拉满，处理那些烧脑的活儿正好。"
+      },
+      {
+        "id": "online-2696ba6042f3",
+        "title": "Love Story",
+        "artist": "Taylor Swift",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Taylor Swift / Love Story”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "口味",
+          "slotType": "learned",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 236,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Fearless (Platinum Edition)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 639141,
+            "songmid": "004GK4aP4TGbbG",
+            "mediaMid": "001EqijX2A3asI",
+            "title": "Love Story",
+            "artist": "Taylor Swift",
+            "albumName": "Fearless (Platinum Edition)",
+            "duration": 236,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg"
+          }
+        },
+        "reason": "甜甜的情歌，节奏不急不躁，适合慢慢悠悠边干活边听。"
       }
     ],
     "explanation": [
       "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
-      "推荐线索是“白天工作间隙，用周杰伦和BEYOND的私人记忆旋律填满熟悉感的空隙”，实际落地优先保留 Maroon 5、晴二、黄小琥 这些锚点。",
+      "推荐线索是“在午后把本地音乐库里熟悉且柔和的旧歌（如《Faded》《真的爱你》）调出来，用回忆感的慢歌给工作时段一份安静的陪伴”，实际落地优先保留 张杰、张碧晨、Maroon 5、南拳妈妈 这些锚点。",
       "当前来源是 qq，本轮确认了 8 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 online-regenerate，本轮种子是“白天工作间隙，用周杰伦和BEYOND的私人记忆旋律填满熟悉感的空隙”。这时段更偏 张杰、张碧晨，语言更偏 韩语，当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 calmer，本轮种子是“在午后把本地音乐库里熟悉且柔和的旧歌（如《Faded》《真的爱你》）调出来，用回忆感的慢歌给工作时段一份安静的陪伴”。这时段更偏 张杰、张碧晨，语言更偏 英语，当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

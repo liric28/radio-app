@@ -600,6 +600,46 @@ export function resolveChatIntent(message: string, program: RadioProgram): ChatI
     return { action: "skip", targetPeriod };
   }
 
+  // 暂停 / 继续 / 重播 / 音量绝对值
+  if (
+    normalized === "暂停" ||
+    normalized === "暂停一下" ||
+    normalized === "停" ||
+    normalized === "停一下" ||
+    normalized === "别放了" ||
+    normalized === "别唱了" ||
+    normalized === "pause"
+  ) {
+    return { action: "pause", targetPeriod };
+  }
+  if (
+    normalized === "继续" ||
+    normalized === "继续播" ||
+    normalized === "接着放" ||
+    normalized === "接着听" ||
+    normalized === "恢复" ||
+    normalized === "resume"
+  ) {
+    return { action: "resume", targetPeriod };
+  }
+  if (
+    normalized === "重播" ||
+    normalized === "重新放" ||
+    normalized === "从头放" ||
+    normalized === "再放一遍" ||
+    normalized === "重来一遍" ||
+    normalized === "再听一遍" ||
+    normalized === "replay"
+  ) {
+    return { action: "replay", targetPeriod };
+  }
+  // 音量绝对值：仅匹配 "音量 N" 形式，相对调整（大声点/小声点）走 chat-agent 旁路
+  const volumeMatch = normalized.match(/^音量\s*(\d{1,3})$/);
+  if (volumeMatch) {
+    const v = Math.max(0, Math.min(100, Number.parseInt(volumeMatch[1], 10)));
+    return { action: "set-volume", targetPeriod, value: v };
+  }
+
   if (
     targetPeriod &&
     (normalized.includes("切") ||

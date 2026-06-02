@@ -66,10 +66,29 @@ export async function POST(request: NextRequest) {
               })}\n\n`,
             ),
           );
+          // 新增：控件指令帧（暂停 / 继续 / 音量 / 重播）。
+          // 前端 player-shell.tsx 解析时调 audioRef.current。
+          // 跟 assistant 帧独立，互不影响。
+          if (agentResult.controlAction) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "control",
+                  action: agentResult.controlAction,
+                  value: agentResult.controlValue ?? null,
+                })}\n\n`,
+              ),
+            );
+          }
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
+                type: "assistant",
                 choices: [{ delta: { content: agentResult.directReply } }],
+                // 新增：点播候选提问的候选列表。前端 chatHistory 的 assistant 消息
+                // 写进这条 meta，下一轮 user 选歌时透传回后端匹配。
+                // 原链路不会写 assistantMeta 字段，这条帧也不带 meta。
+                meta: agentResult.assistantMeta ?? null,
               })}\n\n`,
             ),
           );
