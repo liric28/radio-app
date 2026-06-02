@@ -125,6 +125,17 @@ async function inferOnlineFreeformIntent(
   const avoidList = currentSceneProfile?.avoidSignals?.length
     ? currentSceneProfile.avoidSignals
     : insights.topTags.slice(0, 5); // 兜底：没 scene profile 时给全局 topTags
+  const now = new Date();
+  const hour = now.getHours();
+  const dayOfWeek = now.getDay(); // 0=周日, 6=周六
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  // 6-10 早高峰, 11-14 午休, 15-17 下午, 18-22 晚高峰, 23-5 深夜
+  const timeOfDay =
+    hour >= 6 && hour < 11 ? "早高峰" :
+    hour >= 11 && hour < 14 ? "午休" :
+    hour >= 14 && hour < 17 ? "下午" :
+    hour >= 17 && hour < 23 ? "晚间" :
+    "深夜";
   const preferenceBlock = [
     `用户口味画像（基于 ${insights.totalEvents} 条学习事件）：`,
     `- 高频艺人: ${insights.topArtists.slice(0, 5).join("、") || "暂无"}`,
@@ -150,12 +161,15 @@ async function inferOnlineFreeformIntent(
     "- 只有明显是跳过当前歌才用 skip。",
     "- 只有明显是切到某个时段才用 scene-change，并给 targetPeriod: morning/daytime/evening/late-night。",
     "- 普通闲聊、吐槽、问候、问你是谁、非音乐问题输出 none。",
-    "- **关键**：输出 regenerate/fresh/calmer/familiar/scene-change 时，**必须**根据用户口味画像 + 当前消息生成 `messageHint` 字段（10-30 字中文），描述应该匹配的艺人/标签/能量/情绪倾向，避开『应当避免』列表。messageHint 会传给搜索端做种子。",
+    "- **关键**：输出 regenerate/fresh/calmer/familiar/scene-change 时，**必须**根据用户口味画像 + 当前消息 + 实际时间生成 `messageHint` 字段（10-30 字中文），描述应该匹配的艺人/标签/能量/情绪倾向，避开『应当避免』列表。messageHint 会传给搜索端做种子。",
     "- 例子：用户说『今天有点累』 + avoidSignals=[『电子』] → regenerate, messageHint: 『安静、低能量、避开电子』",
     "- 例子：用户说『想家了』 + topTags=[『民谣』,『老歌』] → regenerate, messageHint: 『民谣、怀旧、慢节奏』",
     "- 例子：用户说『换点歌』 + 什么都没标 → regenerate, messageHint: null（或省略）",
+    "- **时间敏感**：早高峰偏好清新提神、午休偏好舒缓解压、晚间偏好有温度、深夜偏好低能量不打扰；messageHint 必须反映实际时间（timeOfDay）而不是笼统的『当下』。",
+    "- **周末感知**：周末和工作日的偏好通常不同（周末更愿尝试新东西），周末时 messageHint 可以适当放开探索。",
     preferenceBlock,
     `当前时段: ${program.scene}`,
+    `实际时间: 周${["日","一","二","三","四","五","六"][dayOfWeek]} ${hour}:${String(now.getMinutes()).padStart(2, "0")}（${timeOfDay}${isWeekend ? "，周末" : ""}）`,
     `当前歌: ${program.currentTrack.artist} - ${program.currentTrack.title}`,
     `下一首: ${nextTrack ? `${nextTrack.artist} - ${nextTrack.title}` : "暂无"}`,
     `用户消息: ${message}`,
@@ -248,6 +262,63 @@ export async function runChatAgent({
 
   let intentResolution: IntentResolution | null =
     initialState.mode === "music-control" ? { resolver: "rule" } : null;
+
+  // Avoid-current 旁路（chat + music-control 都判，太吵/太老/不喜欢 这类跟意图正交）
+  // 必须在 point-of-no-return 之前最优先，命中后短路。
+  const avoidResolved = resolveAvoidIntent(message, program.currentTrack);
+  if (avoidResolved) {
+    const trackSnapshot = preferenceTrackFromSong(program.currentTrack, program.scene);
+    await appendPreferenceEvent({
+      type: "avoid_signal",
+      message,
+      action: "avoid-current",
+      scene: program.scene,
+      track: trackSnapshot,
+      reason: avoidResolved.reason,
+    }).catch(() => null);
+    const [, schedule] = await Promise.all([
+      Promise.resolve(),
+      isOnlineRadioMode()
+        ? ensureOnlineRadioProgram().then((result) => result.schedule)
+        : ensureDailySchedule(),
+    ]);
+    // 实际换歌：online 模式走 applyOnlineChatIntent（走智能优先 + 标黑）；local 模式走 skip
+    let nextProgramAfterAvoid = program;
+    if (isOnlineRadioMode()) {
+      const avoidIntent: ChatIntent = {
+        action: "avoid-current",
+        messageHint: avoidResolved.reason,
+      };
+      const result = await applyOnlineChatIntent(avoidIntent, program, avoidResolved.reason);
+      nextProgramAfterAvoid = result.program;
+    } else {
+      const skipResult = await applyChatIntentWithProgram({ action: "skip" }, program);
+      nextProgramAfterAvoid = skipResult ?? program;
+    }
+    const avoidState: ChatAgentState = {
+      mode: "music-control",
+      tool: "schedule",
+      intent: { action: "avoid-current" },
+      summary: avoidResolved.reply,
+    };
+    const memory = await readMemory();
+    return {
+      state: avoidState,
+      program: nextProgramAfterAvoid,
+      schedule,
+      favorites: await readFavorites(),
+      llmMessages: buildChatModelMessages({
+        message,
+        program: nextProgramAfterAvoid,
+        memory,
+        intent: avoidState.intent,
+        history,
+        state: avoidState,
+      }),
+      directReply: avoidResolved.reply,
+    };
+  }
+
   if (initialState.mode === "chat" && isOnlineRadioMode()) {
     // Phase 9: 把 preference insights 喂给 LLM 路由器，让它能基于用户口味
     // 画像 + 当前 sceneProfile 输出精准的 messageHint。
@@ -296,6 +367,78 @@ export async function runChatAgent({
   let nextProgram = program;
   let nextState = initialState;
   let nextFavorites = await readFavorites();
+
+/**
+ * Similar 旁路（chat mode 才判，"再来点这种/类似的/和这首一样" 跟意图正交）
+ * 命中后构造 messageHint = currentTrack 特征，让 applyOnlineChatIntent 走智能优先
+ *
+ * 反向回写：
+ *   similar_request 事件已经写盘（+1.2 分），但**真正的反馈闭环靠 playback_completed/interrupted**。
+ *   - 用户听完 80%+：playback_completed +1.5，跟 similar_request +1.2 累加，正向循环
+ *   - 用户中途 skip：playback_interrupted -0.5~-2，跟 similar_request 抵消，模型能学到"这次不像"
+ *   - 用户主动 avoid_signal（"太吵了"）：-1.5，**不**抹 similar_request（让模型看到"既要类似的又怕吵"是更精细的口味）
+ *   所以这一路**不**做额外反向回写逻辑——现有 playback flow 已覆盖，避免重复扣分。
+ */
+  if (initialState.mode === "chat") {
+    const similarResolved = resolveSimilarIntent(message, program.currentTrack);
+    if (similarResolved) {
+      const ct = program.currentTrack;
+      const tagSeed = (ct.tags || []).slice(0, 3).filter(Boolean).join(",");
+      const messageHint = `类似 ${ct.artist} 的 ${ct.title}，风格延续，标签：${tagSeed || ct.mood || "延续当前口味"}`;
+      await appendPreferenceEvent({
+        type: "similar_request",
+        message,
+        action: "similar",
+        scene: program.scene,
+        track: preferenceTrackFromSong(ct, program.scene),
+        seed: messageHint,
+      }).catch(() => null);
+      const [, schedule] = await Promise.all([
+        Promise.resolve(),
+        isOnlineRadioMode()
+          ? ensureOnlineRadioProgram().then((result) => result.schedule)
+          : ensureDailySchedule(),
+      ]);
+      let nextProgramAfterSimilar = program;
+      if (isOnlineRadioMode()) {
+        const similarIntent: ChatIntent = {
+          action: "similar",
+          messageHint,
+        };
+        const result = await applyOnlineChatIntent(similarIntent, program, messageHint);
+        nextProgramAfterSimilar = result.program;
+      } else {
+        // local 模式：fall back 到 regenerate（不传 messageHint，走原 9 个 action）
+        const regenResult = await applyChatIntentWithProgram(
+          { action: "regenerate" },
+          program,
+        );
+        nextProgramAfterSimilar = regenResult ?? program;
+      }
+      const similarState: ChatAgentState = {
+        mode: "music-control",
+        tool: "schedule",
+        intent: { action: "similar" },
+        summary: similarResolved.reply,
+      };
+      const memory = await readMemory();
+      return {
+        state: similarState,
+        program: nextProgramAfterSimilar,
+        schedule,
+        favorites: nextFavorites,
+        llmMessages: buildChatModelMessages({
+          message,
+          program: nextProgramAfterSimilar,
+          memory,
+          intent: similarState.intent,
+          history,
+          state: similarState,
+        }),
+        directReply: similarResolved.reply,
+      };
+    }
+  }
 
   // 点播旁路（新增，纯增量）。命中就短路下面所有 weather / music-control 流程，
   // 不动原 radio-engine / online-radio / applyChatIntentWithProgram / preference-learning。
@@ -508,13 +651,18 @@ const MOOD_KEYWORD_HINTS: Array<{
   },
   // —— 情绪上扬 / 燃 ——
   {
-    keywords: ["嗨", "兴奋", "开心", "得劲", "起劲", "带劲", "躁起来", "燃起来"],
+    keywords: ["嗨", "嗨一点", "嗨起来", "兴奋", "开心", "得劲", "起劲", "带劲", "躁起来", "燃起来", "热一点", "沸腾"],
     hint: "用户情绪上扬，要嗨一点，需要节奏强、有推力的歌",
     weight: 5,
   },
   {
-    keywords: ["燃", "燃一点", "推起来", "推上来", "上头"],
+    keywords: ["燃", "燃一点", "推起来", "推上来", "上头", "劲爆", "推力", "冲劲", "够劲", "带感", "嗨翻", "飞起"],
     hint: "用户想更燃、更有推力，需要节奏更快、能量更密集的歌",
+    weight: 5,
+  },
+  {
+    keywords: ["炸", "炸一点", "爆炸", "炸裂", "劲爆一点", "硬核", "暴力"],
+    hint: "用户要炸、能量高、冲击力强，需要电子/摇滚/重型节拍的歌",
     weight: 5,
   },
   // —— 风格 / 速度 ——
@@ -576,9 +724,56 @@ const MOOD_KEYWORD_HINTS: Array<{
     weight: 2,
   },
   {
-    keywords: ["不要", "别放"],
+    keywords: ["不要", "别放", "避开", "排斥", "不喜欢", "听腻", "腻了"],
     hint: "用户想避开某种风格 / 节奏 / 情绪",
     weight: 2,
+  },
+  // —— 浪漫 / 治愈 / 文艺 ——
+  {
+    keywords: ["浪漫", "罗曼蒂克", "甜蜜", "甜一点", "甜歌"],
+    hint: "用户想听浪漫、甜蜜的歌，节奏舒缓、感情色彩浓",
+    weight: 4,
+  },
+  {
+    keywords: ["文艺", "诗意", "有故事", "走心", "动人"],
+    hint: "用户想听文艺、走心、有故事感的歌",
+    weight: 4,
+  },
+  {
+    keywords: ["孤独", "寂寞", "一个人", "独处", "独自"],
+    hint: "用户想要安静、独处氛围的歌，弱打击、人声主导",
+    weight: 5,
+  },
+  {
+    keywords: ["怀旧", "复古", "老歌", "8090", "千禧", "y2k"],
+    hint: "用户想听怀旧、复古的歌，老歌/经典为主",
+    weight: 4,
+  },
+  // —— 场景补充 ——
+  {
+    keywords: ["困", "想睡", "助眠", "催眠", "哄睡"],
+    hint: "用户要入睡，需要低能量、慢节奏、不打扰的歌",
+    weight: 3,
+  },
+  {
+    keywords: ["开车", "自驾", "高速", "跑长途"],
+    hint: "开车 / 路上，需要有节奏感、不能太安静的歌",
+    weight: 3,
+  },
+  {
+    keywords: ["跑步", "运动", "健身", "撸铁", "有氧"],
+    hint: "运动场景，需要高能量、有节奏推力的歌",
+    weight: 4,
+  },
+  {
+    keywords: ["工作", "写代码", "专注", "干活", "学习"],
+    hint: "工作 / 专注场景，需要低打扰、节奏稳定、不抢注意力的歌",
+    weight: 3,
+  },
+  {
+    keywords: ["吃饭", "聚餐", "朋友", "派对", "party"],
+    hint: "聚餐 / 派对场景，需要热闹、有活力、有氛围的歌",
+    weight: 3,
   },
 ];
 
@@ -904,6 +1099,21 @@ type ControlResolution = {
   reply: string;
 };
 
+type SimilarResolution = {
+  handled: true;
+  reply: string;
+  similarTo: { artist: string; title: string };
+  /** 反向回写 5 用：用户对 similar 推荐的"再换/换回"是否触发 */
+  similarTurnId: string;
+};
+
+type AvoidResolution = {
+  handled: true;
+  reply: string;
+  /** 标黑哪个 tag/artist/energy 段；messageHint 用 */
+  reason: string;
+};
+
 function normalizeControlText(value: string) {
   return value
     .trim()
@@ -979,5 +1189,113 @@ function resolveControlIntent(message: string): ControlResolution | null {
   ) {
     return { controlAction: "volume-down", reply: "调小声点。" };
   }
+  return null;
+}
+
+/**
+ * "再来点这种 / 类似的 / 和这首一样"识别。返回 SimilarResolution 表示触发 similar action。
+ * 不命中返 null。
+ *
+ * 触发关键词（口语化，覆盖用户日常表达）：
+ *   "再来点这种的" / "类似的" / "和这首一样" / "保持这种" / "继续这种" / "就这种" / "再来一首" / "多来点这种"
+ *   "还有这种吗" / "类似的歌" / "同类型" / "类似风格"
+ */
+function resolveSimilarIntent(message: string, currentTrack: { artist: string; title: string } | null): SimilarResolution | null {
+  if (!currentTrack) return null;
+  const normalized = message
+    .trim()
+    .replace(/[，。！？、]/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+  if (!normalized) return null;
+
+  const hit =
+    /再来点这种/.test(normalized) ||
+    /类似的/.test(normalized) ||
+    /和这首一样/.test(normalized) ||
+    /保持这种/.test(normalized) ||
+    /继续这种/.test(normalized) ||
+    /就这种/.test(normalized) ||
+    /再来一首/.test(normalized) ||
+    /多来点这种/.test(normalized) ||
+    /还有这种吗/.test(normalized) ||
+    /类似的歌/.test(normalized) ||
+    /同类型/.test(normalized) ||
+    /类似风格/.test(normalized) ||
+    /^再来点$/.test(normalized) ||
+    /^类似的$/.test(normalized);
+  if (!hit) return null;
+
+  const turnId = `sim-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return {
+    handled: true,
+    reply: `好，按《${currentTrack.title}》这种味道再来一首。`,
+    similarTo: { artist: currentTrack.artist, title: currentTrack.title },
+    similarTurnId: turnId,
+  };
+}
+
+/**
+ * "太吵了 / 太老了 / 太甜了 / 太闹了"识别。返回 AvoidResolution。
+ * 命中后写一条 avoid_signal preference event，messageHint 标黑 currentTrack 的对应 tag/artist 段。
+ *
+ * 注意：必须有 currentTrack，否则无法判断"太 X 的是哪首"。无 currentTrack 时返 null。
+ */
+function resolveAvoidIntent(message: string, currentTrack: { artist: string; title: string; tags?: string[]; artist_id?: string } | null): AvoidResolution | null {
+  if (!currentTrack) return null;
+  const normalized = message
+    .trim()
+    .replace(/[，。！？、]/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+  if (!normalized) return null;
+
+  // 否定型：太 + 形容词
+  const tooPatterns: Array<{ regex: RegExp; reason: string }> = [
+    { regex: /太吵/, reason: "用户觉得太吵，避开高能量、强节奏的歌" },
+    { regex: /太闹/, reason: "用户觉得太闹，避开高能量、强节奏的歌" },
+    { regex: /太重/, reason: "用户觉得太重，避开重金属/重型节拍" },
+    { regex: /太躁/, reason: "用户觉得太躁，避开高能量、强节奏的歌" },
+    { regex: /太老/, reason: "用户觉得太老，避开老歌、年代感太强的歌" },
+    { regex: /太旧/, reason: "用户觉得太旧，避开老歌" },
+    { regex: /太甜/, reason: "用户觉得太甜，避开甜蜜/小清新" },
+    { regex: /太腻/, reason: "用户觉得太腻，避开情绪太浓的歌" },
+    { regex: /太慢/, reason: "用户觉得太慢，避开慢节奏/慢歌" },
+    { regex: /太柔/, reason: "用户觉得太柔，避开弱能量、人声主导" },
+    { regex: /太安静/, reason: "用户觉得太安静，避开弱打击、低能量" },
+    { regex: /太忧伤/, reason: "用户觉得太忧伤，避开悲伤/孤独/怀旧" },
+    { regex: /太伤感/, reason: "用户觉得太伤感，避开悲伤/孤独" },
+    { regex: /太嗨/, reason: "用户觉得太嗨，避开高能量、燃/炸的歌" },
+    { regex: /太燃/, reason: "用户觉得太燃，避开燃/炸的歌" },
+    { regex: /太摇滚/, reason: "用户觉得太摇滚，避开摇滚/重型" },
+    { regex: /太电子/, reason: "用户觉得太电子，避开电子/合成器" },
+  ];
+
+  for (const p of tooPatterns) {
+    if (p.regex.test(normalized)) {
+      return {
+        handled: true,
+        reply: "好，这首不听了，给你换首不一样的。",
+        reason: p.reason,
+      };
+    }
+  }
+
+  // 显式不要：跳过这首 / 换掉这首 / 不喜欢这首
+  if (
+    /跳过这首/.test(normalized) ||
+    /换掉这首/.test(normalized) ||
+    /不喜欢这首/.test(normalized) ||
+    /不喜欢当前/.test(normalized) ||
+    /这首要换/.test(normalized) ||
+    /这首不行/.test(normalized)
+  ) {
+    return {
+      handled: true,
+      reply: "收到，跳过这首。",
+      reason: "用户明确不要当前曲，标黑当前曲的整体风格",
+    };
+  }
+
   return null;
 }

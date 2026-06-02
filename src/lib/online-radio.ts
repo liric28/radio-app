@@ -377,6 +377,8 @@ function extractMessageHints(messageHint: string | undefined) {
     "女声", "男声", "器乐", "电子", "摇滚", "民谣", "说唱", "爵士", "city pop",
     "安静", "轻一点", "慢一点", "深夜", "早上", "通勤", "熟悉", "新一点", "别太炸",
     "劲爆", "炸一点", "炸", "推起来", "有冲劲", "有力一点", "热一点",
+    "避开", "不要", "排斥", "跳过", "换掉",
+    "类似", "延续", "保持", "继续", "类似风格", "同类型",
   ];
   const matched = directPhrases.filter((phrase) => normalized.toLowerCase().includes(phrase.toLowerCase()));
   return [...new Set([normalized, ...matched])].slice(0, 8);
@@ -1426,6 +1428,32 @@ export async function applyOnlineChatIntent(
 
   if (intent.action === "select-track" && intent.trackId) {
     return selectOnlineTrackProgram(intent.trackId);
+  }
+
+  if (intent.action === "similar") {
+    // 基于当前曲的特征做"风格延续"重排。
+    // messageHint 已经是 chat-agent 构造的"类似 X 的 Y，标签：t1,t2,t3"形态，
+    // 走到 regenerateOnlineRadioProgram 的 messageHint 智能优先路径
+    // （extractMessageHints + parseRequestPreferences 派发）。
+    return regenerateOnlineRadioProgram({
+      action: "regenerate",
+      messageHint,
+      excludeTrackIds: [currentProgram.currentTrack.id],
+    });
+  }
+
+  if (intent.action === "avoid-current") {
+    // 标黑当前曲：excludeTrackIds 把当前曲踢出候选，
+    // messageHint 走智能优先路径（"避开 X"作为 vibe 喂给搜索端）。
+    // 走 fresh 而不是 regenerate——avoid 是"换方向"语义，比"再来一首"更强烈。
+    return regenerateOnlineRadioProgram({
+      action: "fresh",
+      messageHint,
+      excludeTrackIds: [
+        currentProgram.currentTrack.id,
+        ...(currentProgram.queue || []).map((t) => t.id),
+      ],
+    });
   }
 
   if (

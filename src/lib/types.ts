@@ -129,7 +129,9 @@ export type ChatIntentAction =
   | "replay"
   | "volume-up"
   | "volume-down"
-  | "set-volume";
+  | "set-volume"
+  | "similar"
+  | "avoid-current";
 
 /**
  * 聊天助手消息的元信息。仅"候选提问"这种 assistant 消息会带 pendingCandidates，

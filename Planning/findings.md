@@ -211,3 +211,51 @@
 - `src/lib/chat-agent.ts`（增量：import readPreferenceInsights + inferOnlineFreeformIntent 第 3 参数 insights + prompt preferenceBlock + messageHint 指令 + MOOD_KEYWORD_HINTS 常量 + inferFromMoodKeywords 函数 + runChatAgent fallback 调用 + IntentResolution 联合类型扩展）
 - `src/lib/preference-learning.ts`（增量：PreferenceEvent.resolver 联合类型加 "mood-keyword"）
 - 单元测试脚本：临时 `/tmp/probe_phase9_unit.js`（已删，跑通 18/18 后清理）
+
+## Session 2026-06-03 (Phase 10-14): 聊天控制在线播歌 + agent 懂你想要的歌
+
+### 增量要求
+- 用户说"炸一点/嗨翻/带感"等 mood 表达要稳定进入 regenerate + messageHint
+- "再来点这种/类似的" → 基于 currentTrack 特征找相似
+- "太吵了/太老了/不喜欢这首" → 标黑当前曲
+- LLM 路由器感知"现在是早高峰/午休/深夜"等实际时间，messageHint 反映时段差分
+- 闭环：similar 推荐用户听了 → 正向；中途 skip → 负向；主动 avoid → 负向
+
+### Research Findings
+- LLM 路由器对 mood 表达 100% 判 none 的根因（Phase 9）没消失，只能在 chat-agent 旁路**继续补关键词**。"炸/嗨翻/带感/上头/困/跑步/派对"这些用户口语高频词没被 18 组覆盖 → 直接 0 学习。
+- `extractMessageHints` 已经有"炸/炸一点/劲爆/热一点"派发词（online-radio.ts:378-380），所以**只要 mood 兜底 messageHint 填上，online-radio 端就自然识别**。这是补关键词 ROI 高的原因。
+- similar 路径不能用 messageHint "类似 X" 喂搜索端，原因是搜索端不知道 X 是哪首歌。**必须**在 chat-agent 层把 currentTrack 特征（artist + title + tags）拼成 messageHint，再透传 — `extractMessageHints` 已经有"类似/延续/保持/继续"派发词。
+- avoid-current 跟 similar 互斥：用户说"类似的"绝不是说"避开"，但都是 chat mode 触发。**avoid 必须放最优先**（在 mood 兜底、LLM 路由器、点播旁路之前），否则用户说"太吵了"会先被 LLM 路由器判 none 落到 DJ 闲聊、不会换歌。
+- 反向回写不写新代码的判断依据：现有 `playback_completed`（+1.5）+ `playback_interrupted`（-0.5~-2）+ `avoid_signal`（-1.5）已能完整覆盖 similar 路径的反馈；再加新事件会出现"自己扣自己"的双重计分问题。
+
+### Technical Decisions
+| Decision | Rationale |
+|----------|-----------|
+| MOOD_KEYWORD_HINTS 18→28 组，纯增量补词 | 0 侵入原 9 个 action + LLM 路由器 prompt；高 ROI |
+| 拆"情绪上扬"为 3 组（嗨/燃/炸），weight 5 | 细分语义：嗨=开心推力、燃=上头、炸=重型；同 weight 不冲突，命中时按"先遍历后取最大"自然取首 |
+| "否定/喜好"组扩"避开/排斥/听腻/腻了/不喜欢" | 反向语义，但 mood 兜底只走 regenerate+messageHint；avoid 实际触发由 `resolveAvoidIntent` 专责 |
+| `similar` 跟 `play-*` 一样走 chat-agent 旁路，不进 9 个 action 列表 | 跟"重排推荐 LIST"在用户感知上像，但**不**写 feedbackBias；写专门的 `similar_request` 事件 +1.2 弱信号 |
+| `avoid-current` 旁路位置在 Layer 1 后立即判（比 mood 兜底还早） | avoid 跟"换歌"是 1:1 映射；必须短路所有路由，直接换歌 + 写负反馈 |
+| `avoid-current` online 模式走 fresh + excludeCurrent + excludeQueue，**不**走 regenerate | avoid 是"换方向"语义，regenerate 会回到类似区，fresh 才真换 |
+| local 模式 avoid fallback 到 `applyChatIntentWithProgram({action:"skip"})` | 保留 skip 是合理的"换一首"语义；local 模式没有 messageHint 智能优先能力 |
+| `extractMessageHints` 派发词加"避开/不要/排斥/类似/延续/保持/继续" | 让 avoid / similar 构造的 messageHint 在搜索端被识别成 hints；不写新提取函数，零漂移风险 |
+| time 注入 LLM 路由器 prompt 不动 router 内部逻辑 | 路由器对外契约不变；time 信息只作为额外上下文 |
+| `PreferenceEvent.reason?: string` 字段 | avoid_signal 携带结构化原因"用户觉得太吵，避开高能量"，未来可观测 / 可反馈学习 |
+| 走 chat-agent 旁路而不是扩展 `resolveChatIntent` | 9 个 action 列表是关键词枚举；semantic 任务（similar/avoid）应该旁路隔离，避免污染 |
+| 0 侵入：原 9 个 action 链路 / 控件旁路 / 点播旁路 / 9 个 music-control intent / LLM 路由器 prompt 结构 | 全部 1 行不动，新功能纯加法 |
+
+### Issues Encountered
+| Issue | Resolution |
+|-------|------------|
+| 第一版 plan 提"动 LLM 路由器 prompt"做 time 注入 | 实际只需要在 prompt 末尾追加 2 行 + 1 行时间变量；不动 router 内部逻辑，0 风险 |
+| similar 路径要不要调 `applyOnlineFeedbackAndBuildProgram("familiar")` | 不调 — familiar 是 schedule block 微调；similar 是"基于当前曲找新曲"，跟 familiar 语义正交；用 regenerate + messageHint 智能优先 |
+| avoid 信号要不要写进 `negativeSignals` 而不是 `avoid_signal` event | negativeSignals 是聚合产物（PreferenceModel），不是原始事件；写原始事件后由 `buildPreferenceModel` 聚合（scoreEvent 已经是 -1.5，会自然进 negativeSignals） |
+| similar 跟 avoid 反向回写要不要做特殊计分 | 不做；现有 playback_completed / playback_interrupted / avoid_signal 流已经能区分正向/负向，加新计分会出现"自己扣自己" |
+| patcher 警告"re-read before overwrite" | LSP cache 陈旧已知，以 `npx tsc --noEmit` 0 error 为准 |
+
+### Resources
+- `src/lib/chat-agent.ts`（增量：MOOD_KEYWORD_HINTS 18→28 + resolveSimilarIntent + resolveAvoidIntent + runChatAgent 2 个新旁路 + 2 个新 ChatAgentState 短路 return + time 变量在 prompt）
+- `src/lib/types.ts`（增量：ChatIntentAction 加 `similar` / `avoid-current`）
+- `src/lib/preference-learning.ts`（增量：PreferenceEvent.type 加 `similar_request` / `avoid_signal`，scoreEvent 给两个新事件打分，reason? 字段）
+- `src/lib/online-radio.ts`（增量：applyOnlineChatIntent 加 `similar` / `avoid-current` 两个分支；extractMessageHints directPhrases 扩"避开/类似/延续"等）
+- 单元测试脚本：临时 `/tmp/probe_mood_similar_avoid.mjs`（已删，跑通 75/75 后清理）

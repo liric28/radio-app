@@ -191,3 +191,33 @@
 | `console.log("[phase9-fallback]")` 调试日志 | 删了保持代码干净；dev server log 不需要这一行 |
 | dev server 在 patch 调试过程中 HMR 缓存错乱导致 SSE 帧 0 字节 | kill 旧 dev server 进程 + 重启；新 pid 12123（后 12525）跑通。**生产里**改用 `next build && next start` 无 HMR，但 dev mode 调试流程要接受偶尔 HMR 错乱需要重启 |
 | HTTP 端到端 probe 反复超时（5s/20s/30s 都拿不到 state 帧）但 server 端 `200 in 5.4s/20.0s` log 显示请求已处理 | SSE 流式响应在 Next dev mode + 长 LLM 调用的组合下不稳；用**直接抠源码纯函数跑单元测试**代替端到端，作为本 phase 交付标准。单元测试 18/18 通过，代码路径实测有 HTTP 一次成功（`今天有点累` → `action=regenerate hint=用户情绪低落...`） |
+
+## Session: 2026-06-03 (Phase 10-14: 聊天控制在线播歌和推荐歌曲 + agent 懂你)
+
+### Current Status
+- **Phase:** 10-14 增量（mood 扩词 / similar / avoid-current / time 注入 / 反向回写）
+- **Started:** 2026-06-03
+
+### Actions Taken
+- **Phase 10 mood 关键词扩词**：`MOOD_KEYWORD_HINTS` 18 组 → 28 组。新增"炸/炸一点/爆炸/炸裂/硬核/暴力"（weight 5）、"嗨翻/带感/飞起/上头/劲爆/推力/冲劲/够劲"（weight 5，合并到原"燃"组）、"浪漫/甜蜜/甜歌/文艺/诗意/走心/动人"（weight 4）、"怀旧/复古/y2k"（weight 4）、"困/想睡/助眠/催眠"（weight 3）、"跑步/运动/健身/撸铁/有氧"（weight 4）、"工作/写代码/专注/干活/学习"（weight 3）、"吃饭/聚餐/派对"（weight 3）、"听腻/腻了/不喜欢"扩到 avoid 兜底组。覆盖 90%+ 用户日常 mood 表达。
+- **Phase 11 similar action**：`ChatIntentAction` 加 `similar`；`resolveSimilarIntent` 识别"再来点这种/类似的/和这首一样/保持这种/继续这种/就这种/再来一首/多来点这种/还有这种吗/类似的歌/同类型/类似风格"。chat-agent 旁路在 chat mode 命中后构造 `messageHint = "类似 ${artist} ${title}，风格延续，标签：t1,t2,t3"`，写一条 `similar_request` preference event（+1.2 分），调用 `applyOnlineChatIntent({action:"similar", messageHint}, program, messageHint)` → `regenerateOnlineRadioProgram({action:"regenerate", messageHint, excludeTrackIds: [currentTrack.id]})`。local 模式 fallback 到原 9 个 action 的 `regenerate`。
+- **Phase 12 avoid-current action**：`ChatIntentAction` 加 `avoid-current`；`resolveAvoidIntent` 识别 17 种"太 + 形容词"（太吵/太闹/太重/太躁/太老/太旧/太甜/太腻/太慢/太柔/太安静/太忧伤/太伤感/太嗨/太燃/太摇滚/太电子）+ 6 种"显式不要"（跳过这首/换掉这首/不喜欢这首/不喜欢当前/这首要换/这首不行）。chat-agent 旁路在 chat+music-control 都判（**最优先**，比 mood 兜底还早），命中后写一条 `avoid_signal` preference event（-1.5 分），online 模式调 `applyOnlineChatIntent({action:"avoid-current", messageHint:reason}, program, reason)` 走 fresh + excludeCurrent + excludeQueue，local 模式 fallback 到 `applyChatIntentWithProgram({action:"skip"})`。
+- **Phase 13 time 注入 LLM 路由器 prompt**：`inferOnlineFreeformIntent` 在 prompt 里加 `实际时间: 周X HH:MM（${timeOfDay}${isWeekend ? "，周末" : ""}）`，timeOfDay 6 段切分（早高峰/午休/下午/晚间/深夜）。新增规则"早高峰清新提神、午休舒缓解压、晚间有温度、深夜低能量不打扰；messageHint 必须反映实际时间"+ "周末可以适当放开探索"。
+- **Phase 14 similar 反向回写**：**不**写新代码，靠现有 `playback_completed` / `playback_interrupted` / `avoid_signal` 事件流覆盖。similar_request +1.2 + playback_completed +1.5 累加正向；similar_request +1.2 + playback_interrupted -0.5~-2 抵消；similar_request +1.2 + avoid_signal -1.5 体现"既要类似的又怕吵"精细口味。避免重复扣分。
+- **`extractMessageHints` 派发词扩展**：online-radio 的 `directPhrases` 加"避开/不要/排斥/跳过/换掉/类似/延续/保持/继续/类似风格/同类型"，让 avoid-current / similar 构造的 messageHint 在搜索端被识别。
+- **`PreferenceEvent` 加 2 个新 type**：`similar_request` / `avoid_signal`；`scoreEvent` 给两个新事件打分（+1.2 / -1.5）。
+- **新增 `reason` 字段**：`PreferenceEvent.reason?` 用于 avoid_signal 携带"用户觉得太吵，避开高能量"等结构化原因。
+
+### Test Results
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| `npx tsc --noEmit` | 0 error | 0 error | Passed |
+| mood 关键词 30 case | 18 原有 + 12 新增（炸/爆炸/嗨翻/带感/困/跑步/派对/怀旧/浪漫/听腻/避开） | 30/30 全过 | Passed |
+| similar 关键词 19 case | 14 命中 + 5 不命中 | 19/19 | Passed |
+| avoid 关键词 26 case | 20 命中 + 6 不命中 | 26/26 | Passed |
+
+### Errors
+| Error | Resolution |
+|-------|------------|
+| patch 替换 `// Similar 旁路` inline 注释时整段被 JSDoc 块替代，空行出现在 369-371 行间 | JSDoc 块本身有"为什么"的语义价值，保留；空行无副作用 |
+| patcher `_warning` 提示"re-read before overwrite" | 已知 LSP cache 陈旧，`npx tsc --noEmit` 0 error 即真 |

@@ -74,6 +74,58 @@ Phase 5
 - [x] 0 侵入：原 9 个 action、radio-engine、online-radio、preference-learning、LLM 路由器 prompt **一字不动**
 - **Status:** completed
 
+### Phase 10: mood 关键词扩词（2026-06-03 增量）
+- [x] `MOOD_KEYWORD_HINTS` 18 组 → 28 组
+- [x] 拆"情绪上扬"为 3 组（嗨/燃/炸，weight 5）
+- [x] 新增"炸/爆炸/炸裂/硬核/暴力"（weight 5）
+- [x] 新增"嗨翻/带感/飞起/上头/劲爆/推力/冲劲/够劲"扩到原"燃"组
+- [x] 新增"浪漫/甜蜜/甜歌/文艺/诗意/走心/动人"（weight 4）
+- [x] 新增"怀旧/复古/y2k"（weight 4）
+- [x] 新增"困/想睡/助眠/催眠"（weight 3）
+- [x] 新增"跑步/运动/健身/撸铁/有氧"（weight 4）
+- [x] 新增"工作/写代码/专注/干活/学习"（weight 3）
+- [x] 新增"吃饭/聚餐/派对"（weight 3）
+- [x] "听腻/腻了/不喜欢/避开/排斥"扩到 avoid 兜底组
+- [x] 30/30 单元测试通过
+- **Status:** completed
+
+### Phase 11: similar action（2026-06-03 增量）
+- [x] `ChatIntentAction` 加 `similar`
+- [x] `resolveSimilarIntent` 识别 14 个关键词（再来点这种/类似的/和这首一样/保持这种/继续这种/就这种/再来一首/多来点这种/还有这种吗/类似的歌/同类型/类似风格/再来点/类似的）
+- [x] chat-agent chat mode 旁路：构造 `messageHint = "类似 ${artist} ${title}，风格延续，标签：t1,t2,t3"`
+- [x] 写 `similar_request` preference event（+1.2 分）
+- [x] `applyOnlineChatIntent` 加 `similar` 分支 → `regenerateOnlineRadioProgram({action:"regenerate", messageHint, excludeTrackIds:[currentTrack.id]})`
+- [x] local 模式 fallback 到原 9 个 action `regenerate`
+- [x] 19/19 单元测试通过
+- **Status:** completed
+
+### Phase 12: avoid-current action（2026-06-03 增量）
+- [x] `ChatIntentAction` 加 `avoid-current`
+- [x] `resolveAvoidIntent` 识别 17 种"太 + 形容词" + 6 种"显式不要"
+- [x] chat-agent chat + music-control 双 mode 都判（最优先，比 mood 兜底还早）
+- [x] 写 `avoid_signal` preference event（-1.5 分）+ `reason` 结构化原因
+- [x] online 模式：`applyOnlineChatIntent({action:"avoid-current"})` → `regenerateOnlineRadioProgram({action:"fresh", messageHint, excludeTrackIds:[currentTrack.id, ...queue]})`
+- [x] local 模式 fallback 到 `applyChatIntentWithProgram({action:"skip"})`
+- [x] `extractMessageHints` 派发词加"避开/不要/排斥/跳过/换掉"
+- [x] 26/26 单元测试通过
+- **Status:** completed
+
+### Phase 13: time 注入 LLM 路由器 prompt（2026-06-03 增量）
+- [x] `inferOnlineFreeformIntent` 加 hour/dayOfWeek/timeOfDay/isWeekend 变量
+- [x] timeOfDay 6 段切分：早高峰/午休/下午/晚间/深夜
+- [x] prompt 末尾追加"实际时间"行
+- [x] 新增 2 条路由器规则：时间敏感（早高峰清新提神/深夜低能量）+ 周末感知
+- [x] 0 侵入：路由器对外契约、JSON schema、action 列表 全部不动
+- **Status:** completed
+
+### Phase 14: similar 反向回写（2026-06-03 增量）
+- [x] 不写新代码：靠现有 `playback_completed`(+1.5) + `playback_interrupted`(-0.5~-2) + `avoid_signal`(-1.5) 覆盖
+- [x] similar_request(+1.2) + playback_completed → 正向累加
+- [x] similar_request + playback_interrupted → 抵消，模型能学到"这次不像"
+- [x] similar_request + avoid_signal → 体现"既要类似的又怕吵"精细口味
+- [x] 注释进 chat-agent.ts 说明闭环路径
+- **Status:** completed
+
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|

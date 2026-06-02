@@ -274,7 +274,37 @@ sequenceDiagram
 - 候选数据走 SSE `meta.pendingCandidates` 透传到前端 `chatHistory[].meta`，下一轮 user 选歌时原样发回后端，**不需要 anchor store / 服务端 chat session**。
 - `route.ts` directReply 帧加 `type: "assistant"` 标识与 `meta` 字段；现有 `type: "state"` 帧、模型流式 token 透传、`[DONE]` 终止帧**一行不动**。
 - `player-shell.tsx` SSE 解析新增 `chunk.type === "assistant"` 帧分支写 placeholder.meta；现有 `chunk.type === "state"` / `chunk.choices?.[0]?.delta?.content` 两条路径**一字不动**。
-- **"换一批"在 candidateList 上下文里**走 play-request 旁路 refresh 模式（Phase 8）：用户说"换/换一批/还有吗"等关键词 → 从 history 末尾 candidateList 拿当前歌手 → executor 用 `excludeKeys` 排除已展示候选 → 重搜 top 3。无候选上下文时 fall through 到原 9 个 action 链路，`换一批` regenerate 走 radio-engine 保持原行为。
+- "换一批"在 candidateList 上下文里**走 play-request 旁路 refresh 模式（Phase 8）：用户说"换/换一批/还有吗"等关键词 → 从 history 末尾 candidateList 拿当前歌手 → executor 用 `excludeKeys` 排除已展示候选 → 重搜 top 3。无候选上下文时 fall through 到原 9 个 action 链路，`换一批` regenerate 走 radio-engine 保持原行为。
+
+#### 1.2 聊天触发播放器控件（2026-06-02 增量，Phase 7）
+
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant UI as PlayerShell
+    participant API as /api/agent
+    participant Agent as chat-agent
+    participant Actions as playerActionsRef<br/>(统一动作层)
+    participant Audio as audio 元素
+
+    User->>UI: "暂停"
+    UI->>API: POST /api/agent
+    API->>Agent: runChatAgent()
+    Agent->>Agent: resolveControlIntent()<br/>命中 pause
+    Agent-->>API: controlAction="pause"<br/>(SSE type:"control" 帧)
+    API-->>UI: SSE state 帧 + control 帧 + assistant 帧
+    UI->>Actions: actions.pause()
+    Actions->>Audio: audio.pause() + setIsPlaying(false)<br/>+ setActiveLabel("PAUSED")
+    UI-->>User: 暂停了。
+```
+
+关键不变量：
+
+- `playerActionsRef = useRef<PlayerActions>` 是 `PlayerShell` 内部**统一动作层**，暴露 6 个独立函数（`pause / resume / replay / volumeUp / volumeDown / setVolumeTo`）。
+- **按钮 onClick 跟聊天 SSE control 帧走完全同一份实现**：`togglePlayback` 内部已重构成调 `resumeAudio / pauseAudio`。
+- chat-agent 头部**最优先**旁路（`resolveControlIntent`）在 `resolveAgentState` 之前判，命中后**不写** preference_event、**不动** program、**不调** LLM / radio-engine / online-radio。
+- `volume-up` / `volume-down` 是**相对调整**（前端按 step 0.1 累加，clamp 0-1）；`set-volume N` 是**绝对值**（前端 `setVolume(N/100)`）。音量完全前端管，后端零状态同步。
+- 60+ 个其他按钮 onClick **没动**（A 方案：未来扩"上一首/下一首/收藏/下载"时按需把那个按钮的 onClick 改成 `playerActionsRef.current.xxx()`，渐进式收口）。
 
 #### 1.3 LLM 路由器 + mood keyword 兜底（2026-06-02 增量，Phase 9）
 
@@ -310,8 +340,9 @@ sequenceDiagram
 - **不命中**时返回 `null`，让 chat-agent 继续走 `none` → 真 `none` 路径（chat 闲聊，DJ 自由应答，**不动** LLM 路由器内部 prompt）。
 - `IntentResolution` 联合类型加 `"mood-keyword"` 标识，preference-learning `resolver` 联合类型同步加，跟 `rule` / `llm` 并列。`intent_resolved` 事件写盘会带上 `resolver: "mood-keyword"`，可观测。
 - 0 侵入：原 9 个 action、radio-engine、online-radio、preference-learning、LLM 路由器 prompt **一行不动**。
+- **2026-06-03 扩词**：18 组 → 28 组。新增"炸/炸一点/爆炸/炸裂/硬核/暴力"（weight 5）、"嗨翻/带感/飞起/上头/劲爆/推力/冲劲/够劲"扩到原"燃"组、"浪漫/甜蜜/甜歌/文艺/诗意/走心/动人"（weight 4）、"怀旧/复古/y2k"（weight 4）、"困/想睡/助眠/催眠"（weight 3）、"跑步/运动/健身/撸铁/有氧"（weight 4）、"工作/写代码/专注/干活/学习"（weight 3）、"吃饭/聚餐/派对"（weight 3）、"听腻/腻了/不喜欢/避开/排斥"扩到 avoid 兜底组。覆盖 90%+ 用户日常 mood 表达。
 
-#### 1.2 聊天触发播放器控件（2026-06-02 增量，Phase 7）
+#### 1.4 聊天触发相似推荐（2026-06-03 增量，Phase 11）
 
 ```mermaid
 sequenceDiagram
@@ -319,27 +350,92 @@ sequenceDiagram
     participant UI as PlayerShell
     participant API as /api/agent
     participant Agent as chat-agent
-    participant Actions as playerActionsRef<br/>(统一动作层)
-    participant Audio as audio 元素
+    participant Similar as resolveSimilarIntent
+    participant Online as applyOnlineChatIntent
+    participant Pref as appendPreferenceEvent
+    participant Search as online-radio 搜索端
 
-    User->>UI: "暂停"
+    User->>UI: "再来点这种的"
     UI->>API: POST /api/agent
     API->>Agent: runChatAgent()
-    Agent->>Agent: resolveControlIntent()<br/>命中 pause
-    Agent-->>API: controlAction="pause"<br/>(SSE type:"control" 帧)
-    API-->>UI: SSE state 帧 + control 帧 + assistant 帧
-    UI->>Actions: actions.pause()
-    Actions->>Audio: audio.pause() + setIsPlaying(false)<br/>+ setActiveLabel("PAUSED")
-    UI-->>User: 暂停了。
+    Agent->>Similar: resolveSimilarIntent(msg, currentTrack)
+    Similar-->>Agent: handled (similarTo = {刘德华, 练习})
+    Agent->>Agent: 构造 messageHint = "类似 刘德华 的 练习，风格延续，标签：粤语,抒情,慢歌"
+    Agent->>Pref: appendPreferenceEvent(similar_request, +1.2)
+    Agent->>Online: applyOnlineChatIntent({action:"similar", messageHint})
+    Online->>Online: regenerateOnlineRadioProgram({action:"regenerate", messageHint, excludeTrackIds:[currentTrack.id]})
+    Online->>Search: extractMessageHints("类似 ... 风格延续 ...")
+    Search-->>Online: 新队列
+    Online-->>Agent: {program, schedule}
+    Agent-->>API: state.intent=similar + 直接回复 "好，按《练习》这种味道再来一首。"
+    API-->>UI: SSE state 帧 + assistant 帧
+    UI-->>User: 切到风格相近的新歌
 ```
 
 关键不变量：
 
-- `playerActionsRef = useRef<PlayerActions>` 是 `PlayerShell` 内部**统一动作层**，暴露 6 个独立函数（`pause / resume / replay / volumeUp / volumeDown / setVolumeTo`）。
-- **按钮 onClick 跟聊天 SSE control 帧走完全同一份实现**：`togglePlayback` 内部已重构成调 `resumeAudio / pauseAudio`。
-- chat-agent 头部**最优先**旁路（`resolveControlIntent`）在 `resolveAgentState` 之前判，命中后**不写** preference_event、**不动** program、**不调** LLM / radio-engine / online-radio。
-- `volume-up` / `volume-down` 是**相对调整**（前端按 step 0.1 累加，clamp 0-1）；`set-volume N` 是**绝对值**（前端 `setVolume(N/100)`）。音量完全前端管，后端零状态同步。
-- 60+ 个其他按钮 onClick **没动**（A 方案：未来扩"上一首/下一首/收藏/下载"时按需把那个按钮的 onClick 改成 `playerActionsRef.current.xxx()`，渐进式收口）。
+- `similar` action **不进** 9 个 action 列表，不写 `feedbackBias`，不污染 `applyOnlineChatIntent` 的 regenerate/fresh/calmer/familiar 分支。
+- `messageHint` 必须在 chat-agent 层**预先拼好**（含 currentTrack.artist/title/tags），不能裸传 "类似 X"——搜索端不知道 X 是哪首歌。
+- `extractMessageHints` 已有"类似/延续/保持/继续"派发词，messageHint 一拼上就自动被搜索端识别。
+- `excludeTrackIds = [currentTrack.id]` 避免重推到当前曲。
+- **反馈闭环**靠 `playback_completed/interrupted` + `avoid_signal` 现有事件流，**不**写新计分逻辑。
+
+#### 1.5 聊天触发标黑当前曲（2026-06-03 增量，Phase 12）
+
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant UI as PlayerShell
+    participant API as /api/agent
+    participant Agent as chat-agent
+    participant Avoid as resolveAvoidIntent
+    participant Online as applyOnlineChatIntent
+    participant Pref as appendPreferenceEvent
+
+    User->>UI: "太吵了"
+    UI->>API: POST /api/agent
+    API->>Agent: runChatAgent()
+    Agent->>Avoid: resolveAvoidIntent(msg, currentTrack)
+    Note over Agent,Avoid: 旁路在 Layer 1 后立即判<br/>比 mood 兜底、LLM 路由器、点播旁路都早
+    Avoid-->>Agent: handled, reason="用户觉得太吵，避开高能量、强节奏的歌"
+    Agent->>Pref: appendPreferenceEvent(avoid_signal, -1.5, reason)
+    Agent->>Online: applyOnlineChatIntent({action:"avoid-current", messageHint:reason})
+    Online->>Online: regenerateOnlineRadioProgram({action:"fresh", messageHint, excludeTrackIds:[currentTrack.id, ...queue]})
+    Online-->>Agent: {program, schedule}
+    Agent-->>API: state.intent=avoid-current + 直接回复 "好，这首不听了，给你换首不一样的。"
+    API-->>UI: SSE state 帧 + assistant 帧
+    UI-->>User: 跳到风格不同的新歌
+```
+
+关键不变量：
+
+- `resolveAvoidIntent` 识别 17 种"太 + 形容词"（太吵/太闹/太重/太躁/太老/太旧/太甜/太腻/太慢/太柔/太安静/太忧伤/太伤感/太嗨/太燃/太摇滚/太电子）+ 6 种"显式不要"（跳过这首/换掉这首/不喜欢这首/不喜欢当前/这首要换/这首不行）。
+- **位置最优先**：在 `resolveAgentState` 之后、`inferOnlineFreeformIntent` / 9 个 action / 点播旁路 / mood 兜底**全部之前**判，命中后直接 return 短路。
+- 走 `action: "fresh"` **不**走 `regenerate`——avoid 是"换方向"语义，regenerate 会回到类似区；fresh 才真换。
+- `excludeTrackIds = [currentTrack.id, ...queue]` 把当前曲 + 整个队列都踢出候选，避免重推。
+- local 模式 fallback 到 `applyChatIntentWithProgram({action:"skip"})`（local 没有 messageHint 智能优先能力，skip 是合理"换一首"语义）。
+- `avoid_signal` 事件带 `reason` 字段（"用户觉得太吵，避开高能量"），由 `scoreEvent` 自动 -1.5 进 `negativeSignals` 聚合。
+
+#### 1.6 LLM 路由器 time 注入（2026-06-03 增量，Phase 13）
+
+```mermaid
+flowchart LR
+    A[resolveAgentState] --> B{mode==chat && online?}
+    B -->|是| C[readPreferenceInsights]
+    C --> D[inferOnlineFreeformIntent<br/>prompt 加 timeOfDay + dayOfWeek]
+    D --> E[LLM 路由器]
+    E -->|none| F[inferFromMoodKeywords<br/>28 组关键词]
+    E -->|regenerate/fresh/...| G[applyOnlineChatIntent<br/>messageHint 智能优先]
+    F -->|命中| G
+    F -->|不命中| H[DJ 自由应答]
+```
+
+关键不变量：
+
+- 路由器对外契约不变：JSON schema、action 列表、system prompt 主结构 全部不动。
+- time 注入是**纯 prompt 增量**：在 preferenceBlock 之后追加 `实际时间: 周X HH:MM（${timeOfDay}${isWeekend ? "，周末" : ""}）`。
+- 新增 2 条路由器规则："时间敏感"（早高峰清新提神/午休舒缓解压/晚间有温度/深夜低能量不打扰）+ "周末感知"（周末可以适当放开探索）。
+- 不为 time 单独开 action / 单独开 event type，**完全靠 messageHint 反映**。
 
 ### 2. Claudio 开台与播放
 
@@ -440,6 +536,7 @@ flowchart TD
 - `src/lib/play-request-executor.ts`
   显式点播执行器（2026-06-02 增量）。纯增量模块：play-artist 走"只搜不切"返回 top 3 候选，play-song-by-artist 走"搜 → 评分 → 拿可播 URL → 替换 currentTrack"。不 import `radio-engine` / `online-radio` / `preference-learning`，不写 preference_event，不动 daily-schedule。
 - **统一播放器动作层（2026-06-02 增量，Phase 7）**：在 `src/components/player-shell.tsx` 内部新增 `playerActionsRef = useRef<PlayerActions>`，暴露 6 个独立函数（`pause / resume / replay / volumeUp / volumeDown / setVolumeTo`）。`togglePlayback` 内部已重构成调 `resumeAudio / pauseAudio`，按钮 onClick 和聊天 SSE control 帧走完全同一份实现。后续扩"上一首/下一首/收藏/下载"进聊天控制时，扩 `PlayerActions` 类型 + 那个按钮的 onClick 改 `playerActionsRef.current.xxx()` 即可。
+- **Similar / Avoid-Current 旁路（2026-06-03 增量，Phase 11-12）**：chat-agent 头部新增 `resolveSimilarIntent` + `resolveAvoidIntent` 两个纯函数识别器。`similar` action 写 `similar_request` preference event（+1.2 分）+ 构造 `messageHint = "类似 X 的 Y，风格延续，标签：t1,t2,t3"` → `applyOnlineChatIntent({action:"similar", messageHint})` → `regenerateOnlineRadioProgram({action:"regenerate", messageHint, excludeTrackIds:[currentTrack.id]})`。`avoid-current` 写 `avoid_signal` preference event（-1.5 分）+ `reason` 字段 → `applyOnlineChatIntent({action:"avoid-current", messageHint:reason})` → `regenerateOnlineRadioProgram({action:"fresh", messageHint, excludeTrackIds:[currentTrack.id, ...queue]})`。两个 action 都不进 9 个 action 列表、不写 feedbackBias、不污染原 9 个 action 链路。反馈闭环靠 `playback_completed/interrupted` + `avoid_signal` 现有事件流覆盖，**不**写新计分逻辑。
 
 ### 模型与 TTS 层
 
@@ -484,9 +581,13 @@ flowchart TD
 - 首页聊天已经不再只是显式命令入口，也开始承担“自由音乐请求 -> 重组推荐 LIST”的主入口职责。
 - 首页推荐队列已经支持“熟悉延续 + 新发现”混合编排，既保留符合口味的连续性，也保留受控探索。
 - 首页已有学习面板，能直接观察 top artists / languages / tags、scene profile、avoid signals 和 recent events。
-- 首页在线播放链路已经明确往“推荐给内容，播放时统一解链”的方向收口，不再让推荐层和播放层各自持有一套最终 URL。
+- 首页在线播放链路已经明确往"推荐给内容，播放时统一解链"的方向收口，不再让推荐层和播放层各自持有一套最终 URL。
 - Claudio live 的在线搜歌已经接入同一套学习上下文：会参考 confidence、scene 偏好和 exploration mode 生成 seed/query/ranking。
 - Claudio live 的真实播放完成/中断事件已回流到 `preference-events`，开始和首页共用同一条学习数据带。
+- 2026-06-03 mood 关键词扩到 28 组（Phase 10）：覆盖炸/嗨翻/带感/上头/困/跑步/派对/怀旧/浪漫/听腻/避开等用户口语高频词，全部走 `regenerate + messageHint` 智能优先路径。
+- 2026-06-03 新增 `similar` action（Phase 11）：用户说"再来点这种/类似的/和这首一样"→ chat-agent 把 currentTrack 特征拼成 messageHint → online-radio 走智能优先搜索。**反馈闭环**靠 playback_completed/interrupted/avoid_signal 现有事件流，**不**写新计分逻辑。
+- 2026-06-03 新增 `avoid-current` action（Phase 12）：用户说"太吵了/太老了/不喜欢这首"→ 写一条 `avoid_signal` preference event（-1.5 分）+ reason 字段，online 模式走 fresh + excludeCurrent + excludeQueue；local 模式 fallback 到 skip。
+- 2026-06-03 LLM 路由器 time 注入（Phase 13）：prompt 加 `实际时间: 周X HH:MM（${timeOfDay}${isWeekend ? "，周末" : ""}）`，新增"时间敏感"+"周末感知"两条路由器规则，让 messageHint 反映早高峰/午休/晚间/深夜差分。
 
 还未完成：
 

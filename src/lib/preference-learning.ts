@@ -28,7 +28,9 @@ export type PreferenceEvent = {
     | "download"
     | "replay"
     | "playback_interrupted"
-    | "playback_completed";
+    | "playback_completed"
+    | "similar_request"
+    | "avoid_signal";
   message?: string;
   action?: string;
   scene?: string;
@@ -39,6 +41,7 @@ export type PreferenceEvent = {
   playbackSeconds?: number;
   playbackRatio?: number;
   resolver?: "rule" | "llm" | "mood-keyword";
+  reason?: string;
 };
 
 export type PreferenceModel = {
@@ -157,6 +160,12 @@ function scoreEvent(event: PreferenceEvent) {
       return 1.5;
     case "playback_interrupted":
       return (event.playbackRatio || 0) < 0.2 ? -2 : -0.5;
+    case "similar_request":
+      // 用户主动说"再来点这种"，正向信号 — 比 favorite 弱，但比纯浏览强
+      return 1.2;
+    case "avoid_signal":
+      // 用户主动标黑当前曲的某个 tag，负反馈 — 比 interruption 更明确
+      return -1.5;
     default:
       return 0;
   }
