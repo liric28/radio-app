@@ -1,30 +1,30 @@
 {
   "recentTrackIds": [
+    "We Don't Talk Anymore - Charlie Puth、Selena Gomez",
+    "Baby - Justin Bieber、Ludacris",
+    "告白气球 - 周杰伦",
+    "只要平凡 - 张杰、张碧晨",
+    "稻香 - 周杰伦",
     "失眠 (情绪版) - 林凡",
     "下一个天亮 - 郭静",
     "Emotions - Alex Skrindo、Verdial",
     "Rolling in the Deep (Explicit) - Adele",
     "年轮 - 张碧晨",
     "STAY (Explicit) - The Kid LAROI、Justin Bieber",
-    "Beauty And A Beat - Justin Bieber、Nicki Minaj",
-    "不要忘记我爱你 - 张碧晨",
-    "Something Just Like This - The Chainsmokers、Coldplay",
-    "Booty Music - Git Fresh",
-    "We Don't Talk Anymore - Charlie Puth、Selena Gomez",
-    "Daylight - Maroon 5"
+    "Beauty And A Beat - Justin Bieber、Nicki Minaj"
   ],
   "recentProgramTitles": [
-    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "深夜降速在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "深夜降速在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律"
   ],
   "feedbackBias": {
-    "calmer": 9,
+    "calmer": 11,
     "familiar": 8,
-    "fresh": 19
+    "fresh": 20
   },
-  "lastAction": "online-next"
+  "lastAction": "calmer"
 }
