@@ -2,7 +2,7 @@
   "date": "2026-06-03",
   "seed": {
     "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "reason": "manual-pick"
+    "reason": "queue-advance"
   },
   "source": "qq",
   "program": {
@@ -10,21 +10,21 @@
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "这一轮不从本地记忆里翻旧歌，直接按你现在的口味去外面抓。先听前面这首，后面我把线接顺。",
+    "hostIntro": "先别急着认歌，这一轮我想先把气口放稳。前面偏克制，后面会慢慢亮一点。",
     "currentTrack": {
-      "id": "online-b964c3f0105a",
-      "title": "Daylight",
-      "artist": "Maroon 5",
+      "id": "online-b64f115fb65e",
+      "title": "单向箭头",
+      "artist": "双笙 (陈元汐)",
       "year": 2026,
-      "mood": "专注",
+      "mood": "克制",
       "energy": 9,
-      "language": "英语",
+      "language": "中文",
       "tags": [
         "在线推荐",
         "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 单向箭头”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "qq",
@@ -35,241 +35,26 @@
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 226,
+        "duration": 270,
         "payable": false,
         "downloadable": true,
-        "albumName": "Singles (Explicit)",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
+        "albumName": "单向箭头",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg",
         "raw": {
           "source": "qq",
-          "songId": 104357077,
-          "songmid": "001DwtBl2gdXYN",
-          "mediaMid": "000XzVwY1T07TK",
-          "title": "Daylight",
-          "artist": "Maroon 5",
-          "albumName": "Singles (Explicit)",
-          "duration": 226,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
+          "songId": 229120828,
+          "songmid": "001HFKxc0Hm4Dc",
+          "mediaMid": "001HFKxc0Hm4Dc",
+          "title": "单向箭头",
+          "artist": "双笙 (陈元汐)",
+          "albumName": "单向箭头",
+          "duration": 270,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg"
         }
       },
-      "reason": "Maroon 5的Daylight，让工作区亮起来"
+      "reason": "单向箭头般的节奏感，克制中带你向前"
     },
     "queue": [
-      {
-        "id": "online-21130641af9b",
-        "title": "七里香",
-        "artist": "周杰伦",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 7,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 七里香”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "常听",
-          "slotType": "anchor",
-          "slotLabel": "主推"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 299,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "七里香",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 102065756,
-            "songmid": "004Z8Ihr0JIu5s",
-            "mediaMid": "0012Ez0a1tFcOI",
-            "title": "七里香",
-            "artist": "周杰伦",
-            "albumName": "七里香",
-            "duration": 299,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg"
-          }
-        },
-        "reason": "午后办公桌前，让周杰伦的七里香陪你找回初心"
-      },
-      {
-        "id": "online-a4f4093a663b",
-        "title": "交换余生",
-        "artist": "白天",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 277,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "治愈男生版",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 495254237,
-            "songmid": "003Mr8HR2HksC8",
-            "mediaMid": "003Mr8HR2HksC8",
-            "title": "交换余生",
-            "artist": "白天",
-            "albumName": "治愈男生版",
-            "duration": 277,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
-          }
-        },
-        "reason": "交换余生的旋律，专注里带着温柔的期待"
-      },
-      {
-        "id": "online-ce519545a5ab",
-        "title": "一路向北",
-        "artist": "周杰伦",
-        "year": 2026,
-        "mood": "克制",
-        "energy": 8,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 一路向北”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "常听",
-          "slotType": "anchor",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 294,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "J III MP3 Player",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002MAeob3zLXwZ.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 5105986,
-            "songmid": "001xd0HI0X9GNq",
-            "mediaMid": "003jT4SU22clE5",
-            "title": "一路向北",
-            "artist": "周杰伦",
-            "albumName": "J III MP3 Player",
-            "duration": 294,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002MAeob3zLXwZ.jpg"
-          }
-        },
-        "reason": "一路向北不是逃避，是给自己一个清醒的下午"
-      },
-      {
-        "id": "online-36d2ba493e35",
-        "title": "马步谣",
-        "artist": "双笙 (陈元汐)",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 马步谣”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 271,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "马步谣",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000036xgNI3TwnxS.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 212927645,
-            "songmid": "004Spkye3VEcda",
-            "mediaMid": "0033kElr4fbTll",
-            "title": "马步谣",
-            "artist": "双笙 (陈元汐)",
-            "albumName": "马步谣",
-            "duration": 271,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000036xgNI3TwnxS.jpg"
-          }
-        },
-        "reason": "双笙的马步谣，专注时刻的古风BGM"
-      },
-      {
-        "id": "online-b64f115fb65e",
-        "title": "单向箭头",
-        "artist": "双笙 (陈元汐)",
-        "year": 2026,
-        "mood": "克制",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 单向箭头”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 270,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "单向箭头",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 229120828,
-            "songmid": "001HFKxc0Hm4Dc",
-            "mediaMid": "001HFKxc0Hm4Dc",
-            "title": "单向箭头",
-            "artist": "双笙 (陈元汐)",
-            "albumName": "单向箭头",
-            "duration": 270,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg"
-          }
-        },
-        "reason": "单向箭头般的节奏感，克制中带你向前"
-      },
       {
         "id": "online-06fe23b436e5",
         "title": "百战成诗",
