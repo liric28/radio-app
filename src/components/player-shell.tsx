@@ -2384,7 +2384,13 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           </div>
         </section>
 
-        <section className={styles.queueHeader}>
+        <button
+          type="button"
+          className={styles.queueHeader}
+          onClick={() => setShowQueueList((value) => !value)}
+          aria-expanded={showQueueList}
+          aria-controls="queue-list-overlay"
+        >
           <span>QUEUE</span>
           {weather && (
             <div className={styles.weatherInHeader}>
@@ -2393,7 +2399,36 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             </div>
           )}
           <span>{currentQueueTracks.length} TRACKS</span>
-        </section>
+        </button>
+
+        {showQueueList && (
+          <div
+            id="queue-list-overlay"
+            className={styles.queueListOverlay}
+            ref={queueOverlayRef}
+            role="list"
+            aria-label="当前推荐队列"
+          >
+            {currentQueueTracks.map((track, index) => {
+              const isActive = index === 0;
+              return (
+                <button
+                  key={track.id}
+                  type="button"
+                  role="listitem"
+                  className={`${styles.queueListRow} ${isActive ? styles.queueListRowActive : ""}`}
+                  onClick={() => selectQueueTrack(track.id, true)}
+                >
+                  <span className={styles.queueListRowIndex}>
+                    {isActive ? "▶" : index + 1}
+                  </span>
+                  <span className={styles.queueListRowTitle}>{track.title}</span>
+                  <span className={styles.queueListRowArtist}>{track.artist}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <section className={styles.liveStrip}>
           <div className={styles.liveTitle}>
@@ -2464,6 +2499,34 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                           <DotmHex10 dotSize={3} color="#54d88c" size={20} speed={1.2} />
                         </span>
                       )}
+                      {message.meta?.pendingCandidates && message.meta.pendingCandidates.length > 0 ? (
+                        <div
+                          className={styles.queueOverlay}
+                          role="list"
+                          aria-label="点播候选"
+                        >
+                          {message.meta.pendingCandidates.map((cand, candIndex) => (
+                            <button
+                              key={`${cand.artist}-${cand.title}-${candIndex}`}
+                              type="button"
+                              role="listitem"
+                              className={styles.queueCard}
+                              onClick={() => {
+                                setChatInput(cand.title);
+                                void sendChatMessage();
+                              }}
+                            >
+                              <span className={styles.queueCardIcon} aria-hidden>
+                                {candIndex + 1}
+                              </span>
+                              <div className={styles.queueCardText}>
+                                <strong className={styles.queueCardTitle}>{cand.title}</strong>
+                                <p className={styles.queueCardArtist}>{cand.artist}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   </>
                 ) : (
@@ -2480,46 +2543,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               </div>
             ))}
           </div>
-
-          {showQueueList && (
-            <div
-              className={styles.queueOverlay}
-              ref={queueOverlayRef}
-              role="list"
-              aria-label="当前推荐队列"
-            >
-              {currentQueueTracks.map((track, index) => {
-                const isActive = index === 0;
-                return (
-                  <button
-                    key={track.id}
-                    type="button"
-                    role="listitem"
-                    className={`${styles.queueCard} ${isActive ? styles.queueCardActive : ""}`}
-                    onClick={() => selectQueueTrack(track.id, true)}
-                  >
-                    <span className={styles.queueCardIcon} aria-hidden>
-                      {isActive ? "★" : "▶"}
-                    </span>
-                    <div className={styles.queueCardText}>
-                      <strong className={styles.queueCardTitle}>{track.title}</strong>
-                      <p className={styles.queueCardArtist}>{track.artist}</p>
-                      <div className={styles.queueCardMetaRow}>
-                        <p className={styles.queueCardMeta}>
-                          {track.recommendationMeta?.sourceLabel || "未标注来源"}
-                        </p>
-                        {track.recommendationMeta?.slotLabel ? (
-                          <span className={styles.queueCardSlotBadge}>
-                            {track.recommendationMeta.slotLabel}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
 
           <section className={styles.inputDock}>
             <input

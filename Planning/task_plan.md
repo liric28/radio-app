@@ -126,6 +126,23 @@ Phase 5
 - [x] 注释进 chat-agent.ts 说明闭环路径
 - **Status:** completed
 
+### Phase 15: LIST 展开区挪到 QUEUE 区域 + top3 候选卡渲染（2026-06-03 增量，纯 UI）
+- [x] 旧 .queueOverlay 卡片组（chatLog 内联）整段删除，渲染位置挪到 queueHeader 正下方
+- [x] 新写 .queueListOverlay / .queueListRow 紧凑行样式：左序号 + 中标题 + 右艺术家，无边框无圆角，**左右在 panel 内正常留白**（margin 0 20px 8px、padding 8px 4px，对齐截图）
+- [x] .queueListRowActive 行高亮（左序号 + 标题加绿色，对齐截图）
+- [x] queueHeader 改成 <button> 整行可点击：点 QUEUE 横条任意位置都能 toggle showQueueList（与 LIST 按钮共用 state），reset 浏览器 default button 样式（appearance none / cursor pointer / focus-visible outline）
+- [x] 亮色主题 .pageLight 覆盖（.queueListOverlay 渲染在 .panel 之外，祖先链只有 .pageLight）
+- [x] 复用 queueOverlayRef 实现展开时 scrollIntoView，让用户看到刚展开的歌单
+- [x] LIST 按钮保持原位（transport 区），点击 toggle showQueueList
+- assistant 气泡内挂 `message.meta?.pendingCandidates` 渲染 top3 候选卡（**复用旧 .queueCard 卡片样式**，跟旧 chatLog 卡片组视觉一致：fit-content 宽度 / ★ 图标位置换序号 / title+artist 两行）
+- [x] 候选卡点击走 setChatInput(cand.title) + void sendChatMessage()，触发后端 matchPendingCandidate 现有链路
+- [x] 当前播放行（isActive）序号列显示绿色 ▶ 三角（font-size 14px）替代数字 `1`，跟截图里"▶ 비행운"激活态视觉一致
+- [x] 艺术家列长名截断改用 `text-overflow: clip`（不显示 `...`），跟截图一致
+- [x] **修正：艺术家列不设 `max-width: 50%` / `flex-shrink: 0`**——之前写法会让长艺术家名被硬卡成 1-2 个字（截图 bug：`周杰` / `双笙` / `白` 完全不可识别）。改成不限制宽度、grid 模板 `28px minmax(0,1fr) auto` 让 title 列 `minmax(0,1fr)` 缩、artist 拿自然宽度；artist 加 `text-align: right` 贴右端
+- [x] 0 侵入：后端 chat-agent / route / play-request-executor 全部 1 行不动；只是把已有 meta 字段可视化
+- [x] `npx tsc --noEmit` 0 error
+- **Status:** completed
+
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|

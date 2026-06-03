@@ -596,7 +596,7 @@ flowchart TD
 - Claudio live 侧还没有收藏/跳过/显式反馈按钮，因此 live 的偏好回流还主要依赖自然播放完成/中断。
 - 自学习层虽已具备时间衰减、探索策略、scene 分层和轻量面板，但还没有独立调试页，也没有更强的策略评估。
 - 外部对照页 `src/app/claudio-live/external/route.ts` 仍保留，仅用于对照。
-- 显式点播旁路在 frontend UI 形态上只走"数字 1/2/3 / 歌名 / 第 N 首 / 就这首"等纯文本回复，还**没有专门的候选列表气泡组件**（当前是让 assistant 文本含 `1.《X》2.《Y》3.《Z》` 列表行 + 后端 meta 透传，前端不做专门 UI 渲染）。后续如果要做真正的"可点击候选卡"再扩展 player-shell 渲染层。
+- 显式点播旁路在 frontend UI 形态上只走"数字 1/2/3 / 歌名 / 第 N 首 / 就这首"等纯文本回复，**已升级**为可点击候选卡（Phase 15，2026-06-03）：assistant 气泡内挂 `message.meta?.pendingCandidates` 渲染**旧 .queueCard 卡片**（fit-content 宽度 / 圆形序号 / title+artist 两行，跟原 chatLog 卡片组视觉一致），点击 `setChatInput(cand.title) + sendChatMessage()` 触发后端 `matchPendingCandidate` 现有链路。后端链路 0 改动。
 - 聊天触发播放器控件目前只接了"暂停/继续/重播/音量"。**后续要扩"上一首/下一首/收藏/下载/歌词"等进聊天**只需扩 `PlayerActions` 类型 + 那个按钮的 onClick 改 `playerActionsRef.current.xxx()`，零架构改动。chat-agent 旁路 + SSE control 帧协议已就绪。
 - 候选列表"换一批"重搜（Phase 8）已接进 play-request 旁路——用户说"换/换一批/还有吗"等关键词 + 上一条是 candidateList 时重搜同一歌手 top 3（去重已展示候选）。**无候选上下文时 fall through 到原 9 个 action 链路**，"换一批" regenerate 走 radio-engine 保持原行为。assistant 文本用"X 的其他歌，刷新一下："区别于首轮"X 的歌"。
 - LLM 路由器 + mood keyword 兜底（Phase 9）已接进 chat-agent——LLM 路由器对"今天有点累/想家了/嗨一点/夜深了"等 mood 表达判 none 时，keyword 兜底补回 `regenerate + messageHint`，走原 `applyOnlineChatIntent` 链路（messageHint 智能优先路径）。18 组关键词覆盖 5 类信号（情绪/风格/时刻/否定），不命中 fall through 到 LLM 闲聊。`resolver: "mood-keyword"` 写进 preference-learning 事件可观测。**未做**：keyword 库手工维护（后续可接 LLM 自动扩词）、多 keyword 冲突时只取 weight 最高（不做复杂合并）、不命中时给用户主动追问"想听点什么？"（保持当前 fall through 到 LLM DJ 闲聊）。

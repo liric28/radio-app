@@ -1023,6 +1023,31 @@
 .queueHeader {
   background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+  /*
+   * queueHeader 现在是 <button>，需要 reset 浏览器 default button 样式
+   * （outline / cursor / appearance），保持跟原 <section> 视觉一致。
+   * 点击态激活态用 :hover / :focus-visible 表达。
+   */
+  appearance: none;
+  -webkit-appearance: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background-color 160ms ease;
+}
+
+.queueHeader:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.queueHeader:focus-visible {
+  outline: 1px solid rgba(84, 216, 140, 0.6);
+  outline-offset: -1px;
 }
 
 /* Live 条背景。 */
@@ -1403,6 +1428,113 @@
   display: grid;
   gap: 8px;
   margin: 12px 0 12px 44px;
+}
+
+/*
+ * LIST 按钮弹出的“当前时段歌单”紧凑列表（2026-06-03 替换旧 .queueOverlay）。
+ * 渲染位置从 chatLog 之后挪到 queueHeader 之下，视觉对齐播放队列预览：
+ *  - 每行：左序号 + 中标题 + 右艺术家，无边框无圆角
+ *  - 当前歌曲（.queueListRowActive）行高亮，左序号 + 标题加绿色，对齐截图
+ *  - .queueListOverlay 在 .panel 之外（panelContent 内部），使用 .pageLight 覆盖亮色
+ *
+ * top3 候选（assistant.meta.pendingCandidates）也复用这一套样式，
+ * 区别只是没有 .queueListRowActive 高亮 + 点击走 setChatInput + sendChatMessage
+ * 触发后端 matchPendingCandidate 链路。
+ */
+.queueListOverlay {
+  display: grid;
+  gap: 4px;
+  margin: 0 20px 8px;
+  padding: 0;
+}
+
+.queueListRow {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  width: 100%;
+  transition: background-color 160ms ease;
+}
+
+.queueListRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.queueListRowIndex {
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.4);
+  font-variant-numeric: tabular-nums;
+}
+
+.queueListRowTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(246, 242, 255, 0.78);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueListRowArtist {
+  font-size: 12px;
+  color: rgba(223, 218, 240, 0.45);
+  letter-spacing: 0.06em;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  /*
+   * 不设 max-width / flex-shrink：artist 让 grid 按内容自然协商宽度。
+   * title 列 minmax(0, 1fr) 拿剩余空间、必要时缩 1 截断；
+   * artist 拿自己需要的宽度，超长时 title 让位、artist 优先完整。
+   * 设 max-width 会硬卡成截 1-2 字（截图 bug）。
+   */
+  text-align: right;
+}
+
+.queueListRowActive {
+  background: rgba(84, 216, 140, 0.06);
+}
+
+.queueListRowActive .queueListRowIndex {
+  color: #54d88c;
+  /*
+   * ▶ 字符在 12px 视觉上比数字矮一截，提到 14px + 行高 1
+   * 跟行 22px 高度的 row 垂直居中对齐，截图里 ▶ 跟标题基线视觉一致
+   */
+  font-size: 14px;
+  line-height: 1;
+}
+
+.queueListRowActive .queueListRowTitle {
+  color: #d8ffe8;
+  font-weight: 600;
+}
+
+/* 亮色主题覆盖。queueListOverlay 渲染在 .panel 外，祖先链上只有 .pageLight。 */
+.pageLight .queueListRowTitle {
+  color: rgba(20, 18, 30, 0.86);
+}
+.pageLight .queueListRowIndex,
+.pageLight .queueListRowArtist {
+  color: rgba(20, 18, 30, 0.5);
+}
+.pageLight .queueListRow:hover {
+  background: rgba(20, 18, 30, 0.04);
+}
+.pageLight .queueListRowActive {
+  background: rgba(84, 216, 140, 0.1);
+}
+.pageLight .queueListRowActive .queueListRowTitle {
+  color: #1c6a3a;
 }
 
 /*
@@ -2070,6 +2202,15 @@
   color: rgba(223, 218, 240, 0.4);
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/*
+ * 候选项 .queueCard 走 setChatInput + sendChatMessage，需要 cursor: pointer。
+ * 旧 chatLog .queueOverlay 里的卡片是纯展示（cursor: text），跟点击候选项语义不同，
+ * 单独覆盖避免影响旧路径（chatLog 内联卡片组删了，理论上 0 引用，但保持选择器独立稳一点）。
+ */
+.queueOverlay .queueCard {
+  cursor: pointer;
 }
 
 .queueCardText {

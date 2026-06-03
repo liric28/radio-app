@@ -221,3 +221,34 @@
 |-------|------------|
 | patch 替换 `// Similar 旁路` inline 注释时整段被 JSDoc 块替代，空行出现在 369-371 行间 | JSDoc 块本身有"为什么"的语义价值，保留；空行无副作用 |
 | patcher `_warning` 提示"re-read before overwrite" | 已知 LSP cache 陈旧，`npx tsc --noEmit` 0 error 即真 |
+
+## Session: 2026-06-03 (Phase 15: LIST 展开区挪到 QUEUE 区域 + top3 候选卡渲染)
+
+### Current Status
+- **Phase:** 15（纯前端 UI 重构 + meta 可视化，0 侵入）
+- **Started:** 2026-06-03
+
+### Actions Taken
+- **旧 `.queueOverlay` 卡片组（player-shell.tsx 行 2484-2522）整段删除**：包括 chatLog 内联卡片组、所有 `.queueCard` 按钮 JSX。原 `queueOverlayRef` 保留，挪到新位置复用。
+- **新 `.queueListOverlay` 渲染块挪到 queueHeader 正下方（行 2397-2421）**：list 按钮 toggle showQueueList 行为不变；展开时 5 行紧凑行（currentTrack + queue）从 QUEUE 标题下面直接淡入。
+- **新写 `.queueListRow` 紧凑行样式（page.module.css 行 1408-1500）**：grid `28px minmax(0, 1fr) auto` 三栏；左序号（淡灰）、中标题（白，`text-overflow: ellipsis` 缩 1 截断）、右艺术家（淡灰 `text-align: right`，**不设 max-width / flex-shrink**——grid 按内容协商，artist 拿自然宽度，title 缩让位）。`.queueListRowActive` 行高亮（左序号 + 标题加绿色，序号 span 显示 `▶` 三角替代数字 `1`，font-size 14px 让 ▶ 跟 22px 行高视觉对齐）。**左右在 panel 内正常留白**：`.queueListOverlay` 用 `margin:0 20px 8px`、`.queueListRow` 用 `padding:8px 4px`，跟截图一致。
+- **queueHeader `<section>` → `<button>` 整行可点击**（行 2386-2402）：点 QUEUE 横条任意位置都能 toggle `showQueueList`，跟 LIST 按钮共用 state。reset 浏览器 default button 样式（appearance none / cursor pointer / focus-visible outline）。
+- **assistant 气泡内挂 `message.meta?.pendingCandidates` 渲染 top3 候选卡（行 2493-2520）**：复用旧 `.queueCard` 卡片样式（fit-content 宽度、★ 图标位置换 `1/2/3` 序号、title+artist 两行，不带 meta/badge 因为 pendingCandidates 没这俩字段）；点击候选 → `setChatInput(cand.title) + void sendChatMessage()`，触发后端 `matchPendingCandidate` 现有链路（识别"裸歌名"）。
+- **候选项 `.queueCard` 单独覆盖 `cursor: pointer`**（page.module.css 行 2169-2176）：旧 chatLog 卡片组（已删）是纯展示 `cursor: text`；候选项点击触发切歌，需要 pointer，单独选择器覆盖。
+- **亮色主题覆盖 `.pageLight .queueListRow*`**：因为 `.queueListOverlay` 渲染在 `.panel` 之外（panelContent 内部），祖先链只有 `.pageLight` / `.pageDark`，不能写 `.panelLight`。
+- **后端链路 0 侵入**：`src/lib/chat-agent.ts` / `src/lib/play-request-executor.ts` / `src/app/api/agent/route.ts` / `src/lib/preference-learning.ts` 全部 1 行不动；只是把 `meta.pendingCandidates` 这个**早就透传但前端从未渲染**的字段做了可视化。
+
+### Test Results
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| `npx tsc --noEmit` | 0 error | 0 error | Passed |
+| 旧 `.queueOverlay` 引用数（player-shell.tsx） | 0 | 0 | Passed |
+| 旧 `.queueCard` 引用数（player-shell.tsx） | 0 | 0 | Passed |
+| `message.meta?.pendingCandidates` 渲染（top3 候选可视化） | assistant 气泡下挂旧 .queueCard 卡片（fit-content 宽度 / 序号圆形 / title+artist 两行），点击触发 matchPendingCandidate | 需手动确认 | Pending 手动验证 |
+
+### Errors
+| Error | Resolution |
+|-------|------------|
+| 第一版想给 `.queueCard` 加 `1/2/3/4/5` 序号复用手头卡片样式 | 截图明确表达"紧凑行无边框"，不是"按钮卡带边框"；新写 `.queueListRow` 紧凑行更准 |
+| 第二版把候选卡做成了 `.queueListRow` 紧凑行（跟 LIST 一致） | 用户原话"聊天的播放列表 ui 样式保留"——保留的是 `.queueCard` 那种按钮卡视觉，不是新写的紧凑行。改回复用旧 `.queueCard` 样式 |
+| 第三版艺术家列 `max-width: 50%` + `flex-shrink: 0` | 长艺术家名（"双笙（阴..."）被硬卡成 1-2 字（"双笙"/"白"/"曹"）——不可识别。改成不限制宽度，grid `auto` 列让 artist 拿自然宽度，title `minmax(0,1fr)` 缩让位，artist `text-align: right` 贴右端 |

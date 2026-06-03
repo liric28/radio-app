@@ -1,333 +1,117 @@
 {
-  "date": "2026-06-02",
+  "date": "2026-06-03",
   "seed": {
-    "input": "搜几首清晨刚出门时听的安静华语抒情歌，要轻、要柔、带一点刚刚醒来的清醒感。",
-    "reason": "晨间出门场景配合calmer调整，用'刚醒来的清醒感'区别于近期反复出现的'缓慢主旋律'角度；本地库中文占七成且回忆感主导，说明用户偏华语、偏安静，这条种子能精准导向华语线上轻量抒情歌，同时不直接复用本地曲目。"
+    "input": "午后工作时段，挑选几首能让人回想起个人旧歌单里熟悉旋律的中文慢歌，让音乐自然流淌而不喧宾夺主",
+    "reason": "白天工作流需要低调陪伴感，近期已用过缓慢主旋律的比喻，需换一种表达方式，同时保持回忆感与熟悉音乐的核心方向，并明确用中文歌曲作为主体。"
   },
   "source": "qq",
   "program": {
     "stationName": "Claudio FM",
-    "segmentTitle": "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "scene": "晨间出门",
-    "energyLabel": "低照度安静流",
-    "hostIntro": "早上好，先把这条在线流慢慢推起来。前面是《We Don't Talk Anymore》，后面会顺着接到《You Suffer》。",
+    "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "scene": "白天工作流",
+    "energyLabel": "轻推力上行",
+    "hostIntro": "这一轮不从本地记忆里翻旧歌，直接按你现在的口味去外面抓。先听前面这首，后面我把线接顺。",
     "currentTrack": {
-      "id": "online-6b0ac1b4e694",
-      "title": "We Don't Talk Anymore",
-      "artist": "Charlie Puth、Selena Gomez",
+      "id": "online-21130641af9b",
+      "title": "七里香",
+      "artist": "周杰伦",
       "year": 2026,
-      "mood": "清醒",
-      "energy": 3,
-      "language": "英语",
+      "mood": "专注",
+      "energy": 7,
+      "language": "中文",
       "tags": [
         "在线推荐",
-        "晨间出门",
+        "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“晨间出门 / Charlie Puth、Selena Gomez / We Don't Talk Anymore”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 七里香”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "qq",
       "recommendationMeta": {
-        "sourceLabel": "顺推",
-        "slotType": "fallback",
+        "sourceLabel": "常听",
+        "slotType": "anchor",
         "slotLabel": "主推"
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 217,
+        "duration": 299,
         "payable": false,
         "downloadable": true,
-        "albumName": "Nine Track Mind",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg",
+        "albumName": "七里香",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg",
         "raw": {
           "source": "qq",
-          "songId": 105539541,
-          "songmid": "003uNk7n3Fpu7R",
-          "mediaMid": "001o13Y50H28Za",
-          "title": "We Don't Talk Anymore",
-          "artist": "Charlie Puth、Selena Gomez",
-          "albumName": "Nine Track Mind",
-          "duration": 217,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Ws4fG3pT6eA.jpg"
+          "songId": 102065756,
+          "songmid": "004Z8Ihr0JIu5s",
+          "mediaMid": "0012Ez0a1tFcOI",
+          "title": "七里香",
+          "artist": "周杰伦",
+          "albumName": "七里香",
+          "duration": 299,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg"
         }
       },
-      "reason": "这首歌是按“晨间出门 / Charlie Puth、Selena Gomez / We Don't Talk Anymore”这条在线推荐线索命中的。"
+      "reason": "午后办公桌前，让周杰伦的七里香陪你找回初心"
     },
     "queue": [
       {
-        "id": "online-9fb384ec1f3e",
-        "title": "You Suffer",
-        "artist": "Mommy's lil Monsterz",
+        "id": "online-ce519545a5ab",
+        "title": "一路向北",
+        "artist": "周杰伦",
         "year": 2026,
-        "mood": "轻快",
-        "energy": 4,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / Mommy's lil Monsterz / You Suffer”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 2,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Grinding Up the Hits",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Z18dJ0gLZ89.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 272785500,
-            "songmid": "000cecPq0z65cv",
-            "mediaMid": "0042ZvGI4CZ10J",
-            "title": "You Suffer",
-            "artist": "Mommy's lil Monsterz",
-            "albumName": "Grinding Up the Hits",
-            "duration": 2,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004Z18dJ0gLZ89.jpg"
-          }
-        },
-        "reason": "这首歌是按“晨间出门 / Mommy's lil Monsterz / You Suffer”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-2696ba6042f3",
-        "title": "Love Story",
-        "artist": "Taylor Swift",
-        "year": 2026,
-        "mood": "通勤",
-        "energy": 5,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / Taylor Swift / Love Story”这条在线推荐线索命中的。",
-        "sourcePath": "Taylor Swift/Fearless (Platinum Edition)/Love Story.mp3",
-        "libraryRoot": "/Users/lipan/Music/Music/Media/Music",
-        "streamUrl": "/api/audio?path=Taylor%20Swift%2FFearless%20(Platinum%20Edition)%2FLove%20Story.mp3&libraryRoot=%2FUsers%2Flipan%2FMusic%2FMusic%2FMedia%2FMusic",
-        "source": "local",
-        "recommendationMeta": {
-          "sourceLabel": "本地",
-          "slotType": "local-match",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 236,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Fearless (Platinum Edition)",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 639141,
-            "songmid": "004GK4aP4TGbbG",
-            "mediaMid": "001EqijX2A3asI",
-            "title": "Love Story",
-            "artist": "Taylor Swift",
-            "albumName": "Fearless (Platinum Edition)",
-            "duration": 236,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002Q1XUj3HBAzw.jpg"
-          }
-        },
-        "reason": "这首歌是按“晨间出门 / Taylor Swift / Love Story”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-513a1719ae4c",
-        "title": "Cruel Summer",
-        "artist": "Taylor Swift",
-        "year": 2026,
-        "mood": "清醒",
-        "energy": 5,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / Taylor Swift / Cruel Summer”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 178,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Lover",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002MRY88057AhY.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 235175529,
-            "songmid": "0013TCdl37SVzP",
-            "mediaMid": "0040rOp00lZYHC",
-            "title": "Cruel Summer",
-            "artist": "Taylor Swift",
-            "albumName": "Lover",
-            "duration": 178,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002MRY88057AhY.jpg"
-          }
-        },
-        "reason": "这首歌是按“晨间出门 / Taylor Swift / Cruel Summer”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-07d4b3c95b1a",
-        "title": "Hush",
-        "artist": "The Marías",
-        "year": 2026,
-        "mood": "轻快",
-        "energy": 5,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / The Marías / Hush”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 181,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Hush",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004aEsyw4F0N38.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 308242360,
-            "songmid": "0041wvIC49YNGx",
-            "mediaMid": "0043KiKf4cC0FA",
-            "title": "Hush",
-            "artist": "The Marías",
-            "albumName": "Hush",
-            "duration": 181,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000004aEsyw4F0N38.jpg"
-          }
-        },
-        "reason": "这首歌是按“晨间出门 / The Marías / Hush”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-972bda67ba30",
-        "title": "Booty Music",
-        "artist": "Git Fresh",
-        "year": 2026,
-        "mood": "通勤",
-        "energy": 5,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / Git Fresh / Booty Music”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 181,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Git Fresh",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003RB7Lk0Uues1.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 103824181,
-            "songmid": "001gip3A1SpQc2",
-            "mediaMid": "002eE8MJ2PjsUP",
-            "title": "Booty Music",
-            "artist": "Git Fresh",
-            "albumName": "Git Fresh",
-            "duration": 181,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003RB7Lk0Uues1.jpg"
-          }
-        },
-        "reason": "这首歌是按“晨间出门 / Git Fresh / Booty Music”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-b804c69e3c05",
-        "title": "APT.",
-        "artist": "ROSÉ、Bruno Mars",
-        "year": 2026,
-        "mood": "清醒",
-        "energy": 5,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / ROSÉ、Bruno Mars / APT.”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 169,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "APT.",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003k3tmX1u3S55.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 527877310,
-            "songmid": "000zR7cv2QHXks",
-            "mediaMid": "000zR7cv2QHXks",
-            "title": "APT.",
-            "artist": "ROSÉ、Bruno Mars",
-            "albumName": "APT.",
-            "duration": 169,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003k3tmX1u3S55.jpg"
-          }
-        },
-        "reason": "这首歌是按“晨间出门 / ROSÉ、Bruno Mars / APT.”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-360a35091a2d",
-        "title": "坚如磐石",
-        "artist": "张杰、张碧晨",
-        "year": 2026,
-        "mood": "轻快",
-        "energy": 5,
+        "mood": "克制",
+        "energy": 8,
         "language": "中文",
         "tags": [
           "在线推荐",
-          "晨间出门",
+          "白天工作流",
           "qq"
         ],
-        "reasonSeed": "这首歌是按“晨间出门 / 张杰、张碧晨 / 坚如磐石”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 一路向北”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "常听",
+          "slotType": "anchor",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 294,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "J III MP3 Player",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002MAeob3zLXwZ.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 5105986,
+            "songmid": "001xd0HI0X9GNq",
+            "mediaMid": "003jT4SU22clE5",
+            "title": "一路向北",
+            "artist": "周杰伦",
+            "albumName": "J III MP3 Player",
+            "duration": 294,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002MAeob3zLXwZ.jpg"
+          }
+        },
+        "reason": "一路向北不是逃避，是给自己一个清醒的下午"
+      },
+      {
+        "id": "online-36d2ba493e35",
+        "title": "马步谣",
+        "artist": "双笙 (陈元汐)",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 马步谣”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "qq",
@@ -338,32 +122,247 @@
         },
         "downloadContext": {
           "source": "qq",
-          "duration": 227,
+          "duration": 271,
           "payable": false,
           "downloadable": true,
-          "albumName": "坚如磐石",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000yFgXX2pP2hd.jpg",
+          "albumName": "马步谣",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000036xgNI3TwnxS.jpg",
           "raw": {
             "source": "qq",
-            "songId": 438160218,
-            "songmid": "003JrwbL3MqdyF",
-            "mediaMid": "003JrwbL3MqdyF",
-            "title": "坚如磐石",
-            "artist": "张杰、张碧晨",
-            "albumName": "坚如磐石",
-            "duration": 227,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000yFgXX2pP2hd.jpg"
+            "songId": 212927645,
+            "songmid": "004Spkye3VEcda",
+            "mediaMid": "0033kElr4fbTll",
+            "title": "马步谣",
+            "artist": "双笙 (陈元汐)",
+            "albumName": "马步谣",
+            "duration": 271,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000036xgNI3TwnxS.jpg"
           }
         },
-        "reason": "这首歌是按“晨间出门 / 张杰、张碧晨 / 坚如磐石”这条在线推荐线索命中的。"
+        "reason": "双笙的马步谣，专注时刻的古风BGM"
+      },
+      {
+        "id": "online-b64f115fb65e",
+        "title": "单向箭头",
+        "artist": "双笙 (陈元汐)",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 单向箭头”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 270,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "单向箭头",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 229120828,
+            "songmid": "001HFKxc0Hm4Dc",
+            "mediaMid": "001HFKxc0Hm4Dc",
+            "title": "单向箭头",
+            "artist": "双笙 (陈元汐)",
+            "albumName": "单向箭头",
+            "duration": 270,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg"
+          }
+        },
+        "reason": "单向箭头般的节奏感，克制中带你向前"
+      },
+      {
+        "id": "online-06fe23b436e5",
+        "title": "百战成诗",
+        "artist": "白天",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 百战成诗”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 393,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "温柔男声版",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 376647925,
+            "songmid": "004YBAEm0SZrrg",
+            "mediaMid": "000uIunD1K4GmS",
+            "title": "百战成诗",
+            "artist": "白天",
+            "albumName": "温柔男声版",
+            "duration": 393,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg"
+          }
+        },
+        "reason": "百战成诗的激昂，让下午的工作充满能量"
+      },
+      {
+        "id": "online-a4f4093a663b",
+        "title": "交换余生",
+        "artist": "白天",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 277,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "治愈男生版",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 495254237,
+            "songmid": "003Mr8HR2HksC8",
+            "mediaMid": "003Mr8HR2HksC8",
+            "title": "交换余生",
+            "artist": "白天",
+            "albumName": "治愈男生版",
+            "duration": 277,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
+          }
+        },
+        "reason": "交换余生的旋律，专注里带着温柔的期待"
+      },
+      {
+        "id": "online-85991d5d8e20",
+        "title": "낮 (Day off) (白天)",
+        "artist": "脸红的思春期",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "韩语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 192,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Two Five",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 237776459,
+            "songmid": "00045fv91egfYd",
+            "mediaMid": "000C6adX259x6U",
+            "title": "낮 (Day off) (白天)",
+            "artist": "脸红的思春期",
+            "albumName": "Two Five",
+            "duration": 192,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg"
+          }
+        },
+        "reason": "思春期的这首白天，让上班也能有day off的感觉"
+      },
+      {
+        "id": "online-b964c3f0105a",
+        "title": "Daylight",
+        "artist": "Maroon 5",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 226,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Singles (Explicit)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 104357077,
+            "songmid": "001DwtBl2gdXYN",
+            "mediaMid": "000XzVwY1T07TK",
+            "title": "Daylight",
+            "artist": "Maroon 5",
+            "albumName": "Singles (Explicit)",
+            "duration": 226,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
+          }
+        },
+        "reason": "Maroon 5的Daylight，让工作区亮起来"
       }
     ],
     "explanation": [
-      "这轮不再从本地曲库起歌，直接按 晨间出门 的在线推荐意图去搜。",
-      "推荐线索是“搜几首清晨刚出门时听的安静华语抒情歌，要轻、要柔、带一点刚刚醒来的清醒感。”，实际落地优先保留 Charlie Puth、Selena Gomez、Mommy's lil Monsterz、Taylor Swift 这些锚点。",
+      "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
+      "推荐线索是“午后工作时段，挑选几首能让人回想起个人旧歌单里熟悉旋律的中文慢歌，让音乐自然流淌而不喧宾夺主”，实际落地优先保留 周杰伦、周杰伦、双笙 (陈元汐) 这些锚点。",
       "当前来源是 qq，本轮确认了 8 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 calmer，本轮种子是“搜几首清晨刚出门时听的安静华语抒情歌，要轻、要柔、带一点刚刚醒来的清醒感。”。当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 calmer，本轮种子是“午后工作时段，挑选几首能让人回想起个人旧歌单里熟悉旋律的中文慢歌，让音乐自然流淌而不喧宾夺主”。当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

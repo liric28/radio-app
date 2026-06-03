@@ -253,9 +253,59 @@
 | similar 跟 avoid 反向回写要不要做特殊计分 | 不做；现有 playback_completed / playback_interrupted / avoid_signal 流已经能区分正向/负向，加新计分会出现"自己扣自己" |
 | patcher 警告"re-read before overwrite" | LSP cache 陈旧已知，以 `npx tsc --noEmit` 0 error 为准 |
 
+## Session: 2026-06-03 (Phase 15: LIST 展开区挪到 QUEUE 区域 + top3 候选卡渲染)
+
+### 增量要求
+- LIST 按钮弹出的"当前段歌单"渲染位置从 chatLog 内联挪到 queueHeader 正下方，跟播放队列预览视觉对齐
+- 旧 `.queueOverlay` 卡片组（带边框/圆角/meta/badge）作为**样式来源保留**给 top3 候选卡复用
+- assistant 气泡内挂 `message.meta?.pendingCandidates` 渲染 top3 候选卡（**复用旧 .queueCard 卡片样式**：fit-content 宽度、★ 图标位置换成 `1/2/3` 序号、title+artist 两行；不显示 meta/badge 因为 pendingCandidates 不带这俩字段）
+- 候选卡点击走 `setChatInput(cand.title) + void sendChatMessage()`，触发后端 `matchPendingCandidate` 现有链路
+- 0 侵入：后端 chat-agent / route / play-request-executor / preference-learning **全部 1 行不动**，只是把已有 `meta` 字段可视化
+
+### Research Findings
+- 旧的 `.queueOverlay` 渲染位置是 chatLog 之后 inputDock 之前（行 2484-2522），从产品语义上"插播在聊天流里"是 OK 的，但截图明显表达"歌单是播放区的一部分、不是聊天流的一部分"。挪到 queueHeader 下面更符合"播放队列预览"的视觉层级。
+- 旧 `.queueCard` 按钮卡样式（带边框圆角、3 行 title/artist/meta/badge）和截图里的紧凑行（无边框、左序号中标题右艺术家）**完全不是一种视觉**。不能用同一份样式两边复用——必须新写一套 `.queueListRow` 紧凑行。
+- top3 候选后端早就透传了 `meta.pendingCandidates`（Phase 6），但前端从来没渲染过，user 看到的是 assistant 文本里 `1.《X》2.《Y》3.《Z》` 纯文本。新加候选卡 UI 复用后端 `matchPendingCandidate` 识别（"1/2/3/歌名/就这首/中间那首"），点击把对应歌名塞进 `chatInput` 再调 `sendChatMessage()` 就走通了。
+- `queueOverlayRef` 在新位置（queueHeader 下面）依然挂上，展开时 `scrollIntoView({block:"center"})` 让长聊天也能滚到歌单位置——只是滚到的目标从 chatLog 内部的卡片组变成了 queueHeader 下方的独立区域。
+
+### Decisions Made
+| Decision | Rationale |
+|----------|-----------|
+| LIST 按钮位置保持 transport 区不动 | 用户原话"点击LIST按钮也是展开折叠或收起"——toggle 触发器是 LIST 按钮，触发后渲染位置是 QUEUE 区域 |
+| 旧 `.queueOverlay` 整段删除，不保留 .queueOverlay 引用 | 引用全在 .queueOverlay 自己定义的位置，删掉后没人会引用；保留是死代码 |
+- 旧 `.queueCard` 样式**不删**（注释行 2233 已经标记"旧版，先保留"） | 候选项（assistant 气泡内）现在复用这套样式——fit-content 宽度、序号图标的圆形、title+artist 视觉，**正好是产品要保留的"聊天播放列表"那种卡片感** |
+| 候选卡复用 `.queueCard`（旧 chatLog 卡片样式）而不是新写 `.queueListRow` 紧凑行 | 用户原话"聊天的播放列表 ui 样式保留 给聊天点播返回的 top3 数据显示 ui"——保留视觉就是保留 `.queueCard` 那种按钮卡感（fit-content 宽度、序号圆形图标、title+artist 两行），不是"无边框紧凑行" |
+| 候选卡点击走 `setChatInput(cand.title) + sendChatMessage()` | 不需要新写点击 handler——直接把候选歌名作为 user input 提交，后端 `matchPendingCandidate` 早就识别裸歌名 |
+| 候选卡**不**标 `.queueListRowActive` 高亮 | active 是"正在播"语义，候选不是"正在播"；保留视觉差异让用户知道这是"待选" |
+| 0 侵入：后端链路 / 原 9 个 action / radio-engine / online-radio / preference-learning | 全部 1 行不动；纯前端 UI 重构 + meta 可视化 |
+
+### Issues Encountered
+| Issue | Resolution |
+|-------|------------|
+| 候选卡点击 handler 想绕开 chatInput state 直接调 sendChatMessage | 走 setChatInput 同步 state 后调 sendChatMessage；行 1824 读 chatInput、行 1844 清空 state，符合现有链路，零侵入 |
+| `.queueListOverlay` 渲染在 `.panel` 之外（panelContent 内部），亮色主题覆盖用 `.pageLight` 而不是 `.panelLight` | 跟 .dayListBackdrop 一样的 ancestor 链规则，统一用 .pageLight |
+| 候选卡 key 用 `${artist}-${title}-${index}` 而不是 stable id | backend pendingCandidates 不带稳定 id 字段（只有 artist+title 字符串），用这两个 + index 当 React key 即可 |
+
+### Test Results
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| `npx tsc --noEmit` | 0 error | 0 error | Passed |
+| 旧 `.queueOverlay` / `.queueCard` 在 player-shell.tsx 引用数 | 0（除 .module.css 定义本身） | 0 | Passed |
+| `.queueListRow` 视觉对齐截图（无边框 / 左序号 / 中标题 / 右艺术家） | 一致 | 一致 | Passed (需手动确认) |
+
+### Resources
+- `src/components/player-shell.tsx`（增量：旧 .queueOverlay chatLog 内联块整段删；新 .queueListOverlay 渲染块挪到 queueHeader 下方；assistant 气泡内挂 message.meta?.pendingCandidates 渲染 top3 候选卡）
+- `src/app/page.module.css`（增量：行 1408-1500 新加 .queueListOverlay / .queueListRow / .queueListRowIndex / .queueListRowTitle / .queueListRowArtist / .queueListRowActive + .pageLight 亮色覆盖；旧 .queueOverlay 块保留定义但 player-shell.tsx 0 引用）
+
 ### Resources
 - `src/lib/chat-agent.ts`（增量：MOOD_KEYWORD_HINTS 18→28 + resolveSimilarIntent + resolveAvoidIntent + runChatAgent 2 个新旁路 + 2 个新 ChatAgentState 短路 return + time 变量在 prompt）
 - `src/lib/types.ts`（增量：ChatIntentAction 加 `similar` / `avoid-current`）
 - `src/lib/preference-learning.ts`（增量：PreferenceEvent.type 加 `similar_request` / `avoid_signal`，scoreEvent 给两个新事件打分，reason? 字段）
 - `src/lib/online-radio.ts`（增量：applyOnlineChatIntent 加 `similar` / `avoid-current` 两个分支；extractMessageHints directPhrases 扩"避开/类似/延续"等）
 - 单元测试脚本：临时 `/tmp/probe_mood_similar_avoid.mjs`（已删，跑通 75/75 后清理）
+
+## Session: 2026-06-03 (Phase 15)
+
+### Resources
+- `src/components/player-shell.tsx`（增量：旧 .queueOverlay chatLog 内联块整段删；新 .queueListOverlay 渲染块挪到 queueHeader 下方行 2397；assistant 气泡内挂 message.meta?.pendingCandidates 行 2493 渲染 top3 候选卡）
+- `src/app/page.module.css`（增量：行 1408-1500 新加 .queueListOverlay / .queueListRow / .queueListRowIndex / .queueListRowTitle / .queueListRowArtist / .queueListRowActive + .pageLight 亮色覆盖；旧 .queueOverlay 块保留定义但 player-shell.tsx 0 引用）

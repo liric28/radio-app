@@ -1,5 +1,7 @@
 {
   "recentTrackIds": [
+    "七里香 - 周杰伦",
+    "七里香 - 周杰伦",
     "We Don't Talk Anymore - Charlie Puth、Selena Gomez",
     "Baby - Justin Bieber、Ludacris",
     "告白气球 - 周杰伦",
@@ -9,22 +11,20 @@
     "下一个天亮 - 郭静",
     "Emotions - Alex Skrindo、Verdial",
     "Rolling in the Deep (Explicit) - Adele",
-    "年轮 - 张碧晨",
-    "STAY (Explicit) - The Kid LAROI、Justin Bieber",
-    "Beauty And A Beat - Justin Bieber、Nicki Minaj"
+    "年轮 - 张碧晨"
   ],
   "recentProgramTitles": [
+    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "深夜降速在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "深夜降速在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律"
+    "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律"
   ],
   "feedbackBias": {
     "calmer": 11,
     "familiar": 8,
     "fresh": 20
   },
-  "lastAction": "calmer"
+  "lastAction": "online-init"
 }
