@@ -2513,7 +2513,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           className={`${styles.claudioLiveInline} ${showClaudioLivePanel ? styles.claudioLiveInlineOpen : ""}`}
           aria-hidden={!showClaudioLivePanel}
         >
-          {showClaudioLivePanel ? <ClaudioLiveShell /> : null}
+          {showClaudioLivePanel ? <ClaudioLiveShell theme={theme} /> : null}
         </section>
 
         <section className={styles.djPanel}>

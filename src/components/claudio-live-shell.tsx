@@ -40,6 +40,10 @@ const claudioPixelFont = Doto({
 
 type Theme = "dark" | "light";
 
+type ClaudioLiveShellProps = {
+  theme?: Theme;
+};
+
 type SnapshotEvent = {
   type: "snapshot";
   programId: string | null;
@@ -82,7 +86,7 @@ function transcriptTokens(text: string) {
     .map((match) => ({ text: match[0], word: !match[1] }));
 }
 
-export function ClaudioLiveShell() {
+export function ClaudioLiveShell({ theme: forcedTheme }: ClaudioLiveShellProps = {}) {
   const SEGUE_BUFFER_SECONDS = 1.8;
   const MIN_SEGUE_LEAD_SECONDS = 4;
   const MAX_SEGUE_LEAD_SECONDS = 18;
@@ -109,8 +113,12 @@ export function ClaudioLiveShell() {
   const [activeWordCount, setActiveWordCount] = useState(0);
   const [starting, setStarting] = useState(false);
   const [theme, setTheme] = useState<Theme>(
-    (typeof window !== "undefined" ? localStorage.getItem("radio.theme") as Theme : null) ?? "dark"
+    forcedTheme ?? ((typeof window !== "undefined" ? localStorage.getItem("radio.theme") as Theme : null) ?? "dark")
   );
+
+  useEffect(() => {
+    if (forcedTheme) setTheme(forcedTheme);
+  }, [forcedTheme]);
 
   // 监听主页 theme 变化（跨页面同步）
   useEffect(() => {
