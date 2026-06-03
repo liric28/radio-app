@@ -705,11 +705,45 @@
   letter-spacing: 0.12em;
   color: #f6f2ff;
   text-shadow: 0 0 18px rgba(246, 242, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .panelLight .pixelClock {
   color: #000000;
   text-shadow: none;
+}
+
+@keyframes clock-colon-blink {
+  0%,
+  44%,
+  100% {
+    opacity: 0;
+  }
+
+  45%,
+  99% {
+    opacity: 0.52;
+  }
+}
+
+.clockColon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0.5em;
+  line-height: 1;
+  text-align: center;
+  font: inherit;
+  color: rgba(246, 242, 255, 0.48);
+  text-shadow: none;
+  animation: clock-colon-blink 1s steps(1, end) infinite;
+  transform: translateY(-10px);
+}
+
+.panelLight .clockColon {
+  color: rgba(0, 0, 0, 0.38);
 }
 
 .clockMeta {

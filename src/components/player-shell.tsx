@@ -1056,7 +1056,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     queueOverlayRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [showQueueList]);
   const now = new Date();
-  const currentClock = `${String(now.getHours()).padStart(2, "0")} ${String(
+  const currentClock = `${String(now.getHours()).padStart(2, "0")}:${String(
     now.getMinutes(),
   ).padStart(2, "0")}`;
   const dayLabel = now.toLocaleDateString("en-US", { weekday: "long" });
@@ -2469,7 +2469,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               {clockDisplayMode === "pixel"
                 ? (
                     <div className={`${styles.pixelClock} ${claudioPixelFont.className}`} aria-hidden="true" suppressHydrationWarning>
-                      {currentClock}
+                      <span>{currentClock.split(":")[0] ?? currentClock}</span>
+                      <span className={styles.clockColon}>{currentClock.includes(":") ? ":" : ""}</span>
+                      <span>{currentClock.split(":")[1] ?? ""}</span>
                     </div>
                   )
                 : (
