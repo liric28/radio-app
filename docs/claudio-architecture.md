@@ -780,3 +780,24 @@ sequenceDiagram
 - 前端镜像到服务端：`[debug-log] [chat] ...`
 
 前端通过 `/api/debug-log` 把关键发送/SSE 节点镜像到 dev server 输出，这样排查时只看 `/tmp/radio-app-dev.log` 就能对齐 request id。
+
+## 2026-06-03 HTTPS 页面音频代理收口
+
+这一轮又补了一层播放边界，但不是改推荐逻辑，而是修浏览器真正吃音频的入口：
+
+- `/api/song-playback` 继续只负责把 `MusicSearchHit/raw` 解成 fresh 远端直链
+- `player-shell.tsx` 不再把这些第三方 `http/https` 直链直接塞给 `<audio>`
+- 主播放器现在统一先包装成 `/api/remote-audio?url=...`，再交给 `<audio>`
+
+覆盖的入口有三条：
+
+- 当前在线曲解析成功后的 `resolvedProgramStreamUrl`
+- 当前曲恢复播放时写回的 `currentTrack.streamUrl`
+- 候选/搜索试听使用的 `searchPreview.url`
+
+这样做的原因不是“下载方便”，而是协议边界：
+
+- 本地 `http://localhost` 页面里播第三方 `http://...` 音频，往往能过
+- 但 `https://...ngrok-free.app` 这种 HTTPS 页面里，浏览器会把第三方 `http://...` 音频当 mixed content 直接拦掉
+
+所以 Claudio 现在对浏览器暴露的音频地址应该始终是同源的 `/api/remote-audio`，而不是第三方直链本身。

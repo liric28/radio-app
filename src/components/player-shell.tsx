@@ -98,7 +98,6 @@ type SearchPlaybackResponse = {
 };
 
 function toPlayableAudioUrl(url: string) {
-  if (!url) return url;
   try {
     const parsed = new URL(url);
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
@@ -1229,6 +1228,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       if (!response.ok || !payload.ok || !payload.url) {
         return false;
       }
+      const playbackUrl = toPlayableAudioUrl(payload.url);
 
       shouldResumePlaybackRef.current = true;
       setProgram((currentProgram) => {
@@ -1239,7 +1239,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           ...currentProgram,
           currentTrack: {
             ...currentProgram.currentTrack,
-            streamUrl: toPlayableAudioUrl(payload.url),
+            streamUrl: playbackUrl,
           },
         };
       });

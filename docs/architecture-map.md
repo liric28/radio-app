@@ -117,6 +117,7 @@ sendChatMessage()
 - assistant 候选帧会把 `meta.pendingCandidates + meta.pendingSeed` 写回最近一条 assistant 消息
 - 候选卡点击直接复用完整 `MusicSearchHit/raw`，不再二次搜索
 - 但播放时仍重新 POST `/api/song-playback` 解析一条新的直链，避免短时 URL 过期
+- 解析出的远端音频 URL 不直接喂给 `<audio>`，而是统一包装成 `/api/remote-audio?url=...`，规避 HTTPS 页面 mixed content
 - 浏览器关键节点会通过 `/api/debug-log` 镜像到服务端输出，方便统一看 `/tmp/radio-app-dev.log`
 
 ### 聊天会话持久化 / 重置链路

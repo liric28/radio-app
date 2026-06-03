@@ -156,6 +156,14 @@ Phase 5
 - [x] 前后端统一 requestId 调试日志：`[chat] / [agent] / [chat-agent]`
 - **Status:** completed
 
+### Phase 17: HTTPS 音频代理收口（2026-06-03 增量）
+- [x] `player-shell.tsx` 新增 `toPlayableAudioUrl()`，统一把远端音频地址包装成 `/api/remote-audio?url=...`
+- [x] 在线当前曲解析成功后的 `resolvedProgramStreamUrl` 改为写代理地址
+- [x] 当前曲恢复播放时写回的 `currentTrack.streamUrl` 改为写代理地址
+- [x] 候选/搜索试听 `searchPreview.url` 改为写代理地址
+- [x] `npm run build` 通过；仅保留既有 Turbopack NFT warning
+- **Status:** completed
+
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|
@@ -185,6 +193,7 @@ Phase 5
 | `换` 必须绑定 `pendingSeed`，不能绑定上一轮第一首歌手 | “来点慢摇”这类 seed 请求的语义是换同类候选，不是换某个歌手的其他歌 |
 | `resolvePlayRequest()` 必须早于 online freeform LLM 路由 | 候选上下文指令（`换/1/2/3/这首`）若先掉进 LLM，会卡住且失去确定性 |
 | 浏览器调试日志镜像到 `/api/debug-log` | 排查 SSE、历史闭包、候选 meta 丢失时，只看 `/tmp/radio-app-dev.log` 就能贯通 requestId |
+| HTTPS 页面里的 `<audio>` 不直接加载第三方远端 URL，而统一走 `/api/remote-audio` | 解决 ngrok/生产页 mixed content 和第三方 header 差异，让浏览器只消费同源地址 |
 
 ## Errors Encountered
 | Error | Resolution |

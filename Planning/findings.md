@@ -355,3 +355,32 @@
 - `src/components/player-shell.tsx`
 - `src/app/api/agent/route.ts`
 - `src/app/api/debug-log/route.ts`
+
+## Session 2026-06-03 (Phase 17): HTTPS 音频代理收口
+
+### 增量要求
+- 无论是候选卡试听，还是当前在线曲播放，只要页面本身跑在 `https`（例如 ngrok），都不能再把第三方 `http://...` 音频直链直接塞给 `<audio>`
+- 播放链修复应只收口到前端 audio source 入口，不重写现有 `/api/song-playback` 解链职责
+
+### Research Findings
+- 这次 prod/ngrok 场景下“候选歌都放不了”并不依赖“是不是手机”，关键差异是页面协议：`http://localhost` 页面里播 `http://...` 音频通常能过；`https://...ngrok-free.app` 页面里播同样的 `http://...` 音频，会被浏览器按 mixed content 直接拦掉。
+- 候选播放链和当前节目在线流链虽然都已经统一经由 `/api/song-playback` 拿 fresh URL，但拿到的第三方直链里仍然经常是 `http://...`。这解释了为什么 dev 可播、同一台电脑打开 ngrok 链接却不可播。
+- 工程里早已有 `/api/remote-audio` 代理路由，支持服务端拉取远端音频并回传给浏览器；真正缺的是把 `player-shell.tsx` 里的 `<audio>` 入口统一切过去。
+
+### Technical Decisions
+| Decision | Rationale |
+|----------|-----------|
+| `<audio>` 永远只消费同源 `/api/remote-audio?url=...` 地址，不直接消费第三方 `http/https` 音频 URL | 彻底规避 HTTPS 页面 mixed content 问题，同时把第三方 header/range 差异收口到服务端 |
+| `/api/song-playback` 继续只负责“解 fresh 直链”，不改成直接返回代理 URL | 保持职责边界：解链和代理是两层能力，避免 route 之间互相缠绕 |
+| 代理包装只改 `player-shell.tsx` 的三个入口：`resolvedProgramStreamUrl`、`currentTrack.streamUrl`、`searchPreview.url` | 这是当前主播放器 `<audio>` 的全部远端来源，最小改动就能覆盖候选试听和在线当前曲 |
+
+### Issues Encountered
+| Issue | Resolution |
+|-------|------------|
+| ngrok / HTTPS 场景下候选歌和在线当前曲都能“解出地址”但实际不播 | 不是解链失败，而是浏览器拦截 mixed content；前端统一切 `/api/remote-audio` 代理 |
+| 第一次补代理后，TypeScript 在 `setResolvedProgramStreamUrl(...)` 和恢复播放写回 `streamUrl` 时报 `string \| undefined` | 调整 helper 返回类型和局部窄化，重新跑 `npm run build` 通过 |
+
+### Resources
+- `src/components/player-shell.tsx`
+- `src/app/api/remote-audio/route.ts`
+- `src/app/api/song-playback/route.ts`

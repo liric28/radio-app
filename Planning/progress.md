@@ -286,3 +286,28 @@
 | `换` 有时直接落到普通 chat/LLM 链，而不是 refresh 候选 | `resolvePlayRequest()` 原来在 online freeform LLM 路由之后；已前移到其之前 |
 | `换` 请求里后端收不到上一轮候选上下文 | 前端发送时原来读取的是滞后的 `chatHistory` state 闭包；改成 `chatHistoryRef.current`，并在 assistant meta / flush / abort / error 分支同步更新 ref |
 | 刷新 seed 一度取上一轮第一首歌手，导致“来点慢摇”后 `换` 总回某个歌手 | assistant candidate 消息新增 `pendingSeed`，refresh 一律按 seed 重搜 |
+
+## Session: 2026-06-03 (Phase 17: HTTPS 音频代理收口)
+
+### Current Status
+- **Phase:** 17 - HTTPS / ngrok 播放链 mixed-content 修复
+- **Started:** 2026-06-03
+
+### Actions Taken
+- `src/components/player-shell.tsx`：新增 `toPlayableAudioUrl()`，把所有远端 `http/https` 音频地址统一包装成 `/api/remote-audio?url=...`，不再把第三方直链直接塞给 `<audio>`。
+- 当前节目在线流解析成功后，`resolvedProgramStreamUrl` 改为保存代理地址，而不是原始远端地址。
+- `recoverCurrentTrackPlayback()` 在重新恢复在线当前曲时，也把 fresh 直链先转成代理地址再写回 `currentTrack.streamUrl`。
+- 候选/搜索试听链路 `playSearchSong()` 同样改成先 POST `/api/song-playback` 解 fresh URL，再包装成 `/api/remote-audio` 代理地址写入 `searchPreview.url`。
+- 构建校验时顺手修掉了两处 TypeScript 窄化错误，保证代理包装后的在线播放链能通过 `next build`。
+
+### Test Results
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| `npm run build` | 代理包装后构建通过 | Passed；仅保留既有 Turbopack NFT warning | Passed |
+| HTTPS 页面候选/在线播放链 | `<audio>` 不再直接加载第三方 `http://...` 直链 | 代码路径已统一改为 `/api/remote-audio?url=...` | Pending 手动验证 |
+
+### Errors
+| Error | Resolution |
+|-------|------------|
+| ngrok / HTTPS 页面里候选歌与在线当前曲能解析出远端直链，但 `<audio>` 直接加载第三方 `http://...` 时会被 mixed content 拦掉；本地 `http://localhost` 因协议相同不暴露此问题 | 收口为前端永远只把 `/api/remote-audio?url=...` 塞给 `<audio>`，浏览器只看同源 HTTPS 地址 |
+| 第一次补代理时 `toPlayableAudioUrl()` 返回类型过宽，导致 `setResolvedProgramStreamUrl` / `streamUrl` 写回编译报 `string \| undefined` | 把 helper 收成稳定返回 `string`，并在恢复播放分支先局部窄化成 `playbackUrl` 再写回 |
