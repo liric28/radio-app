@@ -637,6 +637,30 @@ function createSearchHitKey(hit: MusicSearchHit) {
   return `${hit.source}-${String(raw.songId ?? hit.title)}`;
 }
 
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[()（）\[\]【】\-_.·,，/\\'"]/g, "");
+}
+
+function scoreCandidateHit(hit: MusicSearchHit, artist: string, title: string) {
+  const normalizedArtist = normalizeSearchText(artist);
+  const normalizedTitle = normalizeSearchText(title);
+  const hitArtist = normalizeSearchText(hit.artist);
+  const hitTitle = normalizeSearchText(hit.title);
+
+  let score = 0;
+  if (hitTitle === normalizedTitle) score += 20;
+  else if (hitTitle.includes(normalizedTitle) || normalizedTitle.includes(hitTitle)) score += 8;
+
+  if (hitArtist === normalizedArtist) score += 20;
+  else if (hitArtist.includes(normalizedArtist) || normalizedArtist.includes(hitArtist)) score += 8;
+
+  if (/live|伴奏|纯音乐|dj|remix/i.test(`${hit.title} ${hit.albumName || ""}`)) score -= 4;
+  return score;
+}
+
 function DotMatrixText({
   text,
   className,
@@ -1738,6 +1762,30 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     setActiveLabel("PREVIEW");
   }
 
+  async function playPendingCandidate(candidate: { artist: string; title: string }) {
+    setError(null);
+
+    const queries = [`${candidate.artist} ${candidate.title}`, candidate.title];
+    let bestHit: MusicSearchHit | null = null;
+
+    for (const query of queries) {
+      const hits = await searchSongsFromSource(query, "qq", 1);
+      const ranked = hits
+        .map((hit) => ({ hit, score: scoreCandidateHit(hit, candidate.artist, candidate.title) }))
+        .sort((a, b) => b.score - a.score);
+      if (ranked[0] && ranked[0].score > 0) {
+        bestHit = ranked[0].hit;
+        break;
+      }
+    }
+
+    if (!bestHit) {
+      throw new Error(`QQ 没搜到 ${candidate.artist}《${candidate.title}》`);
+    }
+
+    await playSearchSong(bestHit);
+  }
+
   async function downloadSong(hit: MusicSearchHit) {
     /**
      * 下载成功后走“正式入库”链路：
@@ -1814,14 +1862,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    */
   const sendLockRef = useRef<boolean>(false);
 
-  async function sendChatMessage() {
+  async function sendChatMessage(overrideMessage?: string) {
     if (sendLockRef.current) return;
     sendLockRef.current = true;
     setTimeout(() => {
       sendLockRef.current = false;
     }, 0);
 
-    const message = chatInput.trim();
+    const message = (overrideMessage ?? chatInput).trim();
     if (!message) return;
 
     // 如果有正在进行的请求 → 中止它，让新消息立刻发出去
@@ -1841,7 +1889,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     const placeholderId = `assistant-${Date.now()}`;
     const placeholder: ChatMessage = { id: placeholderId, role: "assistant", content: "" };
 
-    setChatInput("");
+    if (!overrideMessage) {
+      setChatInput("");
+    }
     setIsChatSending(true);
     setError(null);
     setActiveLabel("DJ LIVE");
@@ -2512,8 +2562,9 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                               role="listitem"
                               className={`${styles.queueCard} ${styles.queueCardActive}`}
                               onClick={() => {
-                                setChatInput(cand.title);
-                                void sendChatMessage();
+                                void playPendingCandidate(cand).catch((error) => {
+                                  setError(error instanceof Error ? error.message : "QQ 播放失败");
+                                });
                               }}
                             >
                               <span className={styles.queueCardIcon} aria-hidden>
