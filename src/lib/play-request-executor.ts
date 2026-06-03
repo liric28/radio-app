@@ -20,6 +20,7 @@ import type { ChatIntent, PendingCandidateHit, RadioProgram, Song } from "@/lib/
 
 const CANDIDATE_LIST_SIZE = 3;
 const SOURCE_ORDER: MusicSearchSource[] = ["qq", "kugou", "netease"];
+const PLAYABLE_CANDIDATE_SCAN_LIMIT = 12;
 
 export type PlayCandidate = PendingCandidateHit;
 
@@ -194,14 +195,14 @@ function toPlayCandidate(hit: MusicSearchHit, playbackUrl?: string): PlayCandida
 }
 
 async function pickPlayableCandidates(hits: MusicSearchHit[], n: number): Promise<PlayCandidate[]> {
-  const out: PlayCandidate[] = [];
-  for (const hit of hits) {
-    const playbackUrl = await resolveVerifiedPlaybackUrlForHit(hit).catch(() => null);
-    if (!playbackUrl) continue;
-    out.push(toPlayCandidate(hit, playbackUrl));
-    if (out.length >= n) break;
-  }
-  return out;
+  const scannedHits = hits.slice(0, Math.max(n, PLAYABLE_CANDIDATE_SCAN_LIMIT));
+  const resolved = await Promise.all(
+    scannedHits.map(async (hit) => {
+      const playbackUrl = await resolveVerifiedPlaybackUrlForHit(hit).catch(() => null);
+      return playbackUrl ? toPlayCandidate(hit, playbackUrl) : null;
+    }),
+  );
+  return resolved.filter((item): item is PlayCandidate => Boolean(item)).slice(0, n);
 }
 
 /**

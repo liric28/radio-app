@@ -376,6 +376,34 @@ type SearchPanelInlineProps = {
   downloadFn: (hit: MusicSearchHit) => Promise<void>;
 };
 
+function mirrorClientLog(
+  level: "info" | "error" | "warn",
+  message: string,
+  payload: Record<string, unknown>,
+) {
+  const body = JSON.stringify({
+    scope: "chat",
+    level,
+    message,
+    payload,
+  });
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([body], { type: "application/json" });
+      navigator.sendBeacon("/api/debug-log", blob);
+      return;
+    }
+  } catch {
+    // ignore beacon failures
+  }
+  void fetch("/api/debug-log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).catch(() => null);
+}
+
 const SEARCH_PAGE_SIZE = 20;
 
 function formatClockTime(seconds: number) {
@@ -745,6 +773,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    *   状态变化会触发额外 render；这里只是 effect 之间的 sentinel，没必要驱动 UI。
    */
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const chatHistoryRef = useRef<ChatMessage[]>([]);
 
   /**
    * 挂载后读 localStorage 恢复历史。
@@ -752,6 +781,10 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * 写回 localStorage——否则 mount 时写入 effect 立刻跑会把 intro 写进去覆盖累积的旧历史。
    */
   const chatHydratedRef = useRef<boolean>(false);
+  useEffect(() => {
+    chatHistoryRef.current = chatHistory;
+  }, [chatHistory]);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       chatHydratedRef.current = true;
@@ -762,6 +795,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       if (stored) {
         const parsed = JSON.parse(stored) as ChatMessage[];
         if (Array.isArray(parsed) && parsed.length > 0) {
+          chatHistoryRef.current = parsed;
           setChatHistory(parsed);
         }
       }
@@ -1848,6 +1882,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
 
     const message = (overrideMessage ?? chatInput).trim();
     if (!message) return;
+    const requestId = `chat-${Date.now()}`;
 
     // 如果有正在进行的请求 → 中止它，让新消息立刻发出去
     // 旧请求的 try/catch 会捕获 AbortError，不影响新流程
@@ -1860,7 +1895,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       role: "user",
       content: message,
     };
-    const nextHistory = [...chatHistory, userMessage].slice(-12);
+    const baseHistory = chatHistoryRef.current;
+    const nextHistory = [...baseHistory, userMessage].slice(-12);
 
     // 空占位符 + 流式更新
     const placeholderId = `assistant-${Date.now()}`;
@@ -1873,6 +1909,32 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     setError(null);
     setActiveLabel("DJ LIVE");
     setChatHistory([...nextHistory, placeholder]);
+    chatHistoryRef.current = [...nextHistory, placeholder];
+    const lastAssistantWithMeta = [...baseHistory].reverse().find(
+      (item) => item.role === "assistant",
+    );
+    console.info("[chat] request.start", {
+      requestId,
+      message,
+      historyLength: nextHistory.length,
+      hasPendingCandidates: Boolean(lastAssistantWithMeta?.meta?.pendingCandidates?.length),
+      pendingSeed: lastAssistantWithMeta?.meta?.pendingSeed ?? null,
+      placeholderId,
+      currentTrackId: program.currentTrack.id,
+      currentTrackTitle: program.currentTrack.title,
+      currentTrackArtist: program.currentTrack.artist,
+    });
+    mirrorClientLog("info", "request.start", {
+      requestId,
+      message,
+      historyLength: nextHistory.length,
+      hasPendingCandidates: Boolean(lastAssistantWithMeta?.meta?.pendingCandidates?.length),
+      pendingSeed: lastAssistantWithMeta?.meta?.pendingSeed ?? null,
+      placeholderId,
+      currentTrackId: program.currentTrack.id,
+      currentTrackTitle: program.currentTrack.title,
+      currentTrackArtist: program.currentTrack.artist,
+    });
 
     // 流式 token 批量提交：N 毫秒内的所有 token 合并成一次 setState
     // 避免每个字符触发整个 PlayerShell 重渲染
@@ -1885,11 +1947,20 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     let pendingContent = "";
     let flushTimer: ReturnType<typeof setTimeout> | null = null;
     const thinkStripper = createThinkTagStripper();
+    const commitChatHistory = (
+      updater: (prev: ChatMessage[]) => ChatMessage[],
+    ) => {
+      setChatHistory((prev) => {
+        const next = updater(prev);
+        chatHistoryRef.current = next;
+        return next;
+      });
+    };
     const flushPending = () => {
       if (!pendingContent) return;
       const buf = pendingContent;
       pendingContent = "";
-      setChatHistory((prev) =>
+      commitChatHistory((prev) =>
         prev.map((m) =>
           m.id === placeholderId ? { ...m, content: m.content + buf } : m,
         ),
@@ -1906,7 +1977,10 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     try {
       const response = await fetch("/api/agent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-agent-request-id": requestId,
+        },
         body: JSON.stringify({
           message,
           program,
@@ -1914,9 +1988,29 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         }),
         signal: controller.signal,
       });
+      console.info("[chat] request.response", {
+        requestId,
+        status: response.status,
+        ok: response.ok,
+      });
+      mirrorClientLog("info", "request.response", {
+        requestId,
+        status: response.status,
+        ok: response.ok,
+      });
 
       if (!response.ok) {
         const err = await response.json();
+        console.error("[chat] request.bad-response", {
+          requestId,
+          status: response.status,
+          error: err?.message ?? "Claudio 暂时没有接住这句话",
+        });
+        mirrorClientLog("error", "request.bad-response", {
+          requestId,
+          status: response.status,
+          error: err?.message ?? "Claudio 暂时没有接住这句话",
+        });
         throw new Error(err.message || "Claudio 暂时没有接住这句话");
       }
 
@@ -1945,6 +2039,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           const data = line.slice(6).trim();
             if (!data) continue;
             if (data === "[DONE]") {
+              console.info("[chat] sse.done", { requestId });
+              mirrorClientLog("info", "sse.done", { requestId });
               done = true;
               break;
             }
@@ -1952,6 +2048,18 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           try {
             const chunk = JSON.parse(data);
             if (chunk.type === "state") {
+              console.info("[chat] sse.state", {
+                requestId,
+                nextTrackId: chunk.program?.currentTrack?.id ?? null,
+                hasSchedule: Boolean(chunk.schedule),
+                favoriteCount: Array.isArray(chunk.favorites) ? chunk.favorites.length : null,
+              });
+              mirrorClientLog("info", "sse.state", {
+                requestId,
+                nextTrackId: chunk.program?.currentTrack?.id ?? null,
+                hasSchedule: Boolean(chunk.schedule),
+                favoriteCount: Array.isArray(chunk.favorites) ? chunk.favorites.length : null,
+              });
               if (chunk.program) {
                 setHistory((currentHistory) => [program, ...currentHistory].slice(0, 24));
                 // 聊天触发的歌曲/时段切换：自动续播新轨
@@ -1970,7 +2078,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             // 一次性把 content 和 meta 都写进 placeholder。
             // 原 LLM 流式 token 透传路径不带 type:"assistant"，继续走下面 choices 解析。
             if (chunk.type === "assistant" && chunk.meta) {
-              setChatHistory((prev) =>
+              console.info("[chat] sse.assistant-meta", {
+                requestId,
+                candidateCount: chunk.meta?.pendingCandidates?.length ?? 0,
+              });
+              mirrorClientLog("info", "sse.assistant-meta", {
+                requestId,
+                candidateCount: chunk.meta?.pendingCandidates?.length ?? 0,
+              });
+              commitChatHistory((prev) =>
                 prev.map((m) =>
                   m.id === placeholderId
                     ? {
@@ -1978,6 +2094,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                         meta: {
                           ...(m.meta ?? {}),
                           pendingCandidates: chunk.meta?.pendingCandidates ?? m.meta?.pendingCandidates,
+                          pendingSeed: chunk.meta?.pendingSeed ?? m.meta?.pendingSeed,
                         },
                       }
                     : m,
@@ -1987,6 +2104,11 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             // 新增：聊天触发的控件指令（暂停 / 继续 / 音量 / 重播）。
             // 走 playerActionsRef 统一动作层，跟按钮 onClick 完全同一份实现。
             if (chunk.type === "control" && chunk.action) {
+              console.info("[chat] sse.control", {
+                requestId,
+                action: chunk.action,
+                value: chunk.value ?? null,
+              });
               const actions = playerActionsRef.current;
               switch (chunk.action) {
                 case "pause":
@@ -2025,7 +2147,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                 scheduleFlush();
               }
             }
-          } catch {
+          } catch (parseError) {
+            console.error("[chat] sse.parse-error", {
+              requestId,
+              error: parseError instanceof Error ? parseError.message : String(parseError),
+              raw: data,
+            });
+            mirrorClientLog("error", "sse.parse-error", {
+              requestId,
+              error: parseError instanceof Error ? parseError.message : String(parseError),
+              raw: data,
+            });
             // ignore parse errors
           }
         }
@@ -2043,9 +2175,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       }
       pendingContent += thinkStripper.flush();
       flushPending();
+      console.info("[chat] request.stream-finished", {
+        requestId,
+        receivedContent,
+      });
+      mirrorClientLog("info", "request.stream-finished", {
+        requestId,
+        receivedContent,
+      });
 
       if (!receivedContent) {
-        setChatHistory((prev) =>
+        commitChatHistory((prev) =>
           prev.map((m) =>
             m.id === placeholderId ? { ...m, content: "嗯，我切过去了。" } : m,
           ),
@@ -2054,13 +2194,25 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     } catch (chatError) {
       // 用户主动 abort（点了第二次发送）不算错误，悄悄丢掉占位符就行
       if (chatError instanceof DOMException && chatError.name === "AbortError") {
+        console.info("[chat] request.aborted", { requestId });
+        mirrorClientLog("warn", "request.aborted", { requestId });
         if (flushTimer) clearTimeout(flushTimer);
-        setChatHistory((prev) => prev.filter((m) => m.id !== placeholderId));
+        commitChatHistory((prev) => prev.filter((m) => m.id !== placeholderId));
         return;
       }
+      console.error("[chat] request.error", {
+        requestId,
+        error: chatError instanceof Error ? chatError.message : String(chatError),
+      });
+      mirrorClientLog("error", "request.error", {
+        requestId,
+        error: chatError instanceof Error ? chatError.message : String(chatError),
+      });
       setError(chatError instanceof Error ? chatError.message : "Claudio 掉线了");
-      setChatHistory((prev) => prev.filter((m) => m.id !== placeholderId));
+      commitChatHistory((prev) => prev.filter((m) => m.id !== placeholderId));
     } finally {
+      console.info("[chat] request.finally", { requestId });
+      mirrorClientLog("info", "request.finally", { requestId });
       // 只有当前 controller 就是 ref 里的那个才清掉（防止覆盖到后来的新请求）
       if (chatAbortRef.current === controller) {
         chatAbortRef.current = null;
@@ -2089,6 +2241,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    */
   function clearChatHistory() {
     chatAbortRef.current?.abort();
+    chatHistoryRef.current = [];
     setChatHistory([]);
     setActiveLabel("CLEARED");
   }

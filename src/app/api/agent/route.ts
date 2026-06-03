@@ -30,7 +30,10 @@ type AgentRequest = {
   history?: ChatMessage[];
 };
 
+const LLM_STREAM_TIMEOUT_MS = 45_000;
+
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-agent-request-id") ?? `agent-${Date.now()}`;
   const { message, program, history = [] } = (await request.json()) as AgentRequest;
 
   if (!message?.trim()) {
@@ -42,16 +45,37 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    console.info("[agent] request.start", {
+      requestId,
+      message,
+      historyLength: history.length,
+      currentTrackId: program.currentTrack.id,
+      currentTrackTitle: program.currentTrack.title,
+      currentTrackArtist: program.currentTrack.artist,
+    });
     const agentResult = await runChatAgent({
       message,
       program,
       history,
+    });
+    console.info("[agent] request.resolved", {
+      requestId,
+      mode: agentResult.state.mode,
+      tool: agentResult.state.tool,
+      intent: agentResult.state.intent.action,
+      hasDirectReply: Boolean(agentResult.directReply),
+      candidateCount: agentResult.assistantMeta?.pendingCandidates?.length ?? 0,
+      nextTrackId: agentResult.program.currentTrack.id,
     });
 
     if (agentResult.directReply) {
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {
+          console.info("[agent] direct.sse.start", {
+            requestId,
+            candidateCount: agentResult.assistantMeta?.pendingCandidates?.length ?? 0,
+          });
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
@@ -93,6 +117,7 @@ export async function POST(request: NextRequest) {
             ),
           );
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          console.info("[agent] direct.sse.done", { requestId });
           controller.close();
         },
       });
@@ -107,14 +132,56 @@ export async function POST(request: NextRequest) {
     }
 
     const llmRequest = buildChatLlmRequest(agentResult.llmMessages);
-    const llmRes = await fetch(llmRequest.url, {
-      method: "POST",
-      headers: llmRequest.headers,
-      body: JSON.stringify(llmRequest.body),
-    });
+    const llmController = new AbortController();
+    const llmTimeoutId = setTimeout(() => llmController.abort(), LLM_STREAM_TIMEOUT_MS);
+    let llmRes: Response;
+    try {
+      console.info("[agent] llm.fetch.start", {
+        requestId,
+        provider: llmRequest.provider,
+        timeoutMs: LLM_STREAM_TIMEOUT_MS,
+      });
+      llmRes = await fetch(llmRequest.url, {
+        method: "POST",
+        headers: llmRequest.headers,
+        body: JSON.stringify(llmRequest.body),
+        signal: llmController.signal,
+      });
+      console.info("[agent] llm.fetch.ok", {
+        requestId,
+        provider: llmRequest.provider,
+        status: llmRes.status,
+      });
+    } catch (error) {
+      clearTimeout(llmTimeoutId);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        console.error("[agent] llm.fetch.timeout", {
+          requestId,
+          provider: llmRequest.provider,
+          timeoutMs: LLM_STREAM_TIMEOUT_MS,
+        });
+        return NextResponse.json(
+          { ok: false, message: `${llmRequest.provider} 响应超时` },
+          { status: 504 },
+        );
+      }
+      console.error("[agent] llm.fetch.error", {
+        requestId,
+        provider: llmRequest.provider,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
 
     if (!llmRes.ok) {
+      clearTimeout(llmTimeoutId);
       const err = await llmRes.text();
+      console.error("[agent] llm.fetch.bad-status", {
+        requestId,
+        provider: llmRequest.provider,
+        status: llmRes.status,
+        error: err,
+      });
       return NextResponse.json(
         { ok: false, message: `${llmRequest.provider} error: ${err}` },
         { status: 502 },
@@ -131,6 +198,7 @@ export async function POST(request: NextRequest) {
 
     const stream = new ReadableStream({
       async start(controller) {
+        console.info("[agent] llm.sse.start", { requestId, provider: llmRequest.provider });
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({
@@ -168,9 +236,16 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(tail.endsWith("\n\n") ? tail : `${tail}\n\n`));
           }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          console.info("[agent] llm.sse.done", { requestId, provider: llmRequest.provider });
         } catch (error) {
+          console.error("[agent] llm.sse.error", {
+            requestId,
+            provider: llmRequest.provider,
+            error: error instanceof Error ? error.message : String(error),
+          });
           controller.error(error);
         } finally {
+          clearTimeout(llmTimeoutId);
           sourceReader.releaseLock();
           controller.close();
         }
@@ -185,6 +260,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
+    console.error("[agent] request.error", {
+      requestId,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json(
       { ok: false, message: err instanceof Error ? err.message : "未知错误" },
       { status: 500 },

@@ -146,6 +146,7 @@ export type ChatIntentAction =
  */
 export type ChatMessageMeta = {
   pendingCandidates?: PendingCandidateHit[];
+  pendingSeed?: string;
 };
 
 export type ChatIntent = {

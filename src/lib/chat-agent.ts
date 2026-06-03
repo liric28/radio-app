@@ -320,6 +320,43 @@ export async function runChatAgent({
     };
   }
 
+  // 点播旁路要早于 online freeform LLM 路由。
+  // 否则像“换”这种依赖候选上下文的短指令，会先掉进 online 模式的
+  // inferOnlineFreeformIntent / requestChatCompletion，卡住后连 play-request
+  // 都到不了。这里前置后，候选刷新/选歌会直接短路，不再被 LLM 路由拦住。
+  let nextFavorites = await readFavorites();
+  const earlyPlayResolved = await resolvePlayRequest(message, program, history, nextFavorites);
+  if (earlyPlayResolved.handled) {
+    const [memory, schedule] = await Promise.all([
+      readMemory(),
+      isOnlineRadioMode()
+        ? ensureOnlineRadioProgram().then((result) => result.schedule)
+        : ensureDailySchedule(),
+    ]);
+    const playState: ChatAgentState = {
+      mode: "music-control",
+      tool: "schedule",
+      intent: { action: "none" },
+      summary: earlyPlayResolved.forcedDirectReply,
+    };
+    return {
+      state: playState,
+      program: earlyPlayResolved.nextProgram,
+      schedule,
+      favorites: earlyPlayResolved.nextFavorites,
+      llmMessages: buildChatModelMessages({
+        message,
+        program: earlyPlayResolved.nextProgram,
+        memory,
+        intent: playState.intent,
+        history,
+        state: playState,
+      }),
+      directReply: earlyPlayResolved.forcedDirectReply,
+      assistantMeta: earlyPlayResolved.assistantMeta,
+    };
+  }
+
   if (initialState.mode === "chat" && isOnlineRadioMode()) {
     // Phase 9: 把 preference insights 喂给 LLM 路由器，让它能基于用户口味
     // 画像 + 当前 sceneProfile 输出精准的 messageHint。
@@ -367,7 +404,6 @@ export async function runChatAgent({
   }
   let nextProgram = program;
   let nextState = initialState;
-  let nextFavorites = await readFavorites();
 
 /**
  * Similar 旁路（chat mode 才判，"再来点这种/类似的/和这首一样" 跟意图正交）
@@ -830,13 +866,13 @@ function detectExplicitPlayIntent(
 
   // 0. "换一批" 关键词 + 上一条是 candidateList → 重搜同一歌手的 top N（去重之前展示过的）。
   // 无候选上下文时 fall through，原 9 个 action 的 "换一批/重新推荐" regenerate 接管。
-  const pending = history ? lastPendingCandidates(history) : null;
+  const pending = history ? lastPendingContext(history) : null;
   if (pending && isRefreshIntent(normalized)) {
-    const artist = pending[0]?.artist;
-    if (artist) {
+    const seed = pending.seed?.trim();
+    if (seed) {
       return {
         action: "play-artist",
-        artist,
+        artist: seed,
         refresh: true,
         mustPlayNow: true,
       };
@@ -845,7 +881,7 @@ function detectExplicitPlayIntent(
 
   // 1. 上一条是 assistant with pendingCandidates → 当前 user 是在选歌
   if (pending) {
-    const pick = matchPendingCandidate(normalized, pending);
+    const pick = matchPendingCandidate(normalized, pending.candidates);
     if (pick) {
       return {
         action: "play-song-by-artist",
@@ -909,14 +945,19 @@ function detectExplicitPlayIntent(
  * 倒着找 history 末尾最近 1 条 assistant 带 meta.pendingCandidates。
  * 超过 2 轮外的"上一条候选"不算——避免跳多句闲聊后又回头选歌时误匹配。
  */
-function lastPendingCandidates(
+function lastPendingContext(
   history: ChatMessage[],
-): PendingCandidateHit[] | null {
+): { candidates: PendingCandidateHit[]; seed: string | null } | null {
   for (let i = history.length - 1; i >= 0; i--) {
     const m = history[i];
     if (m.role !== "assistant") continue;
     const cands = m.meta?.pendingCandidates;
-    if (cands && cands.length > 0) return cands;
+    if (cands && cands.length > 0) {
+      return {
+        candidates: cands,
+        seed: m.meta?.pendingSeed?.trim() || null,
+      };
+    }
     // 遇到 assistant 没候选就停，再往前的候选视为过期
     return null;
   }
@@ -999,6 +1040,10 @@ type PlayRequestResolution =
       assistantMeta?: ChatMessageMeta;
     };
 
+function buildPendingSeed(message: string, intent: ChatIntent) {
+  return intent.artist?.trim() || intent.title?.trim() || message.trim();
+}
+
 async function resolvePlayRequest(
   message: string,
   program: RadioProgram,
@@ -1007,22 +1052,39 @@ async function resolvePlayRequest(
 ): Promise<PlayRequestResolution> {
   const intent = detectExplicitPlayIntent(message, history);
   if (!intent) return { handled: false };
+  console.info("[chat-agent] play-request.detected", {
+    message,
+    action: intent.action,
+    artist: intent.artist ?? null,
+    title: intent.title ?? null,
+    refresh: Boolean(intent.refresh),
+  });
 
   // refresh 模式：把上一轮 candidates 作为 excludeKeys 透传给 executor，
   // 避免重搜时返回用户已经看过的歌。
   let excludeKeys: Set<string> = new Set();
   let isRefresh = false;
+  let refreshSeed: string | null = null;
   if (intent.refresh && history) {
-    const prev = lastPendingCandidates(history);
+    const prev = lastPendingContext(history);
     if (prev) {
-      for (const c of prev) {
+      for (const c of prev.candidates) {
         excludeKeys.add(`${normalizeTitleKeyForExclude(c.artist)}::${normalizeTitleKeyForExclude(c.title)}`);
       }
       isRefresh = true;
+      refreshSeed = prev.seed;
     }
   }
 
   const result = await executePlayRequest(intent, program, excludeKeys);
+  console.info("[chat-agent] play-request.executed", {
+    action: intent.action,
+    kind: result.kind,
+    empty: result.kind === "candidate-list" ? result.empty : false,
+    candidateCount: result.kind === "candidate-list" ? result.candidateList.length : 0,
+    playedTitle: result.kind === "play-now" ? result.played.title : null,
+    playedArtist: result.kind === "play-now" ? result.played.artist : null,
+  });
 
   if (result.kind === "candidate-list") {
     if (result.empty) {
@@ -1045,16 +1107,20 @@ async function resolvePlayRequest(
     const numbered = result.candidateList
       .map((c, i) => `${i + 1}.《${c.title}》`)
       .join("");
-    const artist = intent.artist || result.candidateList[0]?.artist || "这位";
+    const pendingSeed = (isRefresh ? refreshSeed : null) || buildPendingSeed(message, intent);
+    const label = pendingSeed || intent.artist || result.candidateList[0]?.artist || "这位";
     const prefix = isRefresh
-      ? `${artist} 的其他歌，刷新一下：`
-      : `${artist} 的歌，你想听哪首？`;
+      ? `${label}，换一批：`
+      : `${label}，你想听哪首？`;
     return {
       handled: true,
       nextProgram: program,
       nextFavorites,
       forcedDirectReply: `${prefix}${numbered}`,
-      assistantMeta: { pendingCandidates: result.candidateList },
+      assistantMeta: {
+        pendingCandidates: result.candidateList,
+        pendingSeed,
+      },
     };
   }
 
