@@ -910,7 +910,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     () => [program.currentTrack, ...program.queue],
     [program.currentTrack, program.queue],
   );
-  const liveBadgeBars = [0.34, 0.62, 0.22, 0.85, 0.24, 0.58];
+
+  const liveBadgeBars = [0.34, 0.62, 0.38, 0.85, 0.42, 0.58];
 
   function sendPreferenceEvent(payload: Record<string, unknown>) {
     void fetch("/api/preference-event", {
