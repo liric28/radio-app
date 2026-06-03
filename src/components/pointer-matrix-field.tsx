@@ -33,9 +33,9 @@ type MatrixState = {
 // 矩阵圆点间距
 const GRID_GAP = 18;
 // 矩阵圆点半径
-const BASE_RADIUS = 1.6;
+const BASE_RADIUS = 1.1;
 const PUSH_RADIUS = 200;
-const MAX_PUSH = 9;
+const MAX_PUSH = 20;
 const MAX_SCALE = 1.1;
 
 function clamp01(value: number) {
@@ -132,7 +132,7 @@ export const PointerMatrixField = forwardRef<
     const baseColor =
       themeRef.current === "light"
         ? { r: 88, g: 80, b: 128, a: 0.3 }
-        : { r: 244, g: 243, b: 248, a: 0.36 };
+        : { r: 244, g: 243, b: 248, a: 0.38 };
     // 鼠标跟随悬停时的颜色和透明度
     const accentColor =
       themeRef.current === "light"

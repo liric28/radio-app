@@ -2,7 +2,7 @@
   "date": "2026-06-03",
   "seed": {
     "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "reason": "queue-advance"
+    "reason": "manual-pick"
   },
   "source": "qq",
   "program": {
@@ -10,57 +10,187 @@
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "先别急着认歌，这一轮我想先把气口放稳。前面偏克制，后面会慢慢亮一点。",
+    "hostIntro": "先别急着认歌，这一轮我想先把气口放稳。前面偏专注，后面会慢慢亮一点。",
     "currentTrack": {
-      "id": "online-b64f115fb65e",
-      "title": "单向箭头",
+      "id": "online-2c9dd25d6be1",
+      "title": "心做し (心理作用)",
       "artist": "双笙 (陈元汐)",
       "year": 2026,
       "mood": "克制",
-      "energy": 9,
-      "language": "中文",
+      "energy": 8,
+      "language": "日语",
       "tags": [
         "在线推荐",
         "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 单向箭头”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 心做し (心理作用)”这条在线推荐线索命中的。",
+      "sourcePath": "data/downloads/心做し (心理作用).mp3",
       "libraryRoot": "",
-      "streamUrl": "",
+      "streamUrl": "/api/audio?path=data%2Fdownloads%2F%E5%BF%83%E5%81%9A%E3%81%97%20(%E5%BF%83%E7%90%86%E4%BD%9C%E7%94%A8).mp3&libraryRoot=",
       "source": "qq",
       "recommendationMeta": {
-        "sourceLabel": "顺推",
-        "slotType": "fallback",
+        "sourceLabel": "本地",
+        "slotType": "local-match",
         "slotLabel": "延续"
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 270,
+        "duration": 268,
         "payable": false,
         "downloadable": true,
-        "albumName": "单向箭头",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg",
+        "albumName": "心做し",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001TxaCH02ZxJm.jpg",
         "raw": {
           "source": "qq",
-          "songId": 229120828,
-          "songmid": "001HFKxc0Hm4Dc",
-          "mediaMid": "001HFKxc0Hm4Dc",
-          "title": "单向箭头",
+          "songId": 202345063,
+          "songmid": "00256shB4BZSui",
+          "mediaMid": "00331tag3tAfms",
+          "title": "心做し (心理作用)",
           "artist": "双笙 (陈元汐)",
-          "albumName": "单向箭头",
-          "duration": 270,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M0000035yy4933vE3W.jpg"
+          "albumName": "心做し",
+          "duration": 268,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001TxaCH02ZxJm.jpg"
         }
       },
-      "reason": "单向箭头般的节奏感，克制中带你向前"
+      "reason": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 心做し (心理作用)”这条在线推荐线索命中的。"
     },
     "queue": [
+      {
+        "id": "online-c82a3d7f5e33",
+        "title": "晴天",
+        "artist": "周杰伦",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 晴天”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "常听",
+          "slotType": "anchor",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 269,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "叶惠美",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000MkMni19ClKG.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 97773,
+            "songmid": "0039MnYb0qxYhV",
+            "mediaMid": "003Qui1q2u1Zho",
+            "title": "晴天",
+            "artist": "周杰伦",
+            "albumName": "叶惠美",
+            "duration": 269,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000MkMni19ClKG.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 周杰伦 / 晴天”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-e9e46b8499fc",
+        "title": "红尘客栈",
+        "artist": "周杰伦",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 红尘客栈”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "常听",
+          "slotType": "anchor",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 274,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "十二新作",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003Ow85E3pnoqi.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 5177680,
+            "songmid": "003xv4w313tZHV",
+            "mediaMid": "000d5VXa1mFK4G",
+            "title": "红尘客栈",
+            "artist": "周杰伦",
+            "albumName": "十二新作",
+            "duration": 274,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003Ow85E3pnoqi.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 周杰伦 / 红尘客栈”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-b5a4126aaa2e",
+        "title": "采茶纪",
+        "artist": "双笙 (陈元汐)",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 7,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 采茶纪”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "主推"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 206,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "原创歌曲合集",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000dQblX4Xho6U.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 105090460,
+            "songmid": "004Kxue107QgYM",
+            "mediaMid": "00377jNl0Pt6F1",
+            "title": "采茶纪",
+            "artist": "双笙 (陈元汐)",
+            "albumName": "原创歌曲合集",
+            "duration": 206,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000dQblX4Xho6U.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 采茶纪”这条在线推荐线索命中的。"
+      },
       {
         "id": "online-06fe23b436e5",
         "title": "百战成诗",
         "artist": "白天",
         "year": 2026,
-        "mood": "专注",
+        "mood": "轻推力",
         "energy": 9,
         "language": "中文",
         "tags": [
@@ -96,14 +226,57 @@
             "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg"
           }
         },
-        "reason": "百战成诗的激昂，让下午的工作充满能量"
+        "reason": "这首歌是按“白天工作流 / 白天 / 百战成诗”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-be107040983b",
+        "title": "茉莉雨 (COVER版)",
+        "artist": "白天",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 茉莉雨 (COVER版)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 256,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "治愈男生版",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 540899719,
+            "songmid": "004KtX162owd7j",
+            "mediaMid": "004KtX162owd7j",
+            "title": "茉莉雨 (COVER版)",
+            "artist": "白天",
+            "albumName": "治愈男生版",
+            "duration": 256,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 白天 / 茉莉雨 (COVER版)”这条在线推荐线索命中的。"
       },
       {
         "id": "online-85991d5d8e20",
         "title": "낮 (Day off) (白天)",
         "artist": "脸红的思春期",
         "year": 2026,
-        "mood": "轻推力",
+        "mood": "克制",
         "energy": 9,
         "language": "韩语",
         "tags": [
@@ -139,15 +312,58 @@
             "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg"
           }
         },
-        "reason": "思春期的这首白天，让上班也能有day off的感觉"
+        "reason": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-0b91235c8a9e",
+        "title": "世末歌者",
+        "artist": "封茗囧菌、双笙 (陈元汐)",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 封茗囧菌、双笙 (陈元汐) / 世末歌者”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 329,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "封茗囧菌翻唱合辑",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001FElHQ2TwOxI.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 108409838,
+            "songmid": "0017SY4b0kXX4V",
+            "mediaMid": "001SvVHV4Zs6lC",
+            "title": "世末歌者",
+            "artist": "封茗囧菌、双笙 (陈元汐)",
+            "albumName": "封茗囧菌翻唱合辑",
+            "duration": 329,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001FElHQ2TwOxI.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 封茗囧菌、双笙 (陈元汐) / 世末歌者”这条在线推荐线索命中的。"
       }
     ],
     "explanation": [
       "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
-      "推荐线索是“午后工作时段，挑选几首能让人回想起个人旧歌单里熟悉旋律的中文慢歌，让音乐自然流淌而不喧宾夺主”，实际落地优先保留 周杰伦、周杰伦、双笙 (陈元汐) 这些锚点。",
+      "推荐线索是“白天工作流，中文，回忆感，Unknown Artist，顺着当下的情绪慢慢展开”，实际落地优先保留 双笙 (陈元汐)、双笙 (陈元汐)、白天 这些锚点。",
       "当前来源是 qq，本轮确认了 8 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 calmer，本轮种子是“午后工作时段，挑选几首能让人回想起个人旧歌单里熟悉旋律的中文慢歌，让音乐自然流淌而不喧宾夺主”。当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 online-next，本轮种子是“白天工作流，中文，回忆感，Unknown Artist，顺着当下的情绪慢慢展开”。当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

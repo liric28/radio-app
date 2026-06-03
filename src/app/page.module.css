@@ -1461,11 +1461,7 @@
   cursor: pointer;
   font: inherit;
   width: 100%;
-  transition: background-color 160ms ease;
-}
-
-.queueListRow:hover {
-  background: rgba(255, 255, 255, 0.04);
+  transition: color 160ms ease;
 }
 
 .queueListRowIndex {
@@ -1538,9 +1534,6 @@
 .pageLight .queueListRowIndex,
 .pageLight .queueListRowArtist {
   color: rgba(20, 18, 30, 0.5);
-}
-.pageLight .queueListRow:hover {
-  background: rgba(20, 18, 30, 0.04);
 }
 .pageLight .queueListRowActive {
   position: relative;
