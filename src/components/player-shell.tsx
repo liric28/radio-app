@@ -644,6 +644,13 @@ function normalizeSearchText(value: string) {
     .replace(/[()（）\[\]【】\-_.·,，/\\'"]/g, "");
 }
 
+function isSameTrackLabel(left: { title: string; artist: string }, right: { title: string; artist: string }) {
+  return (
+    normalizeSearchText(left.title) === normalizeSearchText(right.title) &&
+    normalizeSearchText(left.artist) === normalizeSearchText(right.artist)
+  );
+}
+
 function scoreCandidateHit(hit: MusicSearchHit, artist: string, title: string) {
   const normalizedArtist = normalizeSearchText(artist);
   const normalizedTitle = normalizeSearchText(title);
@@ -2526,8 +2533,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               </div>
             )}
             {chatHistory.map((message) => (
+              <div key={message.id}>
               <div
-                key={message.id}
                 className={`${styles.chatLine} ${
                   message.role === "assistant" ? styles.chatLineAssistant : styles.chatLineUser
                 }`}
@@ -2549,35 +2556,6 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                           <DotmHex10 dotSize={3} color="#54d88c" size={20} speed={1.2} />
                         </span>
                       )}
-                      {message.meta?.pendingCandidates && message.meta.pendingCandidates.length > 0 ? (
-                        <div
-                          className={styles.queueOverlay}
-                          role="list"
-                          aria-label="点播候选"
-                        >
-                          {message.meta.pendingCandidates.map((cand, candIndex) => (
-                            <button
-                              key={`${cand.artist}-${cand.title}-${candIndex}`}
-                              type="button"
-                              role="listitem"
-                              className={`${styles.queueCard} ${styles.queueCardActive}`}
-                              onClick={() => {
-                                void playPendingCandidate(cand).catch((error) => {
-                                  setError(error instanceof Error ? error.message : "QQ 播放失败");
-                                });
-                              }}
-                            >
-                              <span className={styles.queueCardIcon} aria-hidden>
-                                ★
-                              </span>
-                              <div className={styles.queueCardText}>
-                                <strong className={styles.queueCardTitle}>{cand.title}</strong>
-                                <p className={styles.queueCardArtist}>{cand.artist}</p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
                     </div>
                   </>
                 ) : (
@@ -2591,6 +2569,42 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                     </div>
                   </>
                 )}
+              </div>
+              {message.role === "assistant" &&
+              message.meta?.pendingCandidates &&
+              message.meta.pendingCandidates.length > 0 ? (
+                <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
+                  <div className={styles.chatGhostAvatar} aria-hidden="true" />
+                  <div className={styles.chatCandidateMessage}>
+                    <div className={styles.queueOverlay} role="list" aria-label="点播候选">
+                      {message.meta.pendingCandidates.map((cand, candIndex) => {
+                        const isPlaying = isSameTrackLabel(cand, visibleTrack);
+                        return (
+                          <button
+                            key={`${cand.artist}-${cand.title}-${candIndex}`}
+                            type="button"
+                            role="listitem"
+                            className={`${styles.queueCard} ${isPlaying ? styles.queueCardActive : ""}`}
+                            onClick={() => {
+                              void playPendingCandidate(cand).catch((error) => {
+                                setError(error instanceof Error ? error.message : "QQ 播放失败");
+                              });
+                            }}
+                          >
+                            <span className={styles.queueCardIcon} aria-hidden>
+                              {isPlaying ? "★" : "▶"}
+                            </span>
+                            <div className={styles.queueCardText}>
+                              <strong className={styles.queueCardTitle}>{cand.title}</strong>
+                              <span className={styles.queueCardArtist}>{cand.artist}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
               </div>
             ))}
           </div>

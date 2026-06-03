@@ -1444,6 +1444,21 @@
   margin: 12px 0 12px 44px;
 }
 
+.chatCandidateMessage {
+  display: grid;
+  width: min(320px, 78%);
+}
+
+.chatGhostAvatar {
+  width: 34px;
+  flex: 0 0 34px;
+  visibility: hidden;
+}
+
+.chatCandidateMessage .queueOverlay {
+  margin: 0;
+}
+
 /*
  * LIST 按钮弹出的“当前时段歌单”紧凑列表（2026-06-03 替换旧 .queueOverlay）。
  * 渲染位置从 chatLog 之后挪到 queueHeader 之下，视觉对齐播放队列预览：
@@ -2230,10 +2245,8 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(223, 218, 240, 0.4);
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /*
@@ -2262,6 +2275,7 @@
 
 .queueCardArtist {
   margin: 2px 0 0;
+  display: block;
   font-size: 11px;
   color: rgba(223, 218, 240, 0.45);
   letter-spacing: 0.08em;
@@ -2317,7 +2331,6 @@
 
 .queueCardActive .queueCardIcon {
   color: #54d88c;
-  border-color: rgba(84, 216, 140, 0.6);
 }
 
 .queueCardActive .queueCardTitle {
@@ -2363,7 +2376,6 @@
 .panelLight .queueCardIcon,
 .pageLight .queueCardIcon {
   color: rgba(50, 40, 80, 0.45);
-  border-color: rgba(20, 18, 28, 0.12);
 }
 
 .panelLight .queueCardActive,
@@ -2386,7 +2398,6 @@
 .panelLight .queueCardActive .queueCardIcon,
 .pageLight .queueCardActive .queueCardIcon {
   color: #2c8a4f;
-  border-color: rgba(44, 138, 79, 0.6);
 }
 
 /* LIST 按钮激活态，使用绿色描边表示“当前正在显示”。 */
