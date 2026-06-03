@@ -840,7 +840,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
    * LIST 按钮 toggle：在聊天流和输入框之间插入"当前段歌单卡片"。
    * 默认折叠避免占地，点 LIST 才展开——视觉上等同于一条"系统插播的歌单消息"。
    */
-  const [showQueueList, setShowQueueList] = useState<boolean>(false);
+  const [showQueueList, setShowQueueList] = useState<boolean>(true);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [preferenceInsights, setPreferenceInsights] = useState<PreferenceInsights | null>(null);
 
@@ -2510,14 +2510,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                               key={`${cand.artist}-${cand.title}-${candIndex}`}
                               type="button"
                               role="listitem"
-                              className={styles.queueCard}
+                              className={`${styles.queueCard} ${styles.queueCardActive}`}
                               onClick={() => {
                                 setChatInput(cand.title);
                                 void sendChatMessage();
                               }}
                             >
                               <span className={styles.queueCardIcon} aria-hidden>
-                                {candIndex + 1}
+                                ★
                               </span>
                               <div className={styles.queueCardText}>
                                 <strong className={styles.queueCardTitle}>{cand.title}</strong>

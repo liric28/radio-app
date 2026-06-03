@@ -1,8 +1,8 @@
 {
   "date": "2026-06-03",
   "seed": {
-    "input": "午后工作时段，挑选几首能让人回想起个人旧歌单里熟悉旋律的中文慢歌，让音乐自然流淌而不喧宾夺主",
-    "reason": "白天工作流需要低调陪伴感，近期已用过缓慢主旋律的比喻，需换一种表达方式，同时保持回忆感与熟悉音乐的核心方向，并明确用中文歌曲作为主体。"
+    "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "reason": "manual-pick"
   },
   "source": "qq",
   "program": {
@@ -12,49 +12,135 @@
     "energyLabel": "轻推力上行",
     "hostIntro": "这一轮不从本地记忆里翻旧歌，直接按你现在的口味去外面抓。先听前面这首，后面我把线接顺。",
     "currentTrack": {
-      "id": "online-21130641af9b",
-      "title": "七里香",
-      "artist": "周杰伦",
+      "id": "online-b964c3f0105a",
+      "title": "Daylight",
+      "artist": "Maroon 5",
       "year": 2026,
       "mood": "专注",
-      "energy": 7,
-      "language": "中文",
+      "energy": 9,
+      "language": "英语",
       "tags": [
         "在线推荐",
         "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 七里香”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "qq",
       "recommendationMeta": {
-        "sourceLabel": "常听",
-        "slotType": "anchor",
-        "slotLabel": "主推"
+        "sourceLabel": "顺推",
+        "slotType": "fallback",
+        "slotLabel": "延续"
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 299,
+        "duration": 226,
         "payable": false,
         "downloadable": true,
-        "albumName": "七里香",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg",
+        "albumName": "Singles (Explicit)",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
         "raw": {
           "source": "qq",
-          "songId": 102065756,
-          "songmid": "004Z8Ihr0JIu5s",
-          "mediaMid": "0012Ez0a1tFcOI",
-          "title": "七里香",
-          "artist": "周杰伦",
-          "albumName": "七里香",
-          "duration": 299,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg"
+          "songId": 104357077,
+          "songmid": "001DwtBl2gdXYN",
+          "mediaMid": "000XzVwY1T07TK",
+          "title": "Daylight",
+          "artist": "Maroon 5",
+          "albumName": "Singles (Explicit)",
+          "duration": 226,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
         }
       },
-      "reason": "午后办公桌前，让周杰伦的七里香陪你找回初心"
+      "reason": "Maroon 5的Daylight，让工作区亮起来"
     },
     "queue": [
+      {
+        "id": "online-21130641af9b",
+        "title": "七里香",
+        "artist": "周杰伦",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 7,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 七里香”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "常听",
+          "slotType": "anchor",
+          "slotLabel": "主推"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 299,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "七里香",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 102065756,
+            "songmid": "004Z8Ihr0JIu5s",
+            "mediaMid": "0012Ez0a1tFcOI",
+            "title": "七里香",
+            "artist": "周杰伦",
+            "albumName": "七里香",
+            "duration": 299,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000003DFRzD192KKD.jpg"
+          }
+        },
+        "reason": "午后办公桌前，让周杰伦的七里香陪你找回初心"
+      },
+      {
+        "id": "online-a4f4093a663b",
+        "title": "交换余生",
+        "artist": "白天",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 277,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "治愈男生版",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 495254237,
+            "songmid": "003Mr8HR2HksC8",
+            "mediaMid": "003Mr8HR2HksC8",
+            "title": "交换余生",
+            "artist": "白天",
+            "albumName": "治愈男生版",
+            "duration": 277,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
+          }
+        },
+        "reason": "交换余生的旋律，专注里带着温柔的期待"
+      },
       {
         "id": "online-ce519545a5ab",
         "title": "一路向北",
@@ -228,49 +314,6 @@
         "reason": "百战成诗的激昂，让下午的工作充满能量"
       },
       {
-        "id": "online-a4f4093a663b",
-        "title": "交换余生",
-        "artist": "白天",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 277,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "治愈男生版",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 495254237,
-            "songmid": "003Mr8HR2HksC8",
-            "mediaMid": "003Mr8HR2HksC8",
-            "title": "交换余生",
-            "artist": "白天",
-            "albumName": "治愈男生版",
-            "duration": 277,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
-          }
-        },
-        "reason": "交换余生的旋律，专注里带着温柔的期待"
-      },
-      {
         "id": "online-85991d5d8e20",
         "title": "낮 (Day off) (白天)",
         "artist": "脸红的思春期",
@@ -312,49 +355,6 @@
           }
         },
         "reason": "思春期的这首白天，让上班也能有day off的感觉"
-      },
-      {
-        "id": "online-b964c3f0105a",
-        "title": "Daylight",
-        "artist": "Maroon 5",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 9,
-        "language": "英语",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 226,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "Singles (Explicit)",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 104357077,
-            "songmid": "001DwtBl2gdXYN",
-            "mediaMid": "000XzVwY1T07TK",
-            "title": "Daylight",
-            "artist": "Maroon 5",
-            "albumName": "Singles (Explicit)",
-            "duration": 226,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
-          }
-        },
-        "reason": "Maroon 5的Daylight，让工作区亮起来"
       }
     ],
     "explanation": [
