@@ -700,14 +700,22 @@
   color: rgba(58, 52, 75, 0.5);
 }
 
+.panelLight .controlDeck,
+.panelLight .queueHeader,
+.panelLight .liveStrip,
+.panelLight .djPanel {
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 .panelLight .controlDeck {
-  background: rgba(255, 255, 255, 0.05);
   border-top-color: rgba(58, 52, 75, 0.05);
   border-bottom-color: rgba(58, 52, 75, 0.05);
 }
 
-.panelLight .liveStrip {
-  background: rgba(255, 255, 255, 0.05);
+.panelLight .queueHeader:hover {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .panelLight .chatAvatarLabelLiric {
@@ -770,7 +778,6 @@
   gap: 14px 18px;
   align-items: center;
   padding: 18px 20px 14px;
-  background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(255, 255, 255, 0.022);
   border-bottom: 1px solid rgba(255, 255, 255, 0.022);
 }
@@ -1021,7 +1028,6 @@
 
 /* TODAY 标题条背景。 */
 .queueHeader {
-  background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   /*
    * queueHeader 现在是 <button>，需要 reset 浏览器 default button 样式
@@ -1042,7 +1048,7 @@
 }
 
 .queueHeader:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(9, 10, 16, 0.22);
 }
 
 .queueHeader:focus-visible {
@@ -1052,7 +1058,6 @@
 
 /* Live 条背景。 */
 .liveStrip {
-  background: #000000;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -1132,6 +1137,15 @@
 .djPanel {
   padding: 0 20px 20px;
   position: relative;
+}
+
+.controlDeck,
+.queueHeader,
+.liveStrip,
+.djPanel {
+  background: rgba(4, 5, 10, 0.16);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /*
