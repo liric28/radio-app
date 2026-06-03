@@ -1501,23 +1501,19 @@
 }
 
 .queueListRowActive {
+  position: relative;
+  /* 绿底 + 左 3px 竖条画在 ::before 上，不动 row 自身的 margin/padding/列结构。
+   * 这样 ▶ 序号列和 2/3 行的"2/3"序号列同 x 起点，标题列 / 歌手列也一致。 */
+}
+.queueListRowActive::before {
+  content: "";
+  position: absolute;
+  /* 撑出 .queueListOverlay margin: 0 20px 那个 20px，顶到 panel 内边 */
+  inset: 0 -20px;
   background: rgba(84, 216, 140, 0.18);
-  /*
-   * 截图里 active 行最左侧有一道贯穿整行的绿色竖条（视觉锚点）。
-   * 用 box-shadow inset 画在 padding box 内侧 —— 不受 .panel { overflow: hidden } 裁切。
-   * 3px 宽度清晰可见，跟 ▶ 视觉分离。
-   *
-   * 绿背景整行覆盖 = 抵掉 .queueListOverlay 的 margin: 0 20px 8px 那个 20px：
-   *  - margin-left: -20px; padding-left: 25px  → 绿背景左贴 panel 内边、▶ 跟竖条之间 8px 间隙
-   *  - margin-right: -20px; padding-right: 20px → 绿背景右贴 panel 内边、artist 位置一致
-   *  - column-gap: 4px                          → 序号▶ 跟标题之间 grid gap 从父 12px 缩到 4px
-   */
   box-shadow: inset 3px 0 0 0 #54d88c;
-  margin-left: -20px;
-  padding-left: 25px;
-  margin-right: -20px;
-  padding-right: 20px;
-  column-gap: 4px;
+  z-index: -1;
+  pointer-events: none;
 }
 
 .queueListRowActive .queueListRowIndex {
@@ -1547,7 +1543,17 @@
   background: rgba(20, 18, 30, 0.04);
 }
 .pageLight .queueListRowActive {
+  position: relative;
+  background: transparent;
+}
+.pageLight .queueListRowActive::before {
+  content: "";
+  position: absolute;
+  inset: 0 -20px;
   background: rgba(84, 216, 140, 0.18);
+  box-shadow: inset 3px 0 0 0 #54d88c;
+  z-index: -1;
+  pointer-events: none;
 }
 .pageLight .queueListRowActive .queueListRowIndex {
   color: #54d88c;
