@@ -102,6 +102,12 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
+.panelDark::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.045) 8%, rgba(255, 255, 255, 0.018) 16%, rgba(255, 255, 255, 0) 38%),
+    radial-gradient(85% 22% at 50% 0%, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.018) 42%, rgba(255, 255, 255, 0) 100%);
+}
+
 .panel {
   overflow: hidden;
 }
@@ -186,9 +192,9 @@
 .panelDark::before {
   background:
     radial-gradient(38% 60% at 0% 50%, rgba(133, 85, 255, 0.42) 0%, rgba(133, 85, 255, 0.22) 42%, rgba(133, 85, 255, 0.08) 68%, rgba(133, 85, 255, 0) 100%),
-    radial-gradient(38% 60% at 100% 50%, rgba(133, 85, 255, 0.42) 0%, rgba(133, 85, 255, 0.22) 42%, rgba(133, 85, 255, 0.08) 68%, rgba(133, 85, 255, 0) 100%),
+    radial-gradient(38% 60% at 100% 50%, rgba(133, 85, 255, 0.22) 0%, rgba(133, 85, 255, 0.12) 42%, rgba(133, 85, 255, 0.04) 68%, rgba(133, 85, 255, 0) 100%),
     radial-gradient(24% 28% at 0% 0%, rgba(111, 67, 255, 0.3) 0%, rgba(111, 67, 255, 0.1) 56%, rgba(111, 67, 255, 0) 100%),
-    radial-gradient(24% 28% at 100% 0%, rgba(111, 67, 255, 0.3) 0%, rgba(111, 67, 255, 0.1) 56%, rgba(111, 67, 255, 0) 100%),
+    radial-gradient(24% 28% at 100% 0%, rgba(111, 67, 255, 0.14) 0%, rgba(111, 67, 255, 0.05) 56%, rgba(111, 67, 255, 0) 100%),
     radial-gradient(24% 28% at 0% 100%, rgba(111, 67, 255, 0.24) 0%, rgba(111, 67, 255, 0.08) 56%, rgba(111, 67, 255, 0) 100%),
     radial-gradient(24% 28% at 100% 100%, rgba(111, 67, 255, 0.24) 0%, rgba(111, 67, 255, 0.08) 56%, rgba(111, 67, 255, 0) 100%),
     radial-gradient(34% 36% at 50% 0%, rgba(92, 68, 220, 0.18) 0%, rgba(92, 68, 220, 0.06) 48%, rgba(92, 68, 220, 0) 100%),
@@ -781,6 +787,23 @@
   padding: 18px 20px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.022);
   border-bottom: 1px solid rgba(255, 255, 255, 0.022);
+  position: relative;
+  overflow: hidden;
+}
+
+.panelDark .controlDeck::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.052) 9%, rgba(255, 255, 255, 0.024) 18%, rgba(255, 255, 255, 0.008) 28%, rgba(255, 255, 255, 0) 42%);
+  z-index: 0;
+}
+
+.controlDeck > * {
+  position: relative;
+  z-index: 1;
 }
 
 .nowCard {
@@ -1150,6 +1173,22 @@
   position: relative;
 }
 
+.panelDark .djPanel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.052) 9%, rgba(255, 255, 255, 0.024) 18%, rgba(255, 255, 255, 0.008) 28%, rgba(255, 255, 255, 0) 42%);
+  z-index: 0;
+}
+
+.djPanel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/*
 .controlDeck,
 .queueHeader,
 .liveStrip,
@@ -1158,6 +1197,7 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+*/
 
 /*
  * 点击光圈：

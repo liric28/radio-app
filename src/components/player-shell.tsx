@@ -1030,14 +1030,15 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     now.getMinutes(),
   ).padStart(2, "0")}`;
   const dayLabel = now.toLocaleDateString("en-US", { weekday: "long" });
-  const dateLabel = now
-    .toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-    .replace(/ /g, " · ")
-    .toUpperCase();
+  const dateParts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).formatToParts(now);
+  const dayPart = dateParts.find((part) => part.type === "day")?.value ?? "";
+  const monthPart = dateParts.find((part) => part.type === "month")?.value ?? "";
+  const yearPart = dateParts.find((part) => part.type === "year")?.value ?? "";
+  const dateLabel = `${dayPart} · ${monthPart} · ${yearPart}`.toUpperCase();
   const audioSource = useMemo(() => {
     if (searchPreview?.url) {
       return searchPreview.url;
