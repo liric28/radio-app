@@ -1,3 +1,9 @@
+import type { MusicSearchHit } from "@/lib/music-search";
+
+export type PendingCandidateHit = MusicSearchHit & {
+  playbackUrl?: string;
+};
+
 export type UserTasteProfile = {
   favoriteEras: string[];
   favoriteMoods: string[];
@@ -135,11 +141,11 @@ export type ChatIntentAction =
 
 /**
  * 聊天助手消息的元信息。仅"候选提问"这种 assistant 消息会带 pendingCandidates，
- * 其它消息的 meta 留空。pendingCandidates 是上一轮播 X 搜出来的 top 3，
- * 下一轮 user 选歌时直接匹配，结构化数据比 LLM 读 history 文本猜歌名稳。
+ * 其它消息的 meta 留空。pendingCandidates 直接透传搜索命中，前端点击后
+ * 直接复用 `/api/song-playback` 解析真实播放链接，不再二次搜索。
  */
 export type ChatMessageMeta = {
-  pendingCandidates?: Array<{ artist: string; title: string }>;
+  pendingCandidates?: PendingCandidateHit[];
 };
 
 export type ChatIntent = {

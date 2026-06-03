@@ -16,15 +16,12 @@
 import { searchSongsBySource, type MusicSearchHit, type MusicSearchSource } from "@/lib/music-search";
 import { resolveVerifiedPlaybackUrlForHit } from "@/lib/song-download";
 import { buildTrackLabel } from "@/lib/track-labels";
-import type { ChatIntent, RadioProgram, Song } from "@/lib/types";
+import type { ChatIntent, PendingCandidateHit, RadioProgram, Song } from "@/lib/types";
 
 const CANDIDATE_LIST_SIZE = 3;
 const SOURCE_ORDER: MusicSearchSource[] = ["qq", "kugou", "netease"];
 
-export type PlayCandidate = {
-  artist: string;
-  title: string;
-};
+export type PlayCandidate = PendingCandidateHit;
 
 export type PlayRequestExecutionResult =
   | {
@@ -181,6 +178,32 @@ function buildRemoteSong(hit: MusicSearchHit, url: string): Song {
   };
 }
 
+function toPlayCandidate(hit: MusicSearchHit, playbackUrl?: string): PlayCandidate {
+  return {
+    source: hit.source,
+    artist: hit.artist,
+    title: hit.title,
+    duration: hit.duration,
+    payable: hit.payable,
+    downloadable: hit.downloadable,
+    albumName: hit.albumName,
+    imageUrl: hit.imageUrl,
+    raw: hit.raw,
+    playbackUrl,
+  };
+}
+
+async function pickPlayableCandidates(hits: MusicSearchHit[], n: number): Promise<PlayCandidate[]> {
+  const out: PlayCandidate[] = [];
+  for (const hit of hits) {
+    const playbackUrl = await resolveVerifiedPlaybackUrlForHit(hit).catch(() => null);
+    if (!playbackUrl) continue;
+    out.push(toPlayCandidate(hit, playbackUrl));
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
 /**
  * 真点播切歌：把原 currentTrack 推到 queue 头（去重），explanation 保留。
  * 不依赖 radio-engine / online-radio / applyChatIntentWithProgram。
@@ -209,8 +232,9 @@ export async function executePlayRequest(
   // play-artist：只搜不切，列 top N 让用户选。
   // excludeKeys 用于"换一批"——重搜同一歌手时排除之前已展示的候选。
   if (intent.action === "play-artist" && intent.artist) {
-    const hits = await searchArtistTopN(intent.artist, CANDIDATE_LIST_SIZE, excludeKeys);
-    if (hits.length === 0) {
+    const hits = await searchArtistTopN(intent.artist, CANDIDATE_LIST_SIZE * 6, excludeKeys);
+    const playable = await pickPlayableCandidates(hits, CANDIDATE_LIST_SIZE);
+    if (playable.length === 0) {
       return {
         kind: "candidate-list",
         program: currentProgram,
@@ -221,7 +245,7 @@ export async function executePlayRequest(
     return {
       kind: "candidate-list",
       program: currentProgram,
-      candidateList: hits.map((h) => ({ artist: h.artist, title: h.title })),
+      candidateList: playable,
       empty: false,
     };
   }
@@ -238,25 +262,27 @@ export async function executePlayRequest(
     // 也强制走切歌——否则用户选完候选再输入"1"还是会被同名版
     // 本顶回来 fallback candidate-list，体验上等于没反应。
     const titleExactMatch =
-      intent.title && normalizeText(top.hit.title) === normalizeText(intent.title);
+      !!top && !!intent.title && normalizeText(top.hit.title) === normalizeText(intent.title);
     if (!top || (!titleExactMatch && second && top.score - second.score <= 2)) {
-      const fallback = await searchArtistTopN(intent.artist || intent.title || "", CANDIDATE_LIST_SIZE);
+      const fallback = await searchArtistTopN(intent.artist || intent.title || "", CANDIDATE_LIST_SIZE * 6);
+      const playable = await pickPlayableCandidates(fallback, CANDIDATE_LIST_SIZE);
       return {
         kind: "candidate-list",
         program: currentProgram,
-        candidateList: fallback.map((h) => ({ artist: h.artist, title: h.title })),
-        empty: fallback.length === 0,
+        candidateList: playable,
+        empty: playable.length === 0,
       };
     }
 
     const url = await resolveVerifiedPlaybackUrlForHit(top.hit).catch(() => null);
     if (!url) {
-      const fallback = await searchArtistTopN(intent.artist || intent.title || "", CANDIDATE_LIST_SIZE);
+      const fallback = await searchArtistTopN(intent.artist || intent.title || "", CANDIDATE_LIST_SIZE * 6);
+      const playable = await pickPlayableCandidates(fallback, CANDIDATE_LIST_SIZE);
       return {
         kind: "candidate-list",
         program: currentProgram,
-        candidateList: fallback.map((h) => ({ artist: h.artist, title: h.title })),
-        empty: fallback.length === 0,
+        candidateList: playable,
+        empty: playable.length === 0,
       };
     }
 
@@ -265,7 +291,7 @@ export async function executePlayRequest(
     return {
       kind: "play-now",
       program: buildProgramWithCurrentSong(remoteSong, reason, currentProgram),
-      played: { artist: top.hit.artist, title: top.hit.title },
+      played: toPlayCandidate(top.hit),
     };
   }
 

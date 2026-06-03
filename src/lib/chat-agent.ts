@@ -41,6 +41,7 @@ import type {
   ChatIntent,
   ChatMessage,
   ChatMessageMeta,
+  PendingCandidateHit,
   RadioProgram,
 } from "@/lib/types";
 
@@ -910,7 +911,7 @@ function detectExplicitPlayIntent(
  */
 function lastPendingCandidates(
   history: ChatMessage[],
-): Array<{ artist: string; title: string }> | null {
+): PendingCandidateHit[] | null {
   for (let i = history.length - 1; i >= 0; i--) {
     const m = history[i];
     if (m.role !== "assistant") continue;
@@ -951,8 +952,8 @@ function stripQuotes(value: string) {
 
 function matchPendingCandidate(
   message: string,
-  candidates: Array<{ artist: string; title: string }>,
-): { artist: string; title: string } | null {
+  candidates: PendingCandidateHit[],
+): PendingCandidateHit | null {
   const normalized = message.trim();
   if (!normalized) return null;
 
@@ -1067,7 +1068,7 @@ async function resolvePlayRequest(
 }
 
 /**
- * 把候选 (artist, title) 转成 executor excludeKeys 用的标准化 key。
+ * 把候选 hit 的 artist/title 转成 executor excludeKeys 用的标准化 key。
  * executor 内部 normalizeText 会做小写化 + 去空白 + 去符号，**这里必须复用同一套规则**，
  * 否则 key 不匹配，重搜会返回已展示过的歌。
  */

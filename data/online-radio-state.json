@@ -2,7 +2,7 @@
   "date": "2026-06-03",
   "seed": {
     "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "reason": "manual-pick"
+    "reason": "queue-advance"
   },
   "source": "qq",
   "program": {
@@ -10,137 +10,51 @@
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "今天先不急着解释，先让《采茶纪》把气口定住。后面那首我也给你连好了。",
+    "hostIntro": "先让这一轮在线推荐自己说话。前面这首把步子带起来，后面那首负责把情绪接住。",
     "currentTrack": {
-      "id": "online-06fe23b436e5",
-      "title": "百战成诗",
-      "artist": "白天",
+      "id": "online-b5a4126aaa2e",
+      "title": "采茶纪",
+      "artist": "双笙 (陈元汐)",
       "year": 2026,
-      "mood": "轻推力",
-      "energy": 9,
+      "mood": "专注",
+      "energy": 7,
       "language": "中文",
       "tags": [
         "在线推荐",
         "白天工作流",
         "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 白天 / 百战成诗”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 采茶纪”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "qq",
       "recommendationMeta": {
         "sourceLabel": "顺推",
         "slotType": "fallback",
-        "slotLabel": "延续"
+        "slotLabel": "主推"
       },
       "downloadContext": {
         "source": "qq",
-        "duration": 393,
+        "duration": 206,
         "payable": false,
         "downloadable": true,
-        "albumName": "温柔男声版",
-        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg",
+        "albumName": "原创歌曲合集",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000dQblX4Xho6U.jpg",
         "raw": {
           "source": "qq",
-          "songId": 376647925,
-          "songmid": "004YBAEm0SZrrg",
-          "mediaMid": "000uIunD1K4GmS",
-          "title": "百战成诗",
-          "artist": "白天",
-          "albumName": "温柔男声版",
-          "duration": 393,
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg"
+          "songId": 105090460,
+          "songmid": "004Kxue107QgYM",
+          "mediaMid": "00377jNl0Pt6F1",
+          "title": "采茶纪",
+          "artist": "双笙 (陈元汐)",
+          "albumName": "原创歌曲合集",
+          "duration": 206,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000dQblX4Xho6U.jpg"
         }
       },
-      "reason": "这首歌是按“白天工作流 / 白天 / 百战成诗”这条在线推荐线索命中的。"
+      "reason": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 采茶纪”这条在线推荐线索命中的。"
     },
     "queue": [
-      {
-        "id": "online-0b91235c8a9e",
-        "title": "世末歌者",
-        "artist": "封茗囧菌、双笙 (陈元汐)",
-        "year": 2026,
-        "mood": "轻推力",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 封茗囧菌、双笙 (陈元汐) / 世末歌者”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 329,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "封茗囧菌翻唱合辑",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001FElHQ2TwOxI.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 108409838,
-            "songmid": "0017SY4b0kXX4V",
-            "mediaMid": "001SvVHV4Zs6lC",
-            "title": "世末歌者",
-            "artist": "封茗囧菌、双笙 (陈元汐)",
-            "albumName": "封茗囧菌翻唱合辑",
-            "duration": 329,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001FElHQ2TwOxI.jpg"
-          }
-        },
-        "reason": "这首歌是按“白天工作流 / 封茗囧菌、双笙 (陈元汐) / 世末歌者”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-b5a4126aaa2e",
-        "title": "采茶纪",
-        "artist": "双笙 (陈元汐)",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 7,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "qq"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 采茶纪”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "qq",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "主推"
-        },
-        "downloadContext": {
-          "source": "qq",
-          "duration": 206,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "原创歌曲合集",
-          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000dQblX4Xho6U.jpg",
-          "raw": {
-            "source": "qq",
-            "songId": 105090460,
-            "songmid": "004Kxue107QgYM",
-            "mediaMid": "00377jNl0Pt6F1",
-            "title": "采茶纪",
-            "artist": "双笙 (陈元汐)",
-            "albumName": "原创歌曲合集",
-            "duration": 206,
-            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000dQblX4Xho6U.jpg"
-          }
-        },
-        "reason": "这首歌是按“白天工作流 / 双笙 (陈元汐) / 采茶纪”这条在线推荐线索命中的。"
-      },
       {
         "id": "online-be107040983b",
         "title": "茉莉雨 (COVER版)",

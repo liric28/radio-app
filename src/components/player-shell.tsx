@@ -18,6 +18,7 @@ import { buildTrackLabel } from "@/lib/track-labels";
 import type {
   ChatMessage,
   DailySchedule,
+  PendingCandidateHit,
   RadioProgram,
   Song,
   WeatherSnapshot,
@@ -649,23 +650,6 @@ function isSameTrackLabel(left: { title: string; artist: string }, right: { titl
     normalizeSearchText(left.title) === normalizeSearchText(right.title) &&
     normalizeSearchText(left.artist) === normalizeSearchText(right.artist)
   );
-}
-
-function scoreCandidateHit(hit: MusicSearchHit, artist: string, title: string) {
-  const normalizedArtist = normalizeSearchText(artist);
-  const normalizedTitle = normalizeSearchText(title);
-  const hitArtist = normalizeSearchText(hit.artist);
-  const hitTitle = normalizeSearchText(hit.title);
-
-  let score = 0;
-  if (hitTitle === normalizedTitle) score += 20;
-  else if (hitTitle.includes(normalizedTitle) || normalizedTitle.includes(hitTitle)) score += 8;
-
-  if (hitArtist === normalizedArtist) score += 20;
-  else if (hitArtist.includes(normalizedArtist) || normalizedArtist.includes(hitArtist)) score += 8;
-
-  if (/live|伴奏|纯音乐|dj|remix/i.test(`${hit.title} ${hit.albumName || ""}`)) score -= 4;
-  return score;
 }
 
 function DotMatrixText({
@@ -1747,7 +1731,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     return payload.data as MusicSearchHit[];
   }
 
-  async function playSearchSong(hit: MusicSearchHit) {
+  async function playSearchSong(hit: MusicSearchHit | PendingCandidateHit) {
     /**
      * 搜索试听链路：
      * 1. POST /api/song-playback 解析来源对应的真实可播直链
@@ -1767,55 +1751,16 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     if (!response.ok || !payload.ok || !payload.url) {
       throw new Error(payload.error ?? "播放失败");
     }
+    const playbackUrl = payload.url;
 
     shouldResumePlaybackRef.current = true;
     setSearchPreview({
       key: createSearchHitKey(hit),
       title: hit.title,
       artist: hit.artist,
-      url: payload.url,
+      url: playbackUrl,
     });
     setActiveLabel("PREVIEW");
-  }
-
-  async function playPendingCandidate(candidate: { artist: string; title: string }) {
-    setError(null);
-
-    const queries = [
-      `${candidate.title} ${candidate.artist}`,
-      `${candidate.artist} ${candidate.title}`,
-      candidate.title,
-      `${candidate.title} 原唱`,
-    ];
-    let bestHit: MusicSearchHit | null = null;
-    let fallbackTitleHit: MusicSearchHit | null = null;
-
-    for (const query of queries) {
-      const hits = await searchSongsFromSource(query, "qq", 1);
-      const ranked = hits
-        .map((hit) => ({ hit, score: scoreCandidateHit(hit, candidate.artist, candidate.title) }))
-        .sort((a, b) => b.score - a.score);
-      if (ranked[0] && ranked[0].score > 0) {
-        bestHit = ranked[0].hit;
-        break;
-      }
-      const titleMatched = hits.find(
-        (hit) => normalizeSearchText(hit.title) === normalizeSearchText(candidate.title),
-      );
-      if (!fallbackTitleHit && titleMatched) {
-        fallbackTitleHit = titleMatched;
-      }
-    }
-
-    if (!bestHit && fallbackTitleHit) {
-      bestHit = fallbackTitleHit;
-    }
-
-    if (!bestHit) {
-      throw new Error(`QQ 没搜到 ${candidate.artist}《${candidate.title}》`);
-    }
-
-    await playSearchSong(bestHit);
   }
 
   async function downloadSong(hit: MusicSearchHit) {
@@ -2630,8 +2575,8 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                             role="listitem"
                             className={`${styles.queueCard} ${isPlaying ? styles.queueCardActive : ""}`}
                             onClick={() => {
-                              void playPendingCandidate(cand).catch((error) => {
-                                setError(error instanceof Error ? error.message : "QQ 播放失败");
+                              void playSearchSong(cand).catch((error) => {
+                                setError(error instanceof Error ? error.message : "播放失败");
                               });
                             }}
                           >
