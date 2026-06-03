@@ -1129,6 +1129,46 @@
   cursor: pointer;
 }
 
+.liveBadgeWave {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 42px;
+  height: 18px;
+}
+
+.liveBadgeBar {
+  display: block;
+  width: 10px;
+  height: calc(100% * var(--bar-height));
+  border-radius: 999px;
+  background: linear-gradient(180deg, #85ffd9 0%, #43ffc6 68%, #2ed89d 100%);
+  box-shadow:
+    0 0 0 1px rgba(24, 44, 36, 0.88) inset,
+    0 0 4px rgba(67, 255, 198, 0.38),
+    0 0 8px rgba(67, 255, 198, 0.12);
+  transform-origin: center bottom;
+  animation: live-badge-wave 980ms ease-in-out infinite;
+  animation-delay: var(--bar-delay, 0ms);
+}
+
+@keyframes live-badge-wave {
+  0%,
+  100% {
+    height: calc(100% * var(--bar-height));
+    opacity: 1;
+  }
+  35% {
+    height: calc(100% * var(--bar-max, var(--bar-height)));
+    opacity: 1;
+  }
+  70% {
+    height: calc(100% * var(--bar-min, var(--bar-height)));
+    opacity: 0.84;
+  }
+}
+
 .claudioLiveInline {
   max-height: 0;
   overflow: hidden;

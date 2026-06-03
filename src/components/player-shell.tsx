@@ -910,6 +910,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
     () => [program.currentTrack, ...program.queue],
     [program.currentTrack, program.queue],
   );
+  const liveBadgeBars = [0.34, 0.62, 0.22, 0.85, 0.24, 0.58];
 
   function sendPreferenceEvent(payload: Record<string, unknown>) {
     void fetch("/api/preference-event", {
@@ -1061,6 +1062,12 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   const visibleTrack = searchPreview
     ? { title: searchPreview.title, artist: searchPreview.artist }
     : program.currentTrack;
+  const hasPlayingCandidate = chatHistory.some((message) =>
+    message.role === "assistant" &&
+    Boolean(
+      message.meta?.pendingCandidates?.some((cand) => isSameTrackLabel(cand, visibleTrack)),
+    ),
+  );
 
   function clearSearchPreview() {
     setSearchPreview(null);
@@ -1773,8 +1780,14 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
   async function playPendingCandidate(candidate: { artist: string; title: string }) {
     setError(null);
 
-    const queries = [`${candidate.artist} ${candidate.title}`, candidate.title];
+    const queries = [
+      `${candidate.title} ${candidate.artist}`,
+      `${candidate.artist} ${candidate.title}`,
+      candidate.title,
+      `${candidate.title} 原唱`,
+    ];
     let bestHit: MusicSearchHit | null = null;
+    let fallbackTitleHit: MusicSearchHit | null = null;
 
     for (const query of queries) {
       const hits = await searchSongsFromSource(query, "qq", 1);
@@ -1785,6 +1798,16 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
         bestHit = ranked[0].hit;
         break;
       }
+      const titleMatched = hits.find(
+        (hit) => normalizeSearchText(hit.title) === normalizeSearchText(candidate.title),
+      );
+      if (!fallbackTitleHit && titleMatched) {
+        fallbackTitleHit = titleMatched;
+      }
+    }
+
+    if (!bestHit && fallbackTitleHit) {
+      bestHit = fallbackTitleHit;
     }
 
     if (!bestHit) {
@@ -2502,9 +2525,28 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
             aria-expanded={showClaudioLivePanel}
             aria-controls="claudio-live-panel"
           >
-            <span className={`${styles.liveBadgeText} ${claudioPixelFont.className}`}>
-              LIVE
-            </span>
+            {hasPlayingCandidate ? (
+              <span className={styles.liveBadgeWave} aria-label="playing candidate">
+                {liveBadgeBars.map((height, index) => (
+                  <i
+                    key={`live-badge-bar-${index}`}
+                    className={styles.liveBadgeBar}
+                    style={
+                      {
+                        "--bar-height": String(height),
+                        "--bar-min": String(Math.max(0.28, height * 0.58)),
+                        "--bar-max": String(Math.min(1, height * 1.12)),
+                        "--bar-delay": `${index * 90}ms`,
+                      } as CSSProperties
+                    }
+                  />
+                ))}
+              </span>
+            ) : (
+              <span className={`${styles.liveBadgeText} ${claudioPixelFont.className}`}>
+                LIVE
+              </span>
+            )}
           </button>
         </section>
 
