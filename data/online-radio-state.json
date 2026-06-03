@@ -2,7 +2,7 @@
   "date": "2026-06-03",
   "seed": {
     "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "reason": "queue-advance"
+    "reason": "manual-pick"
   },
   "source": "qq",
   "program": {
