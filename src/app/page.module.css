@@ -175,6 +175,8 @@
 }
 
 .panelDark {
+  --dark-black-surface: linear-gradient(180deg, #050509 0%, #020204 100%);
+  --dark-black-surface-solid: #020204;
   border: 1px solid rgba(164, 146, 236, 0.18);
   background:
     linear-gradient(180deg, rgba(34, 34, 52, 0.86), rgba(20, 20, 30, 0.92)),
@@ -524,8 +526,7 @@
   place-items: center;
   position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, #050509 0%, #020204 100%);
+  background: var(--dark-black-surface, linear-gradient(180deg, #050509 0%, #020204 100%));
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -1051,6 +1052,16 @@
   background: rgba(9, 10, 16, 0.22);
 }
 
+.panelDark .queueHeader {
+  background: var(--dark-black-surface-solid);
+  color: rgba(223, 218, 240, 0.45);
+}
+
+.panelDark .queueHeader:hover {
+  background: var(--dark-black-surface-solid);
+  color: rgba(223, 218, 240, 0.45);
+}
+
 .queueHeader:focus-visible {
   outline: 1px solid rgba(84, 216, 140, 0.6);
   outline-offset: -1px;
@@ -1477,6 +1488,12 @@
   padding: 0;
 }
 
+.panelDark .queueListOverlay {
+  background: var(--dark-black-surface-solid);
+  margin: 0 0 8px;
+  padding: 0 20px;
+}
+
 .queueListRow {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
@@ -1539,6 +1556,10 @@
   box-shadow: inset 3px 0 0 0 #54d88c;
   z-index: -1;
   pointer-events: none;
+}
+
+.panelDark .queueListRowActive::before {
+  inset: 0 -20px;
 }
 
 .queueListRowActive .queueListRowIndex {
