@@ -201,6 +201,7 @@
     radial-gradient(circle at 50% 8%, rgba(184, 174, 241, 0.22), transparent 24%),
     linear-gradient(180deg, #faf9fe 0%, #f0eef8 100%);
   color: #17141f;
+  padding: 34px 30px 46px;
 }
 
 .pageDark {
@@ -210,6 +211,8 @@
 }
 
 .panelLight {
+  width: min(812px, 100%);
+  margin-top: 12px;
   border: 1px solid rgba(168, 159, 215, 0.2);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 243, 252, 0.98)),
