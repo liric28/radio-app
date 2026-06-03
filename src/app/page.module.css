@@ -1498,8 +1498,8 @@
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 8px 4px;
+  gap: 2px;
+  padding: 14px 20px;
   background: transparent;
   border: 0;
   color: inherit;
