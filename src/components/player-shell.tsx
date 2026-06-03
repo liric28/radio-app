@@ -97,6 +97,17 @@ type SearchPlaybackResponse = {
   error?: string;
 };
 
+function toPlayableAudioUrl(url: string) {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return `/api/remote-audio?url=${encodeURIComponent(parsed.toString())}`;
+    }
+  } catch {}
+  return url;
+}
+
 type NeteaseViewer = {
   valid: boolean;
   userId: number | null;
@@ -1153,7 +1164,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           source: hit.source,
           url: payload.url,
         });
-        setResolvedProgramStreamUrl(payload.url);
+        setResolvedProgramStreamUrl(toPlayableAudioUrl(payload.url));
       } catch (error) {
         if (!cancelled) {
           console.error("[Audio] resolve-program-stream.error", {
@@ -1228,7 +1239,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           ...currentProgram,
           currentTrack: {
             ...currentProgram.currentTrack,
-            streamUrl: payload.url,
+            streamUrl: toPlayableAudioUrl(payload.url),
           },
         };
       });
@@ -1792,7 +1803,7 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
       key: createSearchHitKey(hit),
       title: hit.title,
       artist: hit.artist,
-      url: playbackUrl,
+      url: toPlayableAudioUrl(playbackUrl),
     });
     setActiveLabel("PREVIEW");
   }

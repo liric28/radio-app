@@ -143,6 +143,19 @@ Phase 5
 - [x] `npx tsc --noEmit` 0 error
 - **Status:** completed
 
+### Phase 16: 聊天候选直透传 + 刷新语义修复 + 调试链（2026-06-03 增量）
+- [x] `pendingCandidates` 从 `{artist,title}` 升级为完整 `PendingCandidateHit[]`
+- [x] 候选卡点击删除前端 QQ 二次搜索，直接透传完整 `MusicSearchHit/raw`
+- [x] 点击候选时仍重新 POST `/api/song-playback` 解析 fresh URL，避免短时直链过期
+- [x] 候选列表只返回“当前已验证可播”的前 3 首，验证逻辑并发化
+- [x] `pendingSeed` 写入 assistant 候选消息，`换` 一律按 seed 刷新，不再按第一首歌手刷新
+- [x] `resolvePlayRequest()` 前移到 online freeform LLM 路由之前，`换 / 1 / 2 / 3 / 这首` 优先走候选旁路
+- [x] `/api/agent` provider fetch 加 45s 超时 AbortController
+- [x] 新增 `/api/debug-log`，把浏览器 `[chat]` 日志镜像到服务端输出
+- [x] `player-shell.tsx` 加 `chatHistoryRef`，发送时读取最新历史，避免 `pendingCandidates / pendingSeed` 因 state 闭包滞后丢失
+- [x] 前后端统一 requestId 调试日志：`[chat] / [agent] / [chat-agent]`
+- **Status:** completed
+
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|
@@ -168,6 +181,10 @@ Phase 5
 | 兜底命中后用 `mode:"music-control" + intent:{action:"regenerate", messageHint}` | 跟 LLM 路由器命中的产物**同构**，走同一条 `applyOnlineChatIntent` 链路，不为 fallback 单独写 apply 函数 |
 | `IntentResolution` 联合类型加 `"mood-keyword"` 标识 | 跟 `rule` / `llm` 并列，写进 `intent_resolved` 事件；后续可观测"LLM 路由器判 none 率" / "fallback 命中率" / "fallback 后用户对推荐的接受度" |
 | keyword 库不接 LLM 自动扩词、不做多 keyword 复杂合并、不命中时不主动追问 | Phase 9 只补 mood 直觉式表达（"今天有点累" = 想听柔和的）；复杂语义（"我想听一首能让我想起 17 岁夏天的歌"）仍交给 LLM 路由器；保持 fallback 是"简单稳定兜底"定位，避免复杂度爆炸 |
+| 候选卡点击不再二次搜索，但仍重新解 fresh 直链 | 搜索命中是稳定上下文，播放 URL 是短时资源；两者职责必须拆开 |
+| `换` 必须绑定 `pendingSeed`，不能绑定上一轮第一首歌手 | “来点慢摇”这类 seed 请求的语义是换同类候选，不是换某个歌手的其他歌 |
+| `resolvePlayRequest()` 必须早于 online freeform LLM 路由 | 候选上下文指令（`换/1/2/3/这首`）若先掉进 LLM，会卡住且失去确定性 |
+| 浏览器调试日志镜像到 `/api/debug-log` | 排查 SSE、历史闭包、候选 meta 丢失时，只看 `/tmp/radio-app-dev.log` 就能贯通 requestId |
 
 ## Errors Encountered
 | Error | Resolution |

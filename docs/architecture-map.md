@@ -7,7 +7,7 @@
 
 | 模块 | 文件 | 角色 |
 |---|---|---|
-| 前端壳 | `src/components/player-shell.tsx` (1280 行) | 整个 UI + 所有按钮 / 输入 / 流式接收 |
+| 前端壳 | `src/components/player-shell.tsx` | 整个 UI + 所有按钮 / 输入 / 流式接收 |
 | 在线节目生成器 | `src/lib/online-radio.ts` | **当前首页主链路**：AI 推荐意图 + 在线搜歌 + 可播校验 + 队列持久化 |
 | 模式开关 | `src/lib/radio-mode.ts` | `RADIO_PROGRAM_MODE=online|local` 分流首页与交互接口 |
 | 兼容节目生成器 | `src/lib/radio-engine.ts` | 旧本地曲库 / daily schedule 主链路，当前保留作 `local` 回退 |
@@ -21,6 +21,7 @@
 | 下载入库 | `src/lib/song-download.ts` | 三路下载、文件重命名、补封面/歌词/tag |
 | 下载接口 | `src/app/api/song-download/route.ts` | 下载成功后重建画像，并按模式刷新 online program 或 local schedule |
 | 试听接口 | `src/app/api/song-playback/route.ts` | 搜索结果转真实直链，临时试听不入库 |
+| 调试日志镜像 | `src/app/api/debug-log/route.ts` | 浏览器 `[chat]` 日志镜像到服务端输出 |
 | 学习事件流 | `src/lib/preference-learning.ts` | 行为事件落盘、偏好模型聚合、推荐学习主入口 |
 | 学习事件接口 | `src/app/api/preference-event/route.ts` | 前端播放行为埋点写入入口 |
 
@@ -53,6 +54,7 @@
 | 行号 | 符号 | 类型 | 一句话 | 关键点 |
 |---|---|---|---|---|
 | 270 | `chatAbortRef` | ref | 正在进行的聊天请求 AbortController | 用户重发时 abort 旧请求 |
+| 271 | `chatHistoryRef` | ref | 发送消息时读取最新聊天历史 | 避免 state 闭包滞后导致 `pendingCandidates / pendingSeed` 丢失 |
 | 285 | `shouldResumePlaybackRef` | ref | **自动播放开关** | 设 true → setProgram → audioSource useEffect 自动 .play() |
 | 303 | `streamingMessageId` | derived | 流式中的 assistant 气泡 id | 用来在气泡尾追加 loading 指示 |
 | 322 | audioSource useEffect | effect | **自动播放唯一出口** | pause → load → 看 ref 决定是否 play → 复位 ref |
@@ -68,7 +70,7 @@
 | 626 | `selectQueueTrack` | fn | 跳到 queue 任意一首 | 移动 currentTrackIndex |
 | 663 | `regenerateSchedule` | fn | ⌁ 按钮重生成一天歌单 | keepPlaying=true 强制开播新轨 |
 | 706 | `importLocalLibrary` | fn | 底部读取本地曲库 | mode:"replace" 会覆盖手动调整 |
-| 717 | **`sendChatMessage`** | fn ⭐ | **聊天主流程**，8 步 SSE 接收 | abort 重发 + 30ms 批量 flush + loading 指示 |
+| 717 | **`sendChatMessage`** | fn ⭐ | **聊天主流程**，8 步 SSE 接收 | abort 重发 + 30ms 批量 flush + loading 指示 + requestId 调试日志 |
 | 731 | flush 窗口 | const | 流式 token 批量提交 | 30ms（调优表见代码注释） |
 | 271 | `chatHistory` 初始化 | state | useState 固定 `[intro]` | **SSR/CSR 必须一致**，否则 hydration mismatch |
 | 281 | `chatHydratedRef` | ref | 门闸：恢复完成前禁止写入 | 防 mount 时写入 effect 用 intro 覆盖累积的旧 localStorage |
@@ -109,6 +111,13 @@ sendChatMessage()
   ↓ [DONE] 或 reader.done → 收尾 flushPending
   ↓ AbortError → 悄悄清占位符
 ```
+
+补充：
+
+- assistant 候选帧会把 `meta.pendingCandidates + meta.pendingSeed` 写回最近一条 assistant 消息
+- 候选卡点击直接复用完整 `MusicSearchHit/raw`，不再二次搜索
+- 但播放时仍重新 POST `/api/song-playback` 解析一条新的直链，避免短时 URL 过期
+- 浏览器关键节点会通过 `/api/debug-log` 镜像到服务端输出，方便统一看 `/tmp/radio-app-dev.log`
 
 ### 聊天会话持久化 / 重置链路
 
@@ -233,6 +242,7 @@ mount: effect-A (恢复)
 | 文件头 | 文档 | /api/agent 唯一入口，3 种 mode（weather/music-control/chat） |
 | `runChatAgent` | fn ⭐ | 主流程：判定意图 → 调工具 → 装配 messages |
 | `resolveAgentState` | fn | 意图判定，决定 mode |
+| `resolvePlayRequest` | fn ⭐ | 显式点播 / 候选刷新旁路 | 现在前移到 online freeform LLM 路由之前，避免 `换/1/2/3/这首` 被 LLM 卡住 |
 
 ## API 路由速查
 
@@ -241,6 +251,7 @@ mount: effect-A (恢复)
 | `GET /api/radio` | 首页主接口；online 模式返回在线推荐 program + 兼容 schedule 占位 |
 | `POST /api/regenerate-schedule` | `⌁` 按钮；online=换一批在线推荐，local=重建 4 段歌单 |
 | `POST /api/agent` | 聊天 SSE，先吐 state 帧再透传 Hermes token |
+| `POST /api/debug-log` | 浏览器调试日志镜像到服务端输出 |
 | `GET /api/audio` | 白名单 + Range 请求 + 长期缓存 |
 | `POST /api/next-track` | online=消费当前在线 queue；local=advanceProgramRandomly |
 | `POST /api/feedback` | online=改 memory 后重组在线队列；local=applyFeedbackAndBuildProgram |

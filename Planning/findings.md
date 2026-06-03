@@ -309,3 +309,49 @@
 ### Resources
 - `src/components/player-shell.tsx`（增量：旧 .queueOverlay chatLog 内联块整段删；新 .queueListOverlay 渲染块挪到 queueHeader 下方行 2397；assistant 气泡内挂 message.meta?.pendingCandidates 行 2493 渲染 top3 候选卡）
 - `src/app/page.module.css`（增量：行 1408-1500 新加 .queueListOverlay / .queueListRow / .queueListRowIndex / .queueListRowTitle / .queueListRowArtist / .queueListRowActive + .pageLight 亮色覆盖；旧 .queueOverlay 块保留定义但 player-shell.tsx 0 引用）
+
+## Session: 2026-06-03 (Phase 16)
+
+### 增量要求
+- 候选卡点击必须不二次搜索，直接复用上一轮搜索命中
+- 点击时仍要重新解一条 fresh 播放直链，不能长期复用旧短链
+- `换` 必须按上一轮候选自己的 seed 刷新，不允许偷拿第一首歌手
+- `换 / 1 / 2 / 3 / 这首` 这类候选上下文短指令，优先级必须高于 online freeform LLM 路由
+- 排查 loading / SSE / history 丢状态时，必须能只看 `/tmp/radio-app-dev.log` 就串起全链路
+
+### Research Findings
+- 候选卡原来的失败点不是 `/api/song-playback` 本身，而是“候选只带 `{artist,title}`，前端点击后再走一遍 QQ 搜索”。这会出现“搜索页能播、候选卡又搜不到”的分叉。
+- 把 `playbackUrl` 在候选生成时缓存给前端，也不是终解。第三方直链是短时资源，候选生成时能播，不代表用户几秒后点击时还有效；这正是 `audio element.error` 的根因之一。
+- `换` 一度按 `pending[0].artist` 重搜，这对“来点慢摇/来点民谣/来点晚安歌”这类 seed 请求完全错语义。刷新锚点必须是“上一轮候选自己的 seed”，不是第一首歌手。
+- 日志证明某次 `换` 请求只有 `[agent] request.start`，却没有 `[chat-agent] play-request.detected`。这说明请求在 `runChatAgent()` 里、到 `resolvePlayRequest()` 之前就被卡住了。根因是 online 模式下先跑了 freeform LLM 路由，候选上下文短指令被错误地放在后面。
+- 继续追发现，`换` 有时还是不命中 refresh，不是后端判断错，而是前端发过去的 `history` 已经丢了上一轮 `pendingCandidates/pendingSeed`。原因是 `sendChatMessage()` 用的是滞后的 `chatHistory` state 闭包，而不是最新 ref。
+- 浏览器 console 和服务端 dev 输出原本是两套断开的日志面；排 SSE/前端 state 问题时，仅看服务端文件不够。加一个本地 debug route 镜像浏览器关键日志，才能在 `/tmp/radio-app-dev.log` 里按 requestId 贯通。
+
+### Technical Decisions
+| Decision | Rationale |
+|----------|-----------|
+| `pendingCandidates` 升级成完整 `PendingCandidateHit[]` | 候选点击播放需要完整 `MusicSearchHit/raw`，不应再靠 `{artist,title}` 回头重搜 |
+| 候选卡点击不二次搜索，但仍重新解 fresh 直链 | 搜索命中是稳定上下文，播放 URL 是短时资源；两者职责必须拆开 |
+| 候选消息新增 `pendingSeed` | refresh 必须绑定上一轮真实 seed，而不是偷用第一首歌手 |
+| `resolvePlayRequest()` 前移到 online freeform LLM 路由之前 | 候选上下文短指令必须先短路，不允许先掉进 `inferOnlineFreeformIntent()` |
+| 候选可播验证并发化，只扫描前 12 个候选 | refresh/loading 的主要开销在逐首解链和验链；并发验证能显著缩短等待时间 |
+| `chatHistoryRef` 作为发送时的真实 history 来源 | React state 闭包会滞后一拍；候选 meta 一旦丢，`换/1/2/3` 就会退化成普通聊天或普通切歌 |
+| 新增 `/api/debug-log` 镜像浏览器日志 | 统一看 `/tmp/radio-app-dev.log` 就能按 requestId 追到前端和后端同一次请求 |
+| `/api/agent` provider fetch 必须有 45s 超时 | provider 卡住时，不应该让前端 SSE 一直 loading |
+
+### Issues Encountered
+| Issue | Resolution |
+|-------|------------|
+| 候选卡点击“不重搜”后，直接复用旧 `playbackUrl` 导致短链过期，浏览器报 `audio element.error` | 点击时继续直接透传完整 hit，但重新调 `/api/song-playback` 解析一条 fresh URL |
+| `换` 一直回到第一首歌手的歌 | 改为 assistant 候选消息写入 `pendingSeed`，refresh 一律按 seed 重搜 |
+| `换` 某些场景卡在 loading，没有进入 `play-request` 日志 | `resolvePlayRequest()` 前移到 online freeform LLM 路由之前 |
+| `换` 某些场景直接切歌，不出新候选 | 前端 `history` 丢了上一轮 meta；加 `chatHistoryRef`，并在 assistant-meta/flush/abort/error 分支同步更新 ref |
+| 只看浏览器 console 或只看服务端日志都不够 | 新增 `/api/debug-log`，镜像 `[chat]` 关键日志到服务端输出 |
+
+### Resources
+- `src/lib/types.ts`
+- `src/lib/play-request-executor.ts`
+- `src/lib/chat-agent.ts`
+- `src/components/player-shell.tsx`
+- `src/app/api/agent/route.ts`
+- `src/app/api/debug-log/route.ts`

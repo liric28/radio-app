@@ -742,3 +742,41 @@ sequenceDiagram
 - [src/components/claudio-live-shell.tsx](/Users/lipan/Desktop/radio-app/src/components/claudio-live-shell.tsx)
 - [src/lib/claudio/program-adapter.ts](/Users/lipan/Desktop/radio-app/src/lib/claudio/program-adapter.ts)
 - [src/lib/claudio/station-runtime.ts](/Users/lipan/Desktop/radio-app/src/lib/claudio/station-runtime.ts)
+
+## 2026-06-03 聊天候选刷新链路修订
+
+这一轮把“聊天候选卡片点击播放”和“`换` 刷新候选”这两条链路重新收口，核心边界是：
+
+- 候选卡**不再二次搜索**，而是直接透传完整 `MusicSearchHit/raw`
+- 点击候选时**重新解一次新直链**，但不重搜歌，避免短时 URL 过期
+- `换` 不再偷用上一轮第一首歌手，而是复用上一轮候选消息里的 `pendingSeed`
+- `play-request` 旁路前移到 `runChatAgent()` 前半段，优先级高于 online freeform LLM 路由，避免 `换/1/2/3/这首` 被 LLM 卡住
+
+### 候选消息数据模型
+
+- `ChatMessageMeta.pendingCandidates?: PendingCandidateHit[]`
+- `ChatMessageMeta.pendingSeed?: string`
+- `PendingCandidateHit = MusicSearchHit & { playbackUrl?: string }`
+
+这里的 `playbackUrl` 只用于“候选生成时是否可播”的缓存证据，不作为点击时长期复用的最终真相。真正点击时仍走 `/api/song-playback` 重新解析新直链。
+
+### 刷新语义
+
+`来点慢摇` 这类请求第一次产出候选时，会把 `pendingSeed` 记成 `慢摇`。  
+之后用户说 `换`：
+
+- 前端把最近一条 assistant 候选消息的 `pendingCandidates + pendingSeed` 带回 `/api/agent`
+- `chat-agent.detectExplicitPlayIntent()` 命中 refresh
+- `resolvePlayRequest()` 用 `pendingSeed` 重搜
+- `executePlayRequest()` 排除上一轮已展示的候选，再返回新的 top 3 候选
+
+所以“换”的语义已经从“按第一首歌手换别的歌”改成“按上一轮真正的 seed 换一批候选”。
+
+### 可观测性
+
+为了追这条链上的丢状态和卡死问题，这一轮增加了两套日志：
+
+- 服务端：`[agent] ...`、`[chat-agent] ...`
+- 前端镜像到服务端：`[debug-log] [chat] ...`
+
+前端通过 `/api/debug-log` 把关键发送/SSE 节点镜像到 dev server 输出，这样排查时只看 `/tmp/radio-app-dev.log` 就能对齐 request id。
