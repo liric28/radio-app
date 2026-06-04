@@ -1713,7 +1713,7 @@
 
 .queueListRowActive {
   position: relative;
-  /* 绿底 + 左 3px 竖条画在 ::before 上，不动 row 自身的 margin/padding/列结构。
+  /* 绿底 + 左 2px 竖条画在 ::before 上，不动 row 自身的 margin/padding/列结构。
    * 这样 ▶ 序号列和 2/3 行的"2/3"序号列同 x 起点，标题列 / 歌手列也一致。 */
 }
 .queueListRowActive::before {
@@ -1722,7 +1722,7 @@
   /* 撑出 .queueListOverlay margin: 0 20px 那个 20px，顶到 panel 内边 */
   inset: 0 -20px;
   background: rgba(84, 216, 140, 0.18);
-  box-shadow: inset 3px 0 0 0 #54d88c;
+  box-shadow: inset 2px 0 0 0 #54d88c;
   z-index: -1;
   pointer-events: none;
 }
@@ -1763,7 +1763,7 @@
   position: absolute;
   inset: 0 -20px;
   background: rgba(84, 216, 140, 0.18);
-  box-shadow: inset 3px 0 0 0 #54d88c;
+  box-shadow: inset 2px 0 0 0 #54d88c;
   z-index: -1;
   pointer-events: none;
 }

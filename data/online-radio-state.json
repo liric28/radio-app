@@ -1,58 +1,58 @@
 {
   "date": "2026-06-04",
   "seed": {
-    "input": "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "reason": "manual-pick"
+    "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "reason": "queue-advance"
   },
   "source": "qq",
   "program": {
     "stationName": "Claudio FM",
-    "segmentTitle": "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
-    "scene": "晨间出门",
+    "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "今天先不急着解释，先让《七里香》把气口定住。后面那首我也给你连好了。",
+    "hostIntro": "今天先不急着解释，先让《百战成诗》把气口定住。后面那首我也给你连好了。",
     "currentTrack": {
-      "id": "online-ce519545a5ab",
-      "title": "一路向北",
-      "artist": "周杰伦",
+      "id": "online-06fe23b436e5",
+      "title": "百战成诗",
+      "artist": "白天",
       "year": 2026,
-      "mood": "轻快",
+      "mood": "专注",
       "energy": 9,
       "language": "中文",
       "tags": [
         "在线推荐",
-        "晨间出门",
-        "kugou"
+        "白天工作流",
+        "qq"
       ],
-      "reasonSeed": "这首歌是按“晨间出门 / 周杰伦 / 一路向北”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / 白天 / 百战成诗”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
-      "source": "kugou",
+      "source": "qq",
       "recommendationMeta": {
-        "sourceLabel": "常听",
-        "slotType": "anchor",
+        "sourceLabel": "顺推",
+        "slotType": "fallback",
         "slotLabel": "延续"
       },
       "downloadContext": {
-        "source": "kugou",
-        "duration": 294,
+        "source": "qq",
+        "duration": 393,
         "payable": false,
         "downloadable": true,
-        "albumName": "",
-        "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121743958387.jpg",
+        "albumName": "温柔男声版",
+        "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg",
         "raw": {
-          "audioId": 298888513,
-          "hash": "F73F22FB046CA1A135C70417163AF82E",
-          "title": "一路向北",
-          "artist": "周杰伦",
-          "albumName": "",
-          "duration": 294,
-          "payType": 3,
-          "payable": false,
-          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121743958387.jpg"
+          "source": "qq",
+          "songId": 376647925,
+          "songmid": "004YBAEm0SZrrg",
+          "mediaMid": "000uIunD1K4GmS",
+          "title": "百战成诗",
+          "artist": "白天",
+          "albumName": "温柔男声版",
+          "duration": 393,
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002zuIe13f1N3C.jpg"
         }
       },
-      "reason": "一路向北出发吧，让节奏带着心去追逐晨光"
+      "reason": "百战"
     },
     "queue": [
       {
@@ -60,266 +60,223 @@
         "title": "交换余生",
         "artist": "白天",
         "year": 2026,
-        "mood": "清醒",
-        "energy": 7,
+        "mood": "克制",
+        "energy": 9,
         "language": "中文",
         "tags": [
           "在线推荐",
-          "晨间出门",
-          "kugou"
+          "白天工作流",
+          "qq"
         ],
-        "reasonSeed": "这首歌是按“晨间出门 / 白天 / 交换余生”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
-        "source": "kugou",
+        "source": "qq",
         "recommendationMeta": {
           "sourceLabel": "顺推",
           "slotType": "fallback",
-          "slotLabel": "主推"
+          "slotLabel": "延续"
         },
         "downloadContext": {
-          "source": "kugou",
+          "source": "qq",
           "duration": 277,
-          "payable": true,
+          "payable": false,
           "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20240613/20240613104246676124.jpg",
+          "albumName": "治愈男生版",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
           "raw": {
-            "audioId": 199706441,
-            "hash": "C7C2439CB80B3410A27BFBABCA0533A8",
+            "source": "qq",
+            "songId": 495254237,
+            "songmid": "003Mr8HR2HksC8",
+            "mediaMid": "003Mr8HR2HksC8",
             "title": "交换余生",
             "artist": "白天",
-            "albumName": "",
+            "albumName": "治愈男生版",
             "duration": 277,
-            "payType": 0,
-            "payable": true,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20240613/20240613104246676124.jpg"
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
           }
         },
-        "reason": "新的一天，新的开始，这首歌陪你交换人生的每个清晨"
+        "reason": "这首歌是按“白天工作流 / 白天 / 交换余生”这条在线推荐线索命中的。"
       },
       {
-        "id": "online-21130641af9b",
-        "title": "七里香",
+        "id": "online-85991d5d8e20",
+        "title": "낮 (Day off) (白天)",
+        "artist": "脸红的思春期",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "韩语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 192,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Two Five",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 237776459,
+            "songmid": "00045fv91egfYd",
+            "mediaMid": "000C6adX259x6U",
+            "title": "낮 (Day off) (白天)",
+            "artist": "脸红的思春期",
+            "albumName": "Two Five",
+            "duration": 192,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000000I2OMk1DiGUX.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-b964c3f0105a",
+        "title": "Daylight",
+        "artist": "Maroon 5",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "英语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "qq",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "qq",
+          "duration": 226,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "Singles (Explicit)",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg",
+          "raw": {
+            "source": "qq",
+            "songId": 104357077,
+            "songmid": "001DwtBl2gdXYN",
+            "mediaMid": "000XzVwY1T07TK",
+            "title": "Daylight",
+            "artist": "Maroon 5",
+            "albumName": "Singles (Explicit)",
+            "duration": 226,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002mILRb3n4m7A.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-1ad48b67c8f5",
+        "title": "青花瓷",
         "artist": "周杰伦",
         "year": 2026,
-        "mood": "清醒",
+        "mood": "轻推力",
         "energy": 9,
         "language": "中文",
         "tags": [
           "在线推荐",
-          "晨间出门",
-          "kugou"
+          "白天工作流",
+          "qq"
         ],
-        "reasonSeed": "这首歌是按“晨间出门 / 周杰伦 / 七里香”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 青花瓷”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
-        "source": "kugou",
+        "source": "qq",
         "recommendationMeta": {
           "sourceLabel": "常听",
           "slotType": "anchor",
           "slotLabel": "延续"
         },
         "downloadContext": {
-          "source": "kugou",
-          "duration": 299,
+          "source": "qq",
+          "duration": 239,
           "payable": false,
           "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121745628430.jpg",
+          "albumName": "我很忙",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002eFUFm2XYZ7z.jpg",
           "raw": {
-            "audioId": 2561552,
-            "hash": "2C7CEB6CC2340ECC8948E0ACE62F0CF8",
-            "title": "七里香",
+            "source": "qq",
+            "songId": 410316,
+            "songmid": "002qU5aY3Qu24y",
+            "mediaMid": "0015zR8B3gjJLl",
+            "title": "青花瓷",
             "artist": "周杰伦",
-            "albumName": "",
-            "duration": 299,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121745628430.jpg"
+            "albumName": "我很忙",
+            "duration": 239,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002eFUFm2XYZ7z.jpg"
           }
         },
-        "reason": "周杰伦七里香响起，清新的旋律唤醒你的每一个清晨"
+        "reason": "这首歌是按“白天工作流 / 周杰伦 / 青花瓷”这条在线推荐线索命中的。"
       },
       {
-        "id": "online-4d0037a5aee0",
-        "title": "姑娘别哭泣",
+        "id": "online-be107040983b",
+        "title": "茉莉雨 (COVER版)",
         "artist": "白天",
         "year": 2026,
-        "mood": "通勤",
+        "mood": "轻推力",
         "energy": 9,
         "language": "中文",
         "tags": [
           "在线推荐",
-          "晨间出门",
-          "kugou"
+          "白天工作流",
+          "qq"
         ],
-        "reasonSeed": "这首歌是按“晨间出门 / 白天 / 姑娘别哭泣”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 白天 / 茉莉雨 (COVER版)”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
-        "source": "kugou",
+        "source": "qq",
         "recommendationMeta": {
           "sourceLabel": "顺推",
           "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
-          "source": "kugou",
-          "duration": 235,
-          "payable": true,
+          "source": "qq",
+          "duration": 256,
+          "payable": false,
           "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20240613/20240613104246676124.jpg",
+          "albumName": "治愈男生版",
+          "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg",
           "raw": {
-            "audioId": 302114640,
-            "hash": "7D848676B7FBED3563445C49CDE03FAC",
-            "title": "姑娘别哭泣",
+            "source": "qq",
+            "songId": 540899719,
+            "songmid": "004KtX162owd7j",
+            "mediaMid": "004KtX162owd7j",
+            "title": "茉莉雨 (COVER版)",
             "artist": "白天",
-            "albumName": "",
-            "duration": 235,
-            "payType": 0,
-            "payable": true,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20240613/20240613104246676124.jpg"
+            "albumName": "治愈男生版",
+            "duration": 256,
+            "imageUrl": "https://y.gtimg.cn/music/photo_new/T002R500x500M000002YQNtH0lTqof.jpg"
           }
         },
-        "reason": "姑娘别哭泣，晨光里让我们一起笑着出门上班"
-      },
-      {
-        "id": "online-6bd3eeb8afd3",
-        "title": "No Complaints (Live)",
-        "artist": "严浩翔",
-        "year": 2026,
-        "mood": "通勤",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / 严浩翔 / No Complaints (Live)”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 253,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20231124/20231124171502712127.jpg",
-          "raw": {
-            "audioId": 299610551,
-            "hash": "905F0836FB16A14292450FA86BFACE4E",
-            "title": "No Complaints (Live)",
-            "artist": "严浩翔",
-            "albumName": "",
-            "duration": 253,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20231124/20231124171502712127.jpg"
-          }
-        },
-        "reason": "通勤路上别抱怨，严浩翔这首歌陪你穿越早高峰"
-      },
-      {
-        "id": "online-30c42a6940b7",
-        "title": "她没在看我 (Live)",
-        "artist": "刘耀文、张真源、严浩翔",
-        "year": 2026,
-        "mood": "轻快",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / 刘耀文、张真源、严浩翔 / 她没在看我 (Live)”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 234,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20231124/20231124171502712127.jpg",
-          "raw": {
-            "audioId": 299610557,
-            "hash": "D0063A1B1E8AECE8A22DA1315B0F0DBC",
-            "title": "她没在看我 (Live)",
-            "artist": "刘耀文、张真源、严浩翔",
-            "albumName": "",
-            "duration": 234,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20231124/20231124171502712127.jpg"
-          }
-        },
-        "reason": "她没在看我，但她没听见这首歌，快来感受这份轻快"
-      },
-      {
-        "id": "online-c6163abeb633",
-        "title": "花海",
-        "artist": "周杰伦",
-        "year": 2026,
-        "mood": "通勤",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / 周杰伦 / 花海”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "常听",
-          "slotType": "anchor",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 264,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20241118/20241118160622508429.jpg",
-          "raw": {
-            "audioId": 327075,
-            "hash": "3328808CECBD1A1038166003840FDDD7",
-            "title": "花海",
-            "artist": "周杰伦",
-            "albumName": "",
-            "duration": 264,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20241118/20241118160622508429.jpg"
-          }
-        },
-        "reason": "花海里迎着清晨，周杰伦的温柔陪你走过通勤路"
+        "reason": "这首歌是按“白天工作流 / 白天 / 茉莉雨 (COVER版)”这条在线推荐线索命中的。"
       }
     ],
     "explanation": [
-      "这轮不再从本地曲库起歌，直接按 晨间出门 的在线推荐意图去搜。",
-      "推荐线索是“早高峰通勤向，从本地十四年华语库里捞出几首像红尘客栈、光辉岁月这样有集体记忆的中文歌唤醒清晨”，实际落地优先保留 白天、白天、周杰伦 这些锚点。",
-      "当前来源是 kugou，本轮确认了 8 首可播在线歌曲。"
+      "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
+      "推荐线索是“白天工作时段，用周杰伦和BEYOND的华语老歌搭建熟悉感背景声”，实际落地优先保留 周杰伦、周杰伦、白天 这些锚点。",
+      "当前来源是 qq，本轮确认了 8 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 manual-pick，本轮种子是“早高峰通勤向，从本地十四年华语库里捞出几首像红尘客栈、光辉岁月这样有集体记忆的中文歌唤醒清晨”。当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 manual-pick，本轮种子是“白天工作时段，用周杰伦和BEYOND的华语老歌搭建熟悉感背景声”。当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

@@ -40,7 +40,7 @@ type MatrixState = {
 // 点阵基础列距/行距。数值越大，面板里的点越稀。
 const GRID_GAP = 18;
 // 默认灰点半径，未被交互影响时每个点的尺寸。
-const BASE_RADIUS = 1.1;
+const BASE_RADIUS = 1.22;
 // 鼓包影响半径。鼠标附近这片区域内的矩阵点会参与形变和染色。
 const LENS_RADIUS = 160;
 // 形变的最大放大倍率。越大，鼠标经过时“透视鼓包”越明显。
@@ -169,8 +169,8 @@ export const PointerMatrixField = forwardRef<
     // baseColor 是默认矩阵灰点；lensColor 是交互时的绿色点。
     const baseColor =
       themeRef.current === "light"
-        ? { r: 88, g: 80, b: 128, a: 0.26 }
-        : { r: 244, g: 243, b: 248, a: 0.22 };
+        ? { r: 88, g: 80, b: 128, a: 0.32 }
+        : { r: 244, g: 243, b: 248, a: 0.36 };
     const lensColor =
       themeRef.current === "light"
         ? { r: 62, g: 201, b: 132, a: 0.94 }
