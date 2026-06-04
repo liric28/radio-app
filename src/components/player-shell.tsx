@@ -2674,17 +2674,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
           <div className={styles.chatLog} ref={chatLogRef}>
             {chatHistory.length === 0 && (
               <div className={`${styles.chatLine} ${styles.chatLineAssistant}`}>
-                <div className={styles.avatar}>
-                  <img
-                    src="/claudio.jpg"
-                    alt="Claudio"
-                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
-                  />
+                <div className={styles.djAvatarWrap}>
+                  <div className={styles.avatar}>
+                    <img
+                      src="/claudio.jpg"
+                      alt="Claudio"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                    />
+                  </div>
+                  <span className={styles.chatAvatarLabel}>CLAUDIO</span>
                 </div>
-                <p className={styles.chatBubbleWithLabel}>
-                  <span className={styles.chatBubbleLabel}>CLAUDIO</span>
-                  {program.hostIntro}
-                </p>
+                <p className={styles.chatBubbleWithLabel}>{program.hostIntro}</p>
               </div>
             )}
             {chatHistory.map((message) => (
@@ -2696,15 +2696,17 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
               >
                 {message.role === "assistant" ? (
                   <>
-                    <div className={styles.avatar}>
-                      <img
-                        src="/claudio.jpg"
-                        alt="Claudio"
-                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
-                      />
+                    <div className={styles.djAvatarWrap}>
+                      <div className={styles.avatar}>
+                        <img
+                          src="/claudio.jpg"
+                          alt="Claudio"
+                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                        />
+                      </div>
+                      <span className={styles.chatAvatarLabel}>CLAUDIO</span>
                     </div>
                     <div className={styles.chatBubbleWithLabel}>
-                      <span className={styles.chatBubbleLabel}>CLAUDIO</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
                       {message.id === streamingMessageId && message.content && (
                         <span className={styles.streamingCursor} aria-label="streaming">
@@ -2715,11 +2717,13 @@ export function PlayerShell({ initialProgram, initialSchedule, initialWeather }:
                   </>
                 ) : (
                   <>
-                    <div className={styles.userAvatar}>
-                      {renderNeteaseAvatar()}
+                    <div className={styles.djAvatarWrap}>
+                      <div className={styles.userAvatar}>
+                        {renderNeteaseAvatar()}
+                      </div>
+                      <span className={styles.chatAvatarLabelLiric}>LIRIC</span>
                     </div>
                     <div className={`${styles.chatBubbleWithLabel} ${styles.chatBubbleLiric}`}>
-                      <span className={styles.chatBubbleLabelLiric}>LIRIC</span>
                       {message.content || <DotmHex10 dotSize={5} color="#54d88c" size={36} speed={1.2} />}
                     </div>
                   </>
