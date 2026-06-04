@@ -17,6 +17,7 @@ const onlineStatePath = path.join(dataDir, "online-radio-state.json");
 const DEFAULT_SOURCE = (process.env.RADIO_ONLINE_SOURCE || process.env.CLAUDIO_LIVE_MUSIC_SOURCE || "qq") as MusicSearchSource;
 const DEFAULT_TRACK_COUNT = 8;
 const HARD_EXCLUDE_RECENT_TRACKS = Math.max(12, Number(process.env.RADIO_HARD_EXCLUDE_RECENT_TRACKS || 15));
+const RECENT_ARTIST_COOLDOWN = Math.max(6, Number(process.env.RADIO_RECENT_ARTIST_COOLDOWN || 8));
 
 type OnlineRecommendationSeed = {
   input: string;
@@ -103,6 +104,13 @@ function sourceFallbackOrder(preferred: MusicSearchSource) {
 
 function buildTrackKey(track: { title?: string; artist?: string }) {
   return `${track.title || ""}__${track.artist || ""}`.toLowerCase();
+}
+
+function extractArtistFromTrackLabel(label: string | undefined) {
+  const value = String(label || "").trim();
+  const separatorIndex = value.lastIndexOf(" - ");
+  if (separatorIndex < 0) return "";
+  return value.slice(separatorIndex + 3).trim();
 }
 
 function normalizeName(value: string | undefined) {
@@ -227,6 +235,11 @@ function matchesLanguagePreference(hit: MusicSearchHit, language: RequestPrefere
   return false;
 }
 
+function softenLearnedAffinity(value: number, weight = 1) {
+  if (!Number.isFinite(value) || value === 0) return 0;
+  return Math.sign(value) * Math.sqrt(Math.abs(value)) * weight;
+}
+
 function hasExplicitLanguageConstraint(preferences: RequestPreferences) {
   return Boolean(preferences.language);
 }
@@ -262,17 +275,26 @@ function scoreOnlineHit(
   if (!hit.downloadable) score -= 2;
   if (normalizedArtist === "unknown artist" || normalizedArtist === "dj") score -= 12;
 
-  score += (model.artistAffinity[hit.artist] || 0) * 0.9;
-  score += scenePreferenceScore(model.artistAffinityByScene, routine.scene, hit.artist) * 1.6;
+  score += softenLearnedAffinity(model.artistAffinity[hit.artist] || 0, 0.9);
+  score += softenLearnedAffinity(
+    scenePreferenceScore(model.artistAffinityByScene, routine.scene, hit.artist),
+    1.3,
+  );
 
   const inferredLanguage = preferences.language || inferLanguage(taste, hit.title, hit.artist);
-  score += (model.languageAffinity[inferredLanguage] || 0) * 0.8;
-  score += scenePreferenceScore(model.languageAffinityByScene, routine.scene, inferredLanguage) * 1.2;
+  score += softenLearnedAffinity(model.languageAffinity[inferredLanguage] || 0, 0.8);
+  score += softenLearnedAffinity(
+    scenePreferenceScore(model.languageAffinityByScene, routine.scene, inferredLanguage),
+    1.0,
+  );
 
   for (const token of [hit.source, routine.scene, ...preferences.vibes, hit.albumName || ""]) {
     if (!token) continue;
-    score += (model.tagAffinity[token] || 0) * 0.2;
-    score += scenePreferenceScore(model.tagAffinityByScene, routine.scene, token) * 0.35;
+    score += softenLearnedAffinity(model.tagAffinity[token] || 0, 0.2);
+    score += softenLearnedAffinity(
+      scenePreferenceScore(model.tagAffinityByScene, routine.scene, token),
+      0.3,
+    );
   }
 
   score -= sceneNegativeScore(model, routine.scene, hit.artist, inferredLanguage) * 1.4;
@@ -597,6 +619,9 @@ function buildSearchQueries(
     [sanitizeAnchorArtists(taste.anchorArtists)[0], routine.scene].filter(Boolean).join(" "),
     [learnedArtist, routine.scene].filter(Boolean).join(" "),
     [preferredLanguage, learnedTag, routine.scene].filter(Boolean).join(" "),
+    [preferredLanguage, learnedTag || routine.preferredMoods[0], "不同艺人", "相似风格", routine.scene]
+      .filter(Boolean)
+      .join(" "),
     action === "calmer"
       ? [preferredLanguage, "安静", routine.scene].filter(Boolean).join(" ")
       : action === "fresh"
@@ -637,10 +662,17 @@ function reservedExplorationSlots(
   count: number,
   action?: BuildOnlineProgramOptions["action"],
 ) {
+  /**
+   * 扩散策略：
+   * - fresh：用户明确要“新歌”，探索位最多，queue 前半段尽量给陌生艺人
+   * - wide：模型还没学稳时主动扩圈，避免过早收敛到少数常见艺人
+   * - balanced：保留 1-2 个稳定扩圈位，既不中断风格，也不原地打转
+   * - focused：只有意图非常聚焦时才收缩探索位
+   */
   if (count <= 1) return 0;
-  if (action === "fresh") return Math.min(2, Math.max(1, count - 1));
-  if (exploration.mode === "wide") return Math.min(2, Math.max(1, count - 1));
-  if (exploration.mode === "balanced") return 1;
+  if (action === "fresh") return Math.min(4, Math.max(2, count - 1));
+  if (exploration.mode === "wide") return Math.min(3, Math.max(2, count - 1));
+  if (exploration.mode === "balanced") return Math.min(2, Math.max(1, count - 1));
   return 0;
 }
 
@@ -887,8 +919,14 @@ async function collectRankedHits(
   const excluded = new Set(excludeTrackIds.map((item) => item.toLowerCase()));
   const exploration = buildExplorationPlan(model, routine, taste, preferences);
 
+  /**
+   * 搜索池阶段的目标是“多找，再筛”：
+   * 1. query 同时覆盖用户原意图、场景、语言、学习到的标签、以及“相似风格/不同艺人”
+   * 2. 每个 query 抓更多命中，扩大候选池，避免过早只剩熟悉艺人
+   * 3. 这里只做去重和粗排，不在这一层就把范围缩回老歌手
+   */
   for (const query of queries) {
-    const hits = await searchSongsBySource(query, source, 1, 10).catch(() => []);
+    const hits = await searchSongsBySource(query, source, 1, 16).catch(() => []);
     for (const hit of hits) {
       if (isJunkRecommendationHit(hit)) continue;
       const id = buildOnlineTrackId(hit.title, hit.artist);
@@ -905,17 +943,23 @@ async function collectRankedHits(
       const rightLanguage = preferences.language || inferLanguage(taste, right.title, right.artist);
       const leftLanguage = preferences.language || inferLanguage(taste, left.title, left.artist);
       const rightLearned =
-        ((model.artistAffinity[right.artist] || 0) +
-          (model.languageAffinity[rightLanguage] || 0) +
-          scenePreferenceScore(model.artistAffinityByScene, routine.scene, right.artist) +
-          scenePreferenceScore(model.languageAffinityByScene, routine.scene, rightLanguage)) *
-        confidence;
+        softenLearnedAffinity(model.artistAffinity[right.artist] || 0) * confidence +
+        softenLearnedAffinity(model.languageAffinity[rightLanguage] || 0) * confidence +
+        softenLearnedAffinity(
+          scenePreferenceScore(model.artistAffinityByScene, routine.scene, right.artist),
+        ) * confidence +
+        softenLearnedAffinity(
+          scenePreferenceScore(model.languageAffinityByScene, routine.scene, rightLanguage),
+        ) * confidence;
       const leftLearned =
-        ((model.artistAffinity[left.artist] || 0) +
-          (model.languageAffinity[leftLanguage] || 0) +
-          scenePreferenceScore(model.artistAffinityByScene, routine.scene, left.artist) +
-          scenePreferenceScore(model.languageAffinityByScene, routine.scene, leftLanguage)) *
-        confidence;
+        softenLearnedAffinity(model.artistAffinity[left.artist] || 0) * confidence +
+        softenLearnedAffinity(model.languageAffinity[leftLanguage] || 0) * confidence +
+        softenLearnedAffinity(
+          scenePreferenceScore(model.artistAffinityByScene, routine.scene, left.artist),
+        ) * confidence +
+        softenLearnedAffinity(
+          scenePreferenceScore(model.languageAffinityByScene, routine.scene, leftLanguage),
+        ) * confidence;
 
       return (
         scoreOnlineHit(right, taste, memory, model, routine, seed.input, preferences) +
@@ -937,20 +981,47 @@ async function buildProgramTracks(
   memory: RadioMemory,
   options: BuildOnlineProgramOptions,
 ) {
+  /**
+   * 最终落歌阶段不是单纯取 Top N，而是做三层收束：
+   * 1. 维持“当前风格连续”这个大前提
+   * 2. 用艺人冷却 / 同艺人上限 / 本地回流限制，压掉反复出现的老面孔
+   * 3. 把 stable + explore 两个桶交织，确保 queue 里真的留有扩圈位
+   *
+   * 期望结果：
+   * - 风格连续
+   * - 艺人分散
+   * - 尽量是最近没播过、没反复出现的新歌
+   */
   const localSongs = await readSongCatalog().catch(() => []);
   const stableCandidates: OnlineTrackCandidate[] = [];
   const exploreCandidates: OnlineTrackCandidate[] = [];
   const artistCounts = new Map<string, number>();
   const titleCounts = new Map<string, number>();
   const forcedArtist = explicitArtistRequest(options.messageHint, taste);
-  const maxPerArtist = forcedArtist ? count : 2;
+  const preferOnlineOnly = !forcedArtist && options.action !== "familiar";
+  const maxPerArtist = forcedArtist ? count : 1;
   const model = await readPreferenceModel();
   const preferences = parseRequestPreferences(options.messageHint);
   const exploration = buildExplorationPlan(model, routine, taste, preferences, options.action);
   const explorationSlots = reservedExplorationSlots(exploration, count, options.action);
   const acceptedTrackIds = new Set<string>();
+  // 最近播过的艺人簇先进入冷却区。严格阶段优先让“同风格但不同艺人”的歌进来。
+  const recentArtistClusters = new Set(
+    memory.recentTrackIds
+      .slice(0, RECENT_ARTIST_COOLDOWN)
+      .flatMap((label) => buildArtistClusterKeys(extractArtistFromTrackLabel(label))),
+  );
 
-  async function tryAppendHit(hit: MusicSearchHit, index: number, relaxed: boolean) {
+  async function tryAppendHit(
+    hit: MusicSearchHit,
+    index: number,
+    options: {
+      relaxed: boolean;
+      allowRecentArtist: boolean;
+      allowLocalMatch: boolean;
+      perArtistLimit: number;
+    },
+  ) {
     if (stableCandidates.length + exploreCandidates.length >= count * 3) return;
     if (hasExplicitLanguageConstraint(preferences) && !matchesLanguagePreference(hit, preferences.language)) return;
     const trackId = buildOnlineTrackId(hit.title, hit.artist);
@@ -961,15 +1032,21 @@ async function buildProgramTracks(
       0,
       ...artistClusterKeys.map((key) => artistCounts.get(key) || 0),
     );
-    const allowedPerArtist = forcedArtist ? count : relaxed ? 3 : maxPerArtist;
+    // 严格阶段：近期艺人直接跳过，先扩到新艺人；兜底阶段再逐步放开。
+    const isRecentArtist = artistClusterKeys.some((key) => recentArtistClusters.has(key));
+    if (!forcedArtist && !options.allowRecentArtist && isRecentArtist) return;
+    // 非点名场景默认每艺人只留 1 首；回填不足时再逐步放大上限。
+    const allowedPerArtist = forcedArtist ? count : options.perArtistLimit;
     if (currentArtistCount >= allowedPerArtist) return;
 
     const normalizedTitle = normalizeTitleKey(hit.title);
-    const allowedTitleRepeats = relaxed ? 2 : 1;
+    const allowedTitleRepeats = options.relaxed ? 2 : 1;
     if ((titleCounts.get(normalizedTitle) || 0) >= allowedTitleRepeats) return;
 
     const localCandidate = findLocalMatch(hit, localSongs);
     const localMatch = (await localSongFileExists(localCandidate)) ? localCandidate : undefined;
+    // 在线电台默认优先推真正的新在线歌；只有后续回填阶段，才允许本地老歌回流补位。
+    if (preferOnlineOnly && localMatch && !options.allowLocalMatch) return;
     const recommendationMeta = classifyRecommendationSource(
       hit,
       localMatch,
@@ -1034,14 +1111,31 @@ async function buildProgramTracks(
     titleCounts.set(normalizedTitle, (titleCounts.get(normalizedTitle) || 0) + 1);
   }
 
-  for (const [index, hit] of hits.entries()) {
-    await tryAppendHit(hit, index, false);
-  }
+  /**
+   * 回填顺序：
+   * 1. 最严格：新艺人 + 在线新歌优先
+   * 2. 先放开“同艺人第二首”，但仍不允许近期艺人回流
+   * 3. 再放开近期艺人冷却
+   * 4. 最后才允许本地命中老歌回流补位
+   *
+   * 这样可以保证“尽量广范围”，同时避免像刚才那样过滤过猛，最后只剩 2 首。
+   */
+  const fillStages = forcedArtist
+    ? [
+        { relaxed: false, allowRecentArtist: true, allowLocalMatch: true, perArtistLimit: count },
+      ]
+    : [
+        { relaxed: false, allowRecentArtist: false, allowLocalMatch: false, perArtistLimit: maxPerArtist },
+        { relaxed: true, allowRecentArtist: false, allowLocalMatch: false, perArtistLimit: 2 },
+        { relaxed: true, allowRecentArtist: true, allowLocalMatch: false, perArtistLimit: 2 },
+        { relaxed: true, allowRecentArtist: true, allowLocalMatch: true, perArtistLimit: 3 },
+      ];
 
-  if (stableCandidates.length + exploreCandidates.length < count) {
+  for (const stage of fillStages) {
+    if (stableCandidates.length + exploreCandidates.length >= count) break;
     for (const [index, hit] of hits.entries()) {
       if (stableCandidates.length + exploreCandidates.length >= count) break;
-      await tryAppendHit(hit, index, true);
+      await tryAppendHit(hit, index, stage);
     }
   }
 

@@ -46,6 +46,30 @@ function logReasonRewrite(event: string, meta: Record<string, unknown>) {
   console.info(`[reason-rewrite] ${event}`, meta);
 }
 
+const BATCH_REASON_CACHE_TTL_MS = 10_000;
+const inFlightBatchReasonRewrites = new Map<string, Promise<Map<string, string>>>();
+const recentBatchReasonResults = new Map<
+  string,
+  { expiresAt: number; reasons: Map<string, string> }
+>();
+
+function cloneReasonMap(source: Map<string, string>) {
+  return new Map(source);
+}
+
+function buildBatchReasonKey(tracks: Song[], scene: string) {
+  return JSON.stringify({
+    scene,
+    tracks: tracks.map((track) => ({
+      id: track.id,
+      title: track.title,
+      artist: track.artist,
+      mood: track.mood,
+      reasonSeed: track.reasonSeed,
+    })),
+  });
+}
+
 function buildFallbackTrackReason(song: Song, scene: string) {
   const seed = song.reasonSeed.trim();
 
@@ -449,93 +473,126 @@ export async function batchRewriteTrackReasons(
   tracks: Song[],
   scene: string,
 ): Promise<Map<string, string>> {
-  const reasonMap = new Map<string, string>();
-  const trackPreview = tracks.slice(0, 3).map((track) => `${track.artist} - ${track.title}`);
-
-  logReasonRewrite("batch.start", {
-    scene,
-    count: tracks.length,
-    provider: process.env.LLM_PROVIDER || "minimax",
-    sample: trackPreview,
-  });
-
-  if (reasonMap.size === 0) {
-    try {
-      const timeout2 = new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error("LLM batch timeout after 60000ms")), 60000),
-      );
-      const text = await Promise.race([
-        requestChatCompletion(
-          [
-            {
-              role: "system",
-              content:
-                "你是独立音乐电台 DJ 推荐语助手。按序号每行输出一句推荐语，12-25字，自然口语，像 DJ 在介绍歌。禁止列表、解释。",
-            },
-            {
-              role: "user",
-              content: tracks
-                .map(
-                  (t, i) =>
-                    `${i + 1}. 场景：${scene}，氛围：${t.mood}，种子：${t.reasonSeed}`,
-                )
-                .join("\n"),
-            },
-          ],
-          512,
-        ),
-        timeout2,
-      ]);
-      if (text) {
-        const lines = text.split("\n").filter(Boolean);
-        tracks.forEach((t, i) => {
-          if (lines[i])
-            reasonMap.set(t.id, lines[i].replace(/^\d+[\.\)、]\s*/, ""));
-        });
-        logReasonRewrite("batch.provider.ok", {
-          scene,
-          count: tracks.length,
-          generated: lines.length,
-          mapped: reasonMap.size,
-        });
-      } else {
-        logReasonRewrite("batch.provider.empty", {
-          scene,
-          count: tracks.length,
-        });
-      }
-    } catch (error) {
-      logReasonRewrite("batch.provider.fail", {
-        scene,
-        count: tracks.length,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  if (reasonMap.size > 0 && reasonMap.size < tracks.length) {
-    logReasonRewrite("batch.partial", {
+  const cacheKey = buildBatchReasonKey(tracks, scene);
+  const now = Date.now();
+  const cached = recentBatchReasonResults.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    logReasonRewrite("batch.cache.hit", {
       scene,
       count: tracks.length,
-      mapped: reasonMap.size,
-      fallbackCount: tracks.length - reasonMap.size,
     });
+    return cloneReasonMap(cached.reasons);
   }
 
-  tracks.forEach((t) => {
-    if (!reasonMap.has(t.id)) {
-      logReasonRewrite("batch.fallback", {
-        scene,
-        trackId: t.id,
-        artist: t.artist,
-        title: t.title,
-        seed: t.reasonSeed,
-      });
-      reasonMap.set(t.id, buildFallbackTrackReason(t, scene));
-    }
-  });
+  const inFlight = inFlightBatchReasonRewrites.get(cacheKey);
+  if (inFlight) {
+    logReasonRewrite("batch.join", {
+      scene,
+      count: tracks.length,
+    });
+    return cloneReasonMap(await inFlight);
+  }
 
-  return reasonMap;
+  const task = (async () => {
+    const reasonMap = new Map<string, string>();
+    const trackPreview = tracks.slice(0, 3).map((track) => `${track.artist} - ${track.title}`);
+
+    logReasonRewrite("batch.start", {
+      scene,
+      count: tracks.length,
+      provider: process.env.LLM_PROVIDER || "minimax",
+      sample: trackPreview,
+    });
+
+    if (reasonMap.size === 0) {
+      try {
+        const timeout2 = new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error("LLM batch timeout after 60000ms")), 60000),
+        );
+        const text = await Promise.race([
+          requestChatCompletion(
+            [
+              {
+                role: "system",
+                content:
+                  "你是独立音乐电台 DJ 推荐语助手。按序号每行输出一句推荐语，12-25字，自然口语，像 DJ 在介绍歌。禁止列表、解释。",
+              },
+              {
+                role: "user",
+                content: tracks
+                  .map(
+                    (t, i) =>
+                      `${i + 1}. 场景：${scene}，氛围：${t.mood}，种子：${t.reasonSeed}`,
+                  )
+                  .join("\n"),
+              },
+            ],
+            512,
+          ),
+          timeout2,
+        ]);
+        if (text) {
+          const lines = text.split("\n").filter(Boolean);
+          tracks.forEach((t, i) => {
+            if (lines[i])
+              reasonMap.set(t.id, lines[i].replace(/^\d+[\.\)、]\s*/, ""));
+          });
+          logReasonRewrite("batch.provider.ok", {
+            scene,
+            count: tracks.length,
+            generated: lines.length,
+            mapped: reasonMap.size,
+          });
+        } else {
+          logReasonRewrite("batch.provider.empty", {
+            scene,
+            count: tracks.length,
+          });
+        }
+      } catch (error) {
+        logReasonRewrite("batch.provider.fail", {
+          scene,
+          count: tracks.length,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    if (reasonMap.size > 0 && reasonMap.size < tracks.length) {
+      logReasonRewrite("batch.partial", {
+        scene,
+        count: tracks.length,
+        mapped: reasonMap.size,
+        fallbackCount: tracks.length - reasonMap.size,
+      });
+    }
+
+    tracks.forEach((t) => {
+      if (!reasonMap.has(t.id)) {
+        logReasonRewrite("batch.fallback", {
+          scene,
+          trackId: t.id,
+          artist: t.artist,
+          title: t.title,
+          seed: t.reasonSeed,
+        });
+        reasonMap.set(t.id, buildFallbackTrackReason(t, scene));
+      }
+    });
+
+    recentBatchReasonResults.set(cacheKey, {
+      expiresAt: Date.now() + BATCH_REASON_CACHE_TTL_MS,
+      reasons: cloneReasonMap(reasonMap),
+    });
+    return reasonMap;
+  })();
+
+  inFlightBatchReasonRewrites.set(cacheKey, task);
+  try {
+    return cloneReasonMap(await task);
+  } finally {
+    inFlightBatchReasonRewrites.delete(cacheKey);
+  }
 }
 
 /**
