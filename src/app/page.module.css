@@ -735,14 +735,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 0.5em;
+  min-width: 0.34em;
   line-height: 1;
   text-align: center;
-  font: inherit;
+  font-size: 0.62em;
+  font-weight: inherit;
   color: rgba(246, 242, 255, 0.48);
   text-shadow: none;
   animation: clock-colon-blink 1s steps(1, end) infinite;
-  transform: translateY(-10px);
+  transform: translateY(-5px);
 }
 
 .panelLight .clockColon {
