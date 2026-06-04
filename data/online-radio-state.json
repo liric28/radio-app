@@ -1,102 +1,102 @@
 {
   "date": "2026-06-04",
   "seed": {
-    "input": "早高峰通勤向，从本地十四年华语库里捞出几首像红尘客栈、光辉岁月这样有集体记忆的中文歌唤醒清晨",
-    "reason": "早晨出门场景需要活力唤醒，本地库华语回忆感歌曲丰富，周杰伦和BEYOND各占11首和9首，晨间通勤选歌应以中文熟悉旋律为主，区别于上次的缓慢主旋律角度"
+    "input": "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "reason": "manual-pick"
   },
-  "source": "kugou",
+  "source": "qq",
   "program": {
     "stationName": "Claudio FM",
     "segmentTitle": "晨间出门在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "晨间出门",
     "energyLabel": "轻推力上行",
-    "hostIntro": "这一轮我按“早高峰通勤向，从本地十四年华语库里捞出几首像红尘客栈、光辉岁月这样有集体”往外抓了几首。先听《交换余生》，后面那首会把节奏接得更顺。",
+    "hostIntro": "今天先不急着解释，先让《七里香》把气口定住。后面那首我也给你连好了。",
     "currentTrack": {
-      "id": "online-a4f4093a663b",
-      "title": "交换余生",
-      "artist": "白天",
+      "id": "online-ce519545a5ab",
+      "title": "一路向北",
+      "artist": "周杰伦",
       "year": 2026,
-      "mood": "清醒",
-      "energy": 7,
+      "mood": "轻快",
+      "energy": 9,
       "language": "中文",
       "tags": [
         "在线推荐",
         "晨间出门",
         "kugou"
       ],
-      "reasonSeed": "这首歌是按“晨间出门 / 白天 / 交换余生”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“晨间出门 / 周杰伦 / 一路向北”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "kugou",
       "recommendationMeta": {
-        "sourceLabel": "顺推",
-        "slotType": "fallback",
-        "slotLabel": "主推"
+        "sourceLabel": "常听",
+        "slotType": "anchor",
+        "slotLabel": "延续"
       },
       "downloadContext": {
         "source": "kugou",
-        "duration": 277,
-        "payable": true,
+        "duration": 294,
+        "payable": false,
         "downloadable": true,
         "albumName": "",
-        "imageUrl": "http://imge.kugou.com/stdmusic/240/20240613/20240613104246676124.jpg",
+        "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121743958387.jpg",
         "raw": {
-          "audioId": 199706441,
-          "hash": "C7C2439CB80B3410A27BFBABCA0533A8",
-          "title": "交换余生",
-          "artist": "白天",
+          "audioId": 298888513,
+          "hash": "F73F22FB046CA1A135C70417163AF82E",
+          "title": "一路向北",
+          "artist": "周杰伦",
           "albumName": "",
-          "duration": 277,
-          "payType": 0,
-          "payable": true,
-          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20240613/20240613104246676124.jpg"
+          "duration": 294,
+          "payType": 3,
+          "payable": false,
+          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121743958387.jpg"
         }
       },
-      "reason": "新的一天，新的开始，这首歌陪你交换人生的每个清晨"
+      "reason": "一路向北出发吧，让节奏带着心去追逐晨光"
     },
     "queue": [
       {
-        "id": "online-b476d413a192",
-        "title": "茉莉雨 (莫离予))(Live)",
+        "id": "online-a4f4093a663b",
+        "title": "交换余生",
         "artist": "白天",
         "year": 2026,
-        "mood": "轻快",
-        "energy": 8,
+        "mood": "清醒",
+        "energy": 7,
         "language": "中文",
         "tags": [
           "在线推荐",
           "晨间出门",
           "kugou"
         ],
-        "reasonSeed": "这首歌是按“晨间出门 / 白天 / 茉莉雨 (莫离予))(Live)”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“晨间出门 / 白天 / 交换余生”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "kugou",
         "recommendationMeta": {
           "sourceLabel": "顺推",
           "slotType": "fallback",
-          "slotLabel": "延续"
+          "slotLabel": "主推"
         },
         "downloadContext": {
           "source": "kugou",
-          "duration": 256,
+          "duration": 277,
           "payable": true,
           "downloadable": true,
           "albumName": "",
           "imageUrl": "http://imge.kugou.com/stdmusic/240/20240613/20240613104246676124.jpg",
           "raw": {
-            "audioId": 405341085,
-            "hash": "B2C45E01880A4F4BA66C90D956256097",
-            "title": "茉莉雨 (莫离予))(Live)",
+            "audioId": 199706441,
+            "hash": "C7C2439CB80B3410A27BFBABCA0533A8",
+            "title": "交换余生",
             "artist": "白天",
             "albumName": "",
-            "duration": 256,
+            "duration": 277,
             "payType": 0,
             "payable": true,
             "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20240613/20240613104246676124.jpg"
           }
         },
-        "reason": "茉莉雨声落清晨，轻快的节拍带你开启美好一天"
+        "reason": "新的一天，新的开始，这首歌陪你交换人生的每个清晨"
       },
       {
         "id": "online-21130641af9b",
@@ -142,11 +142,11 @@
         "reason": "周杰伦七里香响起，清新的旋律唤醒你的每一个清晨"
       },
       {
-        "id": "online-ce519545a5ab",
-        "title": "一路向北",
-        "artist": "周杰伦",
+        "id": "online-4d0037a5aee0",
+        "title": "姑娘别哭泣",
+        "artist": "白天",
         "year": 2026,
-        "mood": "轻快",
+        "mood": "通勤",
         "energy": 9,
         "language": "中文",
         "tags": [
@@ -154,35 +154,35 @@
           "晨间出门",
           "kugou"
         ],
-        "reasonSeed": "这首歌是按“晨间出门 / 周杰伦 / 一路向北”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“晨间出门 / 白天 / 姑娘别哭泣”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "kugou",
         "recommendationMeta": {
-          "sourceLabel": "常听",
-          "slotType": "anchor",
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "kugou",
-          "duration": 294,
-          "payable": false,
+          "duration": 235,
+          "payable": true,
           "downloadable": true,
           "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121743958387.jpg",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20240613/20240613104246676124.jpg",
           "raw": {
-            "audioId": 298888513,
-            "hash": "F73F22FB046CA1A135C70417163AF82E",
-            "title": "一路向北",
-            "artist": "周杰伦",
+            "audioId": 302114640,
+            "hash": "7D848676B7FBED3563445C49CDE03FAC",
+            "title": "姑娘别哭泣",
+            "artist": "白天",
             "albumName": "",
-            "duration": 294,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121743958387.jpg"
+            "duration": 235,
+            "payType": 0,
+            "payable": true,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20240613/20240613104246676124.jpg"
           }
         },
-        "reason": "一路向北出发吧，让节奏带着心去追逐晨光"
+        "reason": "姑娘别哭泣，晨光里让我们一起笑着出门上班"
       },
       {
         "id": "online-6bd3eeb8afd3",
@@ -269,49 +269,6 @@
           }
         },
         "reason": "她没在看我，但她没听见这首歌，快来感受这份轻快"
-      },
-      {
-        "id": "online-4d0037a5aee0",
-        "title": "姑娘别哭泣",
-        "artist": "白天",
-        "year": 2026,
-        "mood": "通勤",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "晨间出门",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“晨间出门 / 白天 / 姑娘别哭泣”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 235,
-          "payable": true,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20240613/20240613104246676124.jpg",
-          "raw": {
-            "audioId": 302114640,
-            "hash": "7D848676B7FBED3563445C49CDE03FAC",
-            "title": "姑娘别哭泣",
-            "artist": "白天",
-            "albumName": "",
-            "duration": 235,
-            "payType": 0,
-            "payable": true,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20240613/20240613104246676124.jpg"
-          }
-        },
-        "reason": "姑娘别哭泣，晨光里让我们一起笑着出门上班"
       },
       {
         "id": "online-c6163abeb633",
