@@ -1,107 +1,64 @@
 {
   "date": "2026-06-04",
   "seed": {
-    "input": "找几首能唤醒私人记忆的中文抒情歌，节奏偏缓，适合白天上班时安静地回味",
-    "reason": "本地库以中文回忆感歌曲为主，周杰伦和BEYOND占主导，学习请求显示安静偏好达173次，需延续旧歌单熟悉感但换角度切入"
+    "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
+    "reason": "queue-advance"
   },
-  "source": "kugou",
+  "source": "qq",
   "program": {
     "stationName": "Claudio FM",
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "这一轮我按“找几首能唤醒私人记忆的中文抒情歌，节奏偏缓，适合白天上班时安静地回味”往外抓了几首。先听《可惜没如果》，后面那首会把节奏接得更顺。",
+    "hostIntro": "这一轮我按“白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律”往外抓了几首。先听《不再犹豫》，后面那首会把节奏接得更顺。",
     "currentTrack": {
-      "id": "online-2b3744c22048",
-      "title": "可惜没如果",
-      "artist": "林俊杰",
+      "id": "online-c79b3fea2b7e",
+      "title": "不再犹豫",
+      "artist": "BEYOND",
       "year": 2026,
-      "mood": "专注",
-      "energy": 7,
+      "mood": "克制",
+      "energy": 8,
       "language": "中文",
       "tags": [
         "在线推荐",
         "白天工作流",
         "kugou"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / 林俊杰 / 可惜没如果”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / BEYOND / 不再犹豫”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "kugou",
       "recommendationMeta": {
-        "sourceLabel": "顺推",
-        "slotType": "fallback",
-        "slotLabel": "主推"
+        "sourceLabel": "常听",
+        "slotType": "anchor",
+        "slotLabel": "延续"
       },
       "downloadContext": {
         "source": "kugou",
-        "duration": 298,
+        "duration": 254,
         "payable": false,
         "downloadable": true,
         "albumName": "",
-        "imageUrl": "http://imge.kugou.com/stdmusic/240/20211028/20211028112401626704.jpg",
+        "imageUrl": "http://imge.kugou.com/stdmusic/240/20250213/20250213090303734966.jpg",
         "raw": {
-          "audioId": 6288624,
-          "hash": "57D6EAF8F7E593A2C4B780D8045DE5C1",
-          "title": "可惜没如果",
-          "artist": "林俊杰",
+          "audioId": 329617,
+          "hash": "C477FE5B38147B7522DFCF3DC5BB8A6B",
+          "title": "不再犹豫",
+          "artist": "BEYOND",
           "albumName": "",
-          "duration": 298,
+          "duration": 254,
           "payType": 3,
           "payable": false,
-          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20211028/20211028112401626704.jpg"
+          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250213/20250213090303734966.jpg"
         }
       },
-      "reason": "每次听到这首歌都会想，如果当初勇敢一点，结局会不会不一样。"
+      "reason": "这首歌是按“白天工作流 / BEYOND / 不再犹豫”这条在线推荐线索命中的。"
     },
     "queue": [
       {
-        "id": "online-47dba924ed45",
-        "title": "水星记",
-        "artist": "郭顶",
-        "year": 2026,
-        "mood": "克制",
-        "energy": 8,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 郭顶 / 水星记”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 325,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250217/20250217144202898442.jpg",
-          "raw": {
-            "audioId": 23950033,
-            "hash": "5A6043D7B7109D14F01CD4D283D58CFB",
-            "title": "水星记",
-            "artist": "郭顶",
-            "albumName": "",
-            "duration": 325,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250217/20250217144202898442.jpg"
-          }
-        },
-        "reason": "水星绕着太阳转，却永远无法靠近，就像有些话你说不出口。"
-      },
-      {
-        "id": "online-939636386dfb",
-        "title": "小半",
-        "artist": "陈粒",
+        "id": "online-ce519545a5ab",
+        "title": "一路向北",
+        "artist": "周杰伦",
         "year": 2026,
         "mood": "轻推力",
         "energy": 9,
@@ -111,40 +68,40 @@
           "白天工作流",
           "kugou"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 陈粒 / 小半”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 一路向北”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "kugou",
         "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
+          "sourceLabel": "常听",
+          "slotType": "anchor",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "kugou",
-          "duration": 297,
+          "duration": 294,
           "payable": false,
           "downloadable": true,
           "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20200620/20200620103339135851.jpg",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121743958387.jpg",
           "raw": {
-            "audioId": 22399633,
-            "hash": "AFEA9FFE5D7F0EF0874119A363820D33",
-            "title": "小半",
-            "artist": "陈粒",
+            "audioId": 298888513,
+            "hash": "F73F22FB046CA1A135C70417163AF82E",
+            "title": "一路向北",
+            "artist": "周杰伦",
             "albumName": "",
-            "duration": 297,
+            "duration": 294,
             "payType": 3,
             "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20200620/20200620103339135851.jpg"
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121743958387.jpg"
           }
         },
-        "reason": "喜欢你却不敢靠近，这首歌把暗恋的小心思唱得太准了。"
+        "reason": "这首歌是按“白天工作流 / 周杰伦 / 一路向北”这条在线推荐线索命中的。"
       },
       {
-        "id": "online-9fb267ac48a0",
-        "title": "我怀念的",
-        "artist": "孙燕姿",
+        "id": "online-e9e46b8499fc",
+        "title": "红尘客栈",
+        "artist": "周杰伦",
         "year": 2026,
         "mood": "专注",
         "energy": 9,
@@ -154,40 +111,40 @@
           "白天工作流",
           "kugou"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 孙燕姿 / 我怀念的”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 红尘客栈”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "kugou",
         "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
+          "sourceLabel": "常听",
+          "slotType": "anchor",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "kugou",
-          "duration": 289,
+          "duration": 274,
           "payable": false,
           "downloadable": true,
           "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20221230/20221230052215394603.jpg",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20231016/20231016111750787075.jpg",
           "raw": {
-            "audioId": 285029,
-            "hash": "1A3CAACB1E361DAF217A2383E9C8E292",
-            "title": "我怀念的",
-            "artist": "孙燕姿",
+            "audioId": 582129,
+            "hash": "48729371F20FB048EF4E51D4CD41DBF5",
+            "title": "红尘客栈",
+            "artist": "周杰伦",
             "albumName": "",
-            "duration": 289,
+            "duration": 274,
             "payType": 3,
             "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20221230/20221230052215394603.jpg"
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20231016/20231016111750787075.jpg"
           }
         },
-        "reason": "有些东西失去才知道珍贵，工作时听到这首歌你会想起谁？"
+        "reason": "这首歌是按“白天工作流 / 周杰伦 / 红尘客栈”这条在线推荐线索命中的。"
       },
       {
-        "id": "online-66eee4dac7b4",
-        "title": "雨爱",
-        "artist": "杨丞琳",
+        "id": "online-c6163abeb633",
+        "title": "花海",
+        "artist": "周杰伦",
         "year": 2026,
         "mood": "克制",
         "energy": 9,
@@ -197,172 +154,43 @@
           "白天工作流",
           "kugou"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 杨丞琳 / 雨爱”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 花海”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "kugou",
         "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
+          "sourceLabel": "常听",
+          "slotType": "anchor",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "kugou",
-          "duration": 260,
+          "duration": 264,
           "payable": false,
           "downloadable": true,
           "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250716/20250716140851912935.jpg",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20241118/20241118160622508429.jpg",
           "raw": {
-            "audioId": 348980,
-            "hash": "2592FFA57A2D8B1A16F18D991B7098CD",
-            "title": "雨爱",
-            "artist": "杨丞琳",
+            "audioId": 327075,
+            "hash": "3328808CECBD1A1038166003840FDDD7",
+            "title": "花海",
+            "artist": "周杰伦",
             "albumName": "",
-            "duration": 260,
+            "duration": 264,
             "payType": 3,
             "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250716/20250716140851912935.jpg"
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20241118/20241118160622508429.jpg"
           }
         },
-        "reason": "雨停了，可那些没说出口的话，还在心里下着。"
-      },
-      {
-        "id": "online-1625c1754b59",
-        "title": "泡沫",
-        "artist": "G.E.M. 邓紫棋",
-        "year": 2026,
-        "mood": "轻推力",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / G.E.M. 邓紫棋 / 泡沫”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 258,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250630/20250630182953177860.jpg",
-          "raw": {
-            "audioId": 906648,
-            "hash": "8574D02543B5F902469FB4E27E3A350D",
-            "title": "泡沫",
-            "artist": "G.E.M. 邓紫棋",
-            "albumName": "",
-            "duration": 258,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250630/20250630182953177860.jpg"
-          }
-        },
-        "reason": "爱情像泡沫，灿烂却脆弱，但至少曾经拥有过这份心动。"
-      },
-      {
-        "id": "online-2de85cd29ca3",
-        "title": "一直很安静",
-        "artist": "阿桑",
-        "year": 2026,
-        "mood": "克制",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 阿桑 / 一直很安静”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 250,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250221/20250221180751360822.jpg",
-          "raw": {
-            "audioId": 328622,
-            "hash": "44816EF0288A3B1ED2C4A5C5FE6B93B3",
-            "title": "一直很安静",
-            "artist": "阿桑",
-            "albumName": "",
-            "duration": 250,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250221/20250221180751360822.jpg"
-          }
-        },
-        "reason": "有些陪伴安静得让人心疼，你身边有没有这样的人？"
-      },
-      {
-        "id": "online-2e8511a8402d",
-        "title": "云烟成雨",
-        "artist": "房东的猫",
-        "year": 2026,
-        "mood": "轻推力",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 房东的猫 / 云烟成雨”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "顺推",
-          "slotType": "fallback",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 240,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20210114/20210114205318454237.jpg",
-          "raw": {
-            "audioId": 29223581,
-            "hash": "D272A0C930EB6182C723A9F248194309",
-            "title": "云烟成雨",
-            "artist": "房东的猫",
-            "albumName": "",
-            "duration": 240,
-            "payType": 1,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20210114/20210114205318454237.jpg"
-          }
-        },
-        "reason": "离别总是让人措手不及，云烟散了，可那些回忆还留在原地。"
+        "reason": "这首歌是按“白天工作流 / 周杰伦 / 花海”这条在线推荐线索命中的。"
       }
     ],
     "explanation": [
       "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
-      "推荐线索是“找几首能唤醒私人记忆的中文抒情歌，节奏偏缓，适合白天上班时安静地回味”，实际落地优先保留 林俊杰、郭顶、陈粒 这些锚点。",
-      "当前来源是 kugou，本轮确认了 8 首可播在线歌曲。"
+      "推荐线索是“白天工作间隙，用熟悉的中文摇滚和流行慢慢推进，搜索几首像《海阔天空》《不再犹豫》那样能安静陪伴的怀旧中文歌”，实际落地优先保留 BEYOND、BEYOND、周杰伦 这些锚点。",
+      "当前来源是 kugou，本轮确认了 5 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 online-regenerate，本轮种子是“找几首能唤醒私人记忆的中文抒情歌，节奏偏缓，适合白天上班时安静地回味”。当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 online-regenerate，本轮种子是“白天工作间隙，用熟悉的中文摇滚和流行慢慢推进，搜索几首像《海阔天空》《不再犹豫》那样能安静陪伴的怀旧中文歌”。当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }
