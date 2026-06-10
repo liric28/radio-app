@@ -1,5 +1,5 @@
 {
-  "date": "2026-06-04",
+  "date": "2026-06-09",
   "seed": {
     "input": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "reason": "queue-advance"
@@ -10,55 +10,55 @@
     "segmentTitle": "白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律",
     "scene": "白天工作流",
     "energyLabel": "轻推力上行",
-    "hostIntro": "这一轮我按“白天工作流在线电台 · 从旧歌单里捞出最像你的缓慢主旋律”往外抓了几首。先听《不再犹豫》，后面那首会把节奏接得更顺。",
+    "hostIntro": "这一轮不从本地记忆里翻旧歌，直接按你现在的口味去外面抓。先听前面这首，后面我把线接顺。",
     "currentTrack": {
-      "id": "online-c79b3fea2b7e",
-      "title": "不再犹豫",
-      "artist": "BEYOND",
+      "id": "online-b964c3f0105a",
+      "title": "Daylight",
+      "artist": "Maroon 5",
       "year": 2026,
       "mood": "克制",
       "energy": 8,
-      "language": "中文",
+      "language": "英语",
       "tags": [
         "在线推荐",
         "白天工作流",
-        "kugou"
+        "qq"
       ],
-      "reasonSeed": "这首歌是按“白天工作流 / BEYOND / 不再犹豫”这条在线推荐线索命中的。",
+      "reasonSeed": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。",
       "libraryRoot": "",
       "streamUrl": "",
       "source": "kugou",
       "recommendationMeta": {
-        "sourceLabel": "常听",
-        "slotType": "anchor",
+        "sourceLabel": "顺推",
+        "slotType": "fallback",
         "slotLabel": "延续"
       },
       "downloadContext": {
         "source": "kugou",
-        "duration": 254,
+        "duration": 226,
         "payable": false,
         "downloadable": true,
         "albumName": "",
-        "imageUrl": "http://imge.kugou.com/stdmusic/240/20250213/20250213090303734966.jpg",
+        "imageUrl": "http://imge.kugou.com/stdmusic/240/20251024/20251024044341413393.jpg",
         "raw": {
-          "audioId": 329617,
-          "hash": "C477FE5B38147B7522DFCF3DC5BB8A6B",
-          "title": "不再犹豫",
-          "artist": "BEYOND",
+          "audioId": 727663,
+          "hash": "38C108C97C1DDC5826C884C7199549DE",
+          "title": "Daylight",
+          "artist": "Maroon 5",
           "albumName": "",
-          "duration": 254,
+          "duration": 226,
           "payType": 3,
           "payable": false,
-          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250213/20250213090303734966.jpg"
+          "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20251024/20251024044341413393.jpg"
         }
       },
-      "reason": "这首歌是按“白天工作流 / BEYOND / 不再犹豫”这条在线推荐线索命中的。"
+      "reason": "这首歌是按“白天工作流 / Maroon 5 / Daylight”这条在线推荐线索命中的。"
     },
     "queue": [
       {
-        "id": "online-ce519545a5ab",
-        "title": "一路向北",
-        "artist": "周杰伦",
+        "id": "online-45390039a290",
+        "title": "画沙",
+        "artist": "白允y",
         "year": 2026,
         "mood": "轻推力",
         "energy": 9,
@@ -66,85 +66,42 @@
         "tags": [
           "在线推荐",
           "白天工作流",
-          "kugou"
+          "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 一路向北”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 白允y / 画沙”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "kugou",
         "recommendationMeta": {
-          "sourceLabel": "常听",
-          "slotType": "anchor",
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "kugou",
-          "duration": 294,
+          "duration": 272,
           "payable": false,
           "downloadable": true,
           "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121743958387.jpg",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20230208/20230208133408674768.jpg",
           "raw": {
-            "audioId": 298888513,
-            "hash": "F73F22FB046CA1A135C70417163AF82E",
-            "title": "一路向北",
-            "artist": "周杰伦",
+            "audioId": 221993525,
+            "hash": "E5F3B457843C7203B181DEC1754D6217",
+            "title": "画沙",
+            "artist": "白允y",
             "albumName": "",
-            "duration": 294,
+            "duration": 272,
             "payType": 3,
             "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121743958387.jpg"
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20230208/20230208133408674768.jpg"
           }
         },
-        "reason": "这首歌是按“白天工作流 / 周杰伦 / 一路向北”这条在线推荐线索命中的。"
+        "reason": "这首歌是按“白天工作流 / 白允y / 画沙”这条在线推荐线索命中的。"
       },
       {
-        "id": "online-e9e46b8499fc",
-        "title": "红尘客栈",
-        "artist": "周杰伦",
-        "year": 2026,
-        "mood": "专注",
-        "energy": 9,
-        "language": "中文",
-        "tags": [
-          "在线推荐",
-          "白天工作流",
-          "kugou"
-        ],
-        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 红尘客栈”这条在线推荐线索命中的。",
-        "libraryRoot": "",
-        "streamUrl": "",
-        "source": "kugou",
-        "recommendationMeta": {
-          "sourceLabel": "常听",
-          "slotType": "anchor",
-          "slotLabel": "延续"
-        },
-        "downloadContext": {
-          "source": "kugou",
-          "duration": 274,
-          "payable": false,
-          "downloadable": true,
-          "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20231016/20231016111750787075.jpg",
-          "raw": {
-            "audioId": 582129,
-            "hash": "48729371F20FB048EF4E51D4CD41DBF5",
-            "title": "红尘客栈",
-            "artist": "周杰伦",
-            "albumName": "",
-            "duration": 274,
-            "payType": 3,
-            "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20231016/20231016111750787075.jpg"
-          }
-        },
-        "reason": "这首歌是按“白天工作流 / 周杰伦 / 红尘客栈”这条在线推荐线索命中的。"
-      },
-      {
-        "id": "online-c6163abeb633",
-        "title": "花海",
-        "artist": "周杰伦",
+        "id": "online-26491d5e0626",
+        "title": "香草吧噗",
+        "artist": "南拳妈妈",
         "year": 2026,
         "mood": "克制",
         "energy": 9,
@@ -152,45 +109,217 @@
         "tags": [
           "在线推荐",
           "白天工作流",
-          "kugou"
+          "qq"
         ],
-        "reasonSeed": "这首歌是按“白天工作流 / 周杰伦 / 花海”这条在线推荐线索命中的。",
+        "reasonSeed": "这首歌是按“白天工作流 / 南拳妈妈 / 香草吧噗”这条在线推荐线索命中的。",
         "libraryRoot": "",
         "streamUrl": "",
         "source": "kugou",
         "recommendationMeta": {
-          "sourceLabel": "常听",
-          "slotType": "anchor",
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
           "slotLabel": "延续"
         },
         "downloadContext": {
           "source": "kugou",
-          "duration": 264,
+          "duration": 227,
           "payable": false,
           "downloadable": true,
           "albumName": "",
-          "imageUrl": "http://imge.kugou.com/stdmusic/240/20241118/20241118160622508429.jpg",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20210114/20210114195152844094.jpg",
           "raw": {
-            "audioId": 327075,
-            "hash": "3328808CECBD1A1038166003840FDDD7",
-            "title": "花海",
-            "artist": "周杰伦",
+            "audioId": 63177,
+            "hash": "86D6DBDDA876E852B803305260B238EC",
+            "title": "香草吧噗",
+            "artist": "南拳妈妈",
             "albumName": "",
-            "duration": 264,
+            "duration": 227,
             "payType": 3,
             "payable": false,
-            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20241118/20241118160622508429.jpg"
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20210114/20210114195152844094.jpg"
           }
         },
-        "reason": "这首歌是按“白天工作流 / 周杰伦 / 花海”这条在线推荐线索命中的。"
+        "reason": "这首歌是按“白天工作流 / 南拳妈妈 / 香草吧噗”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-85991d5d8e20",
+        "title": "낮 (Day off) (白天)",
+        "artist": "脸红的思春期",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 7,
+        "language": "韩语",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "kugou",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "主推"
+        },
+        "downloadContext": {
+          "source": "kugou",
+          "duration": 192,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20190910/20190910171505110611.jpg",
+          "raw": {
+            "audioId": 59523305,
+            "hash": "333A08E2061F5B03DD3B4EB01C1B57BA",
+            "title": "낮 (Day off) (白天)",
+            "artist": "脸红的思春期",
+            "albumName": "",
+            "duration": 192,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20190910/20190910171505110611.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 脸红的思春期 / 낮 (Day off) (白天)”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-6d638b08f27a",
+        "title": "连名带姓",
+        "artist": "曹杨",
+        "year": 2026,
+        "mood": "专注",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 曹杨 / 连名带姓”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "kugou",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "kugou",
+          "duration": 311,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20260401/20260401214222866454.jpg",
+          "raw": {
+            "audioId": 552975117,
+            "hash": "0C9F364A559277A577D362B467F581B6",
+            "title": "连名带姓",
+            "artist": "曹杨",
+            "albumName": "",
+            "duration": 311,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20260401/20260401214222866454.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 曹杨 / 连名带姓”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-e8d2ecb1b585",
+        "title": "北斗星",
+        "artist": "温岚",
+        "year": 2026,
+        "mood": "克制",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / 温岚 / 北斗星”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "kugou",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "kugou",
+          "duration": 288,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "",
+          "imageUrl": "http://imge.kugou.com/stdmusic/240/20250125/20250125121604894867.jpg",
+          "raw": {
+            "audioId": 305043243,
+            "hash": "B4686BABA44C4F87DD809C167AE629EF",
+            "title": "北斗星",
+            "artist": "温岚",
+            "albumName": "",
+            "duration": 288,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://imge.kugou.com/stdmusic/{size}/20250125/20250125121604894867.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / 温岚 / 北斗星”这条在线推荐线索命中的。"
+      },
+      {
+        "id": "online-58864803fd15",
+        "title": "倒带 (释怀版)",
+        "artist": "Zkaaai",
+        "year": 2026,
+        "mood": "轻推力",
+        "energy": 9,
+        "language": "中文",
+        "tags": [
+          "在线推荐",
+          "白天工作流",
+          "qq"
+        ],
+        "reasonSeed": "这首歌是按“白天工作流 / Zkaaai / 倒带 (释怀版)”这条在线推荐线索命中的。",
+        "libraryRoot": "",
+        "streamUrl": "",
+        "source": "kugou",
+        "recommendationMeta": {
+          "sourceLabel": "顺推",
+          "slotType": "fallback",
+          "slotLabel": "延续"
+        },
+        "downloadContext": {
+          "source": "kugou",
+          "duration": 125,
+          "payable": false,
+          "downloadable": true,
+          "albumName": "",
+          "imageUrl": "http://singerimg.kugou.com/uploadpic/softhead/240/20230420/20230420211240429037.jpg",
+          "raw": {
+            "audioId": 456914102,
+            "hash": "D2522E90857E4F8DAD210749F484FAFC",
+            "title": "倒带 (释怀版)(1.1x DJ 氛围版)",
+            "artist": "Zkaaai",
+            "albumName": "",
+            "duration": 125,
+            "payType": 3,
+            "payable": false,
+            "imageTemplate": "http://singerimg.kugou.com/uploadpic/softhead/{size}/20230420/20230420211240429037.jpg"
+          }
+        },
+        "reason": "这首歌是按“白天工作流 / Zkaaai / 倒带 (释怀版)”这条在线推荐线索命中的。"
       }
     ],
     "explanation": [
       "这轮不再从本地曲库起歌，直接按 白天工作流 的在线推荐意图去搜。",
-      "推荐线索是“白天工作间隙，用熟悉的中文摇滚和流行慢慢推进，搜索几首像《海阔天空》《不再犹豫》那样能安静陪伴的怀旧中文歌”，实际落地优先保留 BEYOND、BEYOND、周杰伦 这些锚点。",
-      "当前来源是 kugou，本轮确认了 5 首可播在线歌曲。"
+      "推荐线索是“工作日的午后，用华语老歌的熟悉旋律慢慢找回那段时间缓慢的感觉”，实际落地优先保留 脸红的思春期、Maroon 5、白允y 这些锚点。",
+      "当前来源是 qq，本轮确认了 8 首可播在线歌曲。"
     ],
     "controlsHint": "这条在线队列会跟着你的反馈、时段和口味继续重组。当前固定保留 0 首新发现。",
-    "memorySummary": "当前直接从在线来源抓歌；最近动作是 online-regenerate，本轮种子是“白天工作间隙，用熟悉的中文摇滚和流行慢慢推进，搜索几首像《海阔天空》《不再犹豫》那样能安静陪伴的怀旧中文歌”。当前以你熟悉的方向为主，这一轮不额外加新发现"
+    "memorySummary": "当前直接从在线来源抓歌；最近动作是 manual-pick，本轮种子是“工作日的午后，用华语老歌的熟悉旋律慢慢找回那段时间缓慢的感觉”。当前以你熟悉的方向为主，这一轮不额外加新发现"
   }
 }

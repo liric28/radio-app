@@ -735,10 +735,17 @@ function classifyRecommendationSource(
   taste: UserTasteProfile,
   model: PreferenceModel,
   preferences: RequestPreferences,
-  options: BuildOnlineProgramOptions,
+  stage: {
+    relaxed: boolean;
+    allowRecentArtist: boolean;
+    allowLocalMatch: boolean;
+    perArtistLimit: number;
+    messageHint?: string;
+    action?: string;
+  },
   exploration: ExplorationPlan,
 ) : RecommendationSourceMeta {
-  const explicitArtist = explicitArtistRequest(options.messageHint, taste);
+  const explicitArtist = explicitArtistRequest(stage.messageHint, taste);
   const inferredLanguage = preferences.language || inferLanguage(taste, hit.title, hit.artist);
 
   if (localMatch?.sourcePath) {
@@ -1015,7 +1022,7 @@ async function buildProgramTracks(
   async function tryAppendHit(
     hit: MusicSearchHit,
     index: number,
-    options: {
+    stage: {
       relaxed: boolean;
       allowRecentArtist: boolean;
       allowLocalMatch: boolean;
@@ -1034,19 +1041,19 @@ async function buildProgramTracks(
     );
     // 严格阶段：近期艺人直接跳过，先扩到新艺人；兜底阶段再逐步放开。
     const isRecentArtist = artistClusterKeys.some((key) => recentArtistClusters.has(key));
-    if (!forcedArtist && !options.allowRecentArtist && isRecentArtist) return;
+    if (!forcedArtist && !stage.allowRecentArtist && isRecentArtist) return;
     // 非点名场景默认每艺人只留 1 首；回填不足时再逐步放大上限。
-    const allowedPerArtist = forcedArtist ? count : options.perArtistLimit;
+    const allowedPerArtist = forcedArtist ? count : stage.perArtistLimit;
     if (currentArtistCount >= allowedPerArtist) return;
 
     const normalizedTitle = normalizeTitleKey(hit.title);
-    const allowedTitleRepeats = options.relaxed ? 2 : 1;
+    const allowedTitleRepeats = stage.relaxed ? 2 : 1;
     if ((titleCounts.get(normalizedTitle) || 0) >= allowedTitleRepeats) return;
 
     const localCandidate = findLocalMatch(hit, localSongs);
     const localMatch = (await localSongFileExists(localCandidate)) ? localCandidate : undefined;
     // 在线电台默认优先推真正的新在线歌；只有后续回填阶段，才允许本地老歌回流补位。
-    if (preferOnlineOnly && localMatch && !options.allowLocalMatch) return;
+    if (preferOnlineOnly && localMatch && !stage.allowLocalMatch) return;
     const recommendationMeta = classifyRecommendationSource(
       hit,
       localMatch,
@@ -1054,7 +1061,7 @@ async function buildProgramTracks(
       taste,
       model,
       preferences,
-      options,
+      stage,
       exploration,
     );
     const streamUrl = localMatch?.sourcePath
