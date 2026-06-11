@@ -52,3 +52,5 @@ next-env.d.ts
 /netease-sidecar/
 /cache/
 /package-lock.json
+
+.codegraph/
